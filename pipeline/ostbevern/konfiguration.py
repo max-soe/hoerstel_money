@@ -9,6 +9,7 @@ die `tomllib` importiert.
 from __future__ import annotations
 
 import itertools
+import os
 import re
 import tomllib
 from collections.abc import Mapping
@@ -21,7 +22,18 @@ STANDARD_JAHR = 2026
 
 PIPELINE_WURZEL = Path(__file__).resolve().parent.parent
 PROJEKT_WURZEL = PIPELINE_WURZEL.parent
-JAHRGAENGE_VERZEICHNIS = PIPELINE_WURZEL / "jahrgaenge"
+STANDARD_JAHRGAENGE_VERZEICHNIS = PIPELINE_WURZEL / "jahrgaenge"
+# Die Umgebungsvariable PIPELINE_JAHRGAENGE (Pfad relativ zu pipeline/ oder absolut) lenkt
+# alle Lesezugriffe auf ein anderes Jahrgangsverzeichnis um. So laufen Tests und die
+# CI-Reproduzierbarkeitsprüfung gegen den archivierten Ostbevern-Jahrgang
+# (jahrgaenge/archiv/ostbevern, ProFIS+-Referenz), solange Hörstel noch nicht vollständig
+# gelesen wird. Ausgewertet beim Import, damit die Standardargumente unten passen.
+_VERZEICHNIS_UEBERSCHREIBUNG = os.environ.get("PIPELINE_JAHRGAENGE")
+JAHRGAENGE_VERZEICHNIS = (
+    (PIPELINE_WURZEL / _VERZEICHNIS_UEBERSCHREIBUNG).resolve()
+    if _VERZEICHNIS_UEBERSCHREIBUNG
+    else STANDARD_JAHRGAENGE_VERZEICHNIS
+)
 
 # Strukturelle Pipeline-Konzepte (keine Jahrgangsdaten): Plantypen und die
 # Kapitel, die jede Jahrgangsdatei mindestens enthalten muss.

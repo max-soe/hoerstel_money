@@ -5,7 +5,7 @@
 # Fehlende Zeilen von PDF S. 62/63 werden nicht zusätzlich abgeschrieben (D-18).
 
 haushaltsjahr = 2026
-quelle = "raw_data/haushalt-2026.pdf; übertragen aus discussion/SPEZIFIKATION.md Anhang B"
+quelle = "raw_data/ostbevern/haushalt-2026.pdf; übertragen aus discussion/SPEZIFIKATION.md Anhang B"
 
 # Haushaltssatzung § 1-3 (PDF S. 8).
 [satzung]

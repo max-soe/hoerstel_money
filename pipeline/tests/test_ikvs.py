@@ -1,8 +1,9 @@
 """Tests für ostbevern.ikvs: Gesamtpläne im IKVS-Layout (Hörstel).
 
 Die PDF-Tests lesen nur das Original-PDF, nie daten/. Seiten, Spalten und Sollwerte kommen
-aus lade_jahrgang(STANDARD_JAHR) bzw. lade_sollwerte(STANDARD_JAHR); die Einheitstests
-bauen synthetische Textzeilen mit der Geometrie der Hörsteler Gesamtpläne.
+aus dem aktiven Jahrgang in STANDARD_JAHRGAENGE_VERZEICHNIS, auch wenn conftest.py die übrigen
+Tests auf den Ostbevern-Referenzjahrgang umlenkt. Die Einheitstests bauen synthetische
+Textzeilen mit der Geometrie der Hörsteler Gesamtpläne.
 """
 
 from __future__ import annotations
@@ -17,11 +18,20 @@ from ostbevern.ikvs import (
     lies_ikvs_betrag,
     lies_ikvs_plantabelle,
 )
-from ostbevern.konfiguration import STANDARD_JAHR, Jahrgang, lade_jahrgang, lade_sollwerte
+from ostbevern.konfiguration import (
+    STANDARD_JAHR,
+    STANDARD_JAHRGAENGE_VERZEICHNIS,
+    Jahrgang,
+    lade_jahrgang,
+    lade_sollwerte,
+)
 from ostbevern.pdf import PdfDokument, Textzeile, Wort
 from ostbevern.pruefung import TOLERANZ_EURO, Planwerte, _pruefe_regel1, _pruefe_regel4_satzung
 from ostbevern.schema import PLAN_SPALTEN, zerlege_spaltenkopf
 from ostbevern.zeilen import ZEILEN
+
+# Der aktive Jahrgang (Hörstel), nicht der Ostbevern-Referenzjahrgang aus conftest.py.
+_VERZEICHNIS = STANDARD_JAHRGAENGE_VERZEICHNIS
 
 _SPALTEN = ("Ergebnis 2024", "Ansatz 2025", "Ansatz 2026")
 # Rechte Kanten der Betragsspalten und Mitten der Jahreszahlen wie auf PDF S. 79/80.
@@ -239,9 +249,8 @@ def test_woerterbuch_zeigt_auf_kanonische_zeilen() -> None:
 
 @pytest.fixture(scope="module")
 def jahrgang() -> Jahrgang:
-    jahrgang = lade_jahrgang(STANDARD_JAHR)
-    if jahrgang.software != "ikvs":
-        pytest.skip("Standardjahrgang ist kein IKVS-Jahrgang")
+    jahrgang = lade_jahrgang(STANDARD_JAHR, verzeichnis=_VERZEICHNIS)
+    assert jahrgang.software == "ikvs"
     return jahrgang
 
 
@@ -259,7 +268,7 @@ def gesamtplaene(jahrgang: Jahrgang) -> dict[str, pl.DataFrame]:
 def test_gesamtergebnisplan_trifft_sollwerte(
     jahrgang: Jahrgang, gesamtplaene: dict[str, pl.DataFrame]
 ) -> None:
-    soll = lade_sollwerte(STANDARD_JAHR)["gesamtergebnisplan"]
+    soll = lade_sollwerte(STANDARD_JAHR, verzeichnis=_VERZEICHNIS)["gesamtergebnisplan"]
     planwerte = Planwerte(gesamtplaene["ergebnisplan"], datei="ergebnisplan")
     spalten = [zerlege_spaltenkopf(kopf) for kopf in jahrgang.spalten["ergebnisplan"]]
     assert [jahr for _, jahr in spalten] == soll["jahre"]
@@ -271,7 +280,7 @@ def test_gesamtergebnisplan_trifft_sollwerte(
 def test_gesamtfinanzplan_trifft_sollwerte(
     jahrgang: Jahrgang, gesamtplaene: dict[str, pl.DataFrame]
 ) -> None:
-    soll = lade_sollwerte(STANDARD_JAHR)["gesamtfinanzplan"]["ansatz"]
+    soll = lade_sollwerte(STANDARD_JAHR, verzeichnis=_VERZEICHNIS)["gesamtfinanzplan"]["ansatz"]
     planwerte = Planwerte(gesamtplaene["finanzplan"], datei="finanzplan")
     for zeile, wert in soll.items():
         assert planwerte.wert("GESAMT", "", zeile, jahrgang.haushaltsjahr, "ansatz") == wert
@@ -299,7 +308,7 @@ def test_gesamtplaene_zeilenformeln_stimmen(gesamtplaene: dict[str, pl.DataFrame
 def test_satzung_trifft_gesamtplaene(
     jahrgang: Jahrgang, gesamtplaene: dict[str, pl.DataFrame]
 ) -> None:
-    sollwerte = lade_sollwerte(STANDARD_JAHR)
+    sollwerte = lade_sollwerte(STANDARD_JAHR, verzeichnis=_VERZEICHNIS)
     satzung = dict(sollwerte["satzung"])
     # Die VE druckt erst die Investitionsübersicht; der Gesamtfinanzplan hat keine VE-Spalte.
     satzung.pop("verpflichtungsermaechtigungen")

@@ -45,6 +45,11 @@ jobs:
         run: uv run pytest
       - name: Pipeline reproduzierbar (D-24)
         working-directory: ${{ github.workspace }}
+        # Bis die Pipeline den Hörsteler Haushalt (IKVS-Layout) vollständig liest, prüft dieser
+        # Schritt den archivierten Ostbevern-Jahrgang (ProFIS+-Referenz), aus dem daten/ und
+        # app/src/data stammen. Die Tests setzen dieselbe Umlenkung in tests/conftest.py.
+        env:
+          PIPELINE_JAHRGAENGE: jahrgaenge/archiv/ostbevern
         run: |
           uv run --directory pipeline python alle.py
           git diff --stat --exit-code -- daten app/src/data

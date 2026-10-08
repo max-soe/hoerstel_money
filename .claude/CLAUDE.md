@@ -6,6 +6,8 @@
 
 Eine statische Webanwendung, die den Bürgerinnen und Bürgern von Ostbevern den Haushalt 2026 der Gemeinde erklärt. Sie beantwortet zwei Leitfragen: **Wo kommt das Geld der Gemeinde her?** und **Wofür wird es ausgegeben?**. Ergänzend zeigt sie die Entwicklung 2024–2029, Investitionen und Schulden, den Gestaltungsspielraum des Rats und den Stellenplan. Die Daten stammen aus einer Python-Pipeline, die das 400-seitige ProFIS+-PDF ausliest und gegen die Planwerte prüft. Vorbild ist „Münster Money“ (Code for Münster, Münsterhack '26).
 
+**Stand v2.0 (Hörstel):** Der Jahrgang 2026 ist jetzt der Haushalt der Stadt Hörstel (`raw_data/haushalt-2026.pdf`, 592 Seiten, Word-Export von Axians IKVS, `software = "ikvs"` in `pipeline/jahrgaenge/2026.toml`). Die IKVS-Leselogik steht in `pipeline/ostbevern/ikvs.py` (bisher Gesamtpläne). Ostbevern bleibt als ProFIS+-Referenz unter `pipeline/jahrgaenge/archiv/ostbevern/` und `raw_data/ostbevern/`; Tests (`tests/conftest.py`) und der CI-Reproduzierbarkeitsschritt laden ihn über `PIPELINE_JAHRGAENGE=jahrgaenge/archiv/ostbevern`. `daten/` und `app/src/data/` stammen bis Phase 11 noch aus Ostbevern. Stand und Phasen: `.planning/ROADMAP.md`, Strukturvergleich: `discussion/HOERSTEL_MACHBARKEIT.md`.
+
 Die vollständige fachliche Spezifikation steht in `discussion/SPEZIFIKATION.md`. Sie ist die maßgebliche Detailquelle für Datenmodell, Prüfregeln, Seiteninhalte und Sollwerte (Anhang B).
 
 **Core Value:** Jede Zahl in der App ist korrekt aus dem Haushalts-PDF abgeleitet und durch automatische Prüfungen gegen den Gesamtplan und die Satzung belegt. Die beiden Leitfragen „Woher?“ und „Wofür?“ sind für Laien verständlich beantwortet.
@@ -41,6 +43,8 @@ Pipeline (vom Repo-Root aus):
 - `uv run --directory pipeline ruff check .`
 - `uv run --directory pipeline ruff format .`
 - `uv run --directory pipeline python alle.py --jahr 2026` (ohne `--jahr` gilt `STANDARD_JAHR`)
+
+Ostbevern-Referenzlauf (wie der CI-Reproduzierbarkeitsschritt): `PIPELINE_JAHRGAENGE=jahrgaenge/archiv/ostbevern uv run --directory pipeline python alle.py`
 
 Hinweis: Ein bloßes `uv run pipeline/SKRIPT.py` vom Repo-Root nutzt **nicht** die Pipeline-Umgebung — deshalb immer `--directory pipeline` angeben (Abweichung von Spez. 5.2).
 
