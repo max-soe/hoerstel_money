@@ -34,7 +34,7 @@ key-files:
 ## Ergebnis
 
 - Pipeline-Tests: **673 bestanden, 1 übersprungen** (fehlende `app/node_modules` im Container). Vor Phase 8 liefen mit dem ausgetauschten PDF nur 509 Tests durch; nach 08-01 allein waren 281 rot.
-- `alle.py` mit `PIPELINE_JAHRGAENGE=jahrgaenge/archiv/ostbevern` (lokal nachgestellter CI-Schritt): Ergebnis ausstehend.
+- `alle.py` mit `PIPELINE_JAHRGAENGE=jahrgaenge/archiv/ostbevern` (lokal nachgestellter CI-Schritt): alle Prüfregeln grün, `daten/` und `app/src/data/` ohne Diff, 0 Belegbilder neu gerendert.
 
 ## Entscheidungen
 
