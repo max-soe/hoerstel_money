@@ -14,6 +14,7 @@ from pathlib import Path
 
 import polars as pl
 
+from ostbevern import ikvs
 from ostbevern.konfiguration import Jahrgang
 from ostbevern.pdf import PdfDokument, Textzeile, Wort
 from ostbevern.schema import (
@@ -527,6 +528,9 @@ def extrahiere_plaene(
     (gedruckte und synthetische PG, D-14) an die GESAMT-Zeilen beider Dateien an und
     schreibt beide CSVs einmal.
     """
+    if jahrgang.software == ikvs.SOFTWARE:
+        return _extrahiere_ikvs_gesamtplaene(jahrgang, daten_wurzel=daten_wurzel)
+
     seiten = lies_seiten_csv(daten_wurzel / SEITEN_CSV)
     hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
 
@@ -554,6 +558,34 @@ def extrahiere_plaene(
             pl.DataFrame(synthetisch_finanzplan, schema=PLAN_SPALTEN),
         ]
     )
+
+    ergebnisplan_pfad = daten_wurzel / ERGEBNISPLAN_CSV
+    finanzplan_pfad = daten_wurzel / FINANZPLAN_CSV
+    schreibe_plan_csv(ergebnisplan_df, ergebnisplan_pfad)
+    schreibe_plan_csv(finanzplan_df, finanzplan_pfad)
+    return (
+        ExtraktionsErgebnis(zeilen_geschrieben=ergebnisplan_df.height, pfad=ergebnisplan_pfad),
+        ExtraktionsErgebnis(zeilen_geschrieben=finanzplan_df.height, pfad=finanzplan_pfad),
+    )
+
+
+def _extrahiere_ikvs_gesamtplaene(
+    jahrgang: Jahrgang, *, daten_wurzel: Path
+) -> tuple[ExtraktionsErgebnis, ExtraktionsErgebnis]:
+    """IKVS-Layout: schreibt bisher nur die Gesamtpläne (ostbevern.ikvs).
+
+    Die Teilpläne folgen mit der IKVS-Seitenklassifikation (Schritt 01); bis dahin enthalten
+    beide CSVs ausschließlich GESAMT-Zeilen.
+    """
+    with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
+        ergebnisplan_df = pl.DataFrame(
+            ikvs.gesamtplan_datensaetze(dokument, jahrgang, datei="ergebnisplan"),
+            schema=PLAN_SPALTEN,
+        )
+        finanzplan_df = pl.DataFrame(
+            ikvs.gesamtplan_datensaetze(dokument, jahrgang, datei="finanzplan"),
+            schema=PLAN_SPALTEN,
+        )
 
     ergebnisplan_pfad = daten_wurzel / ERGEBNISPLAN_CSV
     finanzplan_pfad = daten_wurzel / FINANZPLAN_CSV

@@ -21,6 +21,27 @@ Wiederverwendbar sind die fachlichen Teile:
 Die PDF-lesenden Schritte 01–05 und 08 müssen für das neue Layout neu geschrieben
 oder stark angepasst werden.
 
+## Umsetzungsstand
+
+**Schritt 1 erledigt: Gesamtpläne im IKVS-Layout**
+
+- `pipeline/jahrgaenge/2026.toml` und `2026_sollwerte.toml` beschreiben jetzt Hörstel. Die Ostbevern-Dateien liegen als Referenz für das ProFIS+-Layout unter `pipeline/jahrgaenge/archiv/`.
+- Neuer Schlüssel `software = "ikvs"` in der Jahrgangsdatei (Standard `"profis"`), gelesen über `Jahrgang.software`.
+- `pipeline/ostbevern/ikvs.py` liest Gesamtergebnisplan (S. 79) und Gesamtfinanzplan (S. 80–81). Gelöst sind dabei:
+  - umbrochene Bezeichnungen mit Beträgen in einer Zwischenzeile,
+  - `--` als 0 und Cent-Beträge, kaufmännisch auf Euro gerundet,
+  - das abgetrennte Minuszeichen,
+  - die ungedruckte Zeile „Änderung des Bestandes an fremden Finanzmitteln“.
+  Gedruckte Zeilennummern werden auf die kanonischen Nummern aus `ostbevern/zeilen.py` abgebildet: Finanzplan „40 – Liquide Mittel“ ist kanonisch 41. Die mittelfristigen Jahre („Ansatz 2027“) gehen als Wertart `planung` in die CSVs ein.
+- Schritt 02 (`02_plaene_extrahieren.py`) schreibt für IKVS bisher nur die GESAMT-Zeilen. Schritt 01 bricht für IKVS mit einem klaren Hinweis ab, sodass `alle.py` noch nicht durchläuft.
+- `pipeline/tests/test_ikvs.py` prüft:
+  - alle Zeilen gegen die Sollwerte,
+  - Regel 1 (Zeilenformeln): 108 Prüfungen, 0 Abweichungen, auch nach der Rundung,
+  - die Haushaltssatzung § 1–2 gegen die Gesamtpläne: 0 Abweichungen. Die VE aus § 3 folgen mit den Investitionsübersichten.
+- Die eingecheckten Daten unter `daten/` stammen weiterhin aus dem Ostbevern-Lauf. Sie werden erst neu erzeugt, wenn die Pipeline für Hörstel durchläuft.
+
+**Nächste Schritte:** Seitenklassifikation und Teilpläne im IKVS-Layout, danach Produktinformationen, Investitionsübersichten und Querschnitte. Parallel dazu die Ostbevern-gebundenen Tests auf Hörstel umstellen.
+
 ## Was getestet wurde
 
 | Test | Ergebnis |

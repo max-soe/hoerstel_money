@@ -436,6 +436,11 @@ def klassifiziere_seiten(
 ) -> KlassifizierungsErgebnis:
     """Klassifiziert alle Seiten, leitet die Hierarchie ab und schreibt
     `daten_wurzel/SEITEN_CSV` sowie `daten_wurzel/HIERARCHIE_CSV` (D-16, D-14)."""
+    if jahrgang.software != "profis":
+        raise SeitenFehler(
+            f"Seitenklassifikation für software = {jahrgang.software!r} ist noch nicht "
+            "umgesetzt; bisher liest Schritt 02 im IKVS-Layout nur die Gesamtpläne"
+        )
     with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
         seiten, koepfe = klassifiziere_dokument(dokument, jahrgang)
 
