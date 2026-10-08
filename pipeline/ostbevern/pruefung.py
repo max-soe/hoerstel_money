@@ -499,17 +499,38 @@ def _wende_befunde_an(
     return aktualisiert, abgleich.veraltet
 
 
-def _pruefe_regel1(*, ergebnisplan: pl.DataFrame, finanzplan: pl.DataFrame) -> Regelergebnis:
+def _pruefe_regel1(
+    *,
+    ergebnisplan: pl.DataFrame,
+    finanzplan: pl.DataFrame,
+    nur_mit_gedruckten_komponenten: bool = False,
+) -> Regelergebnis:
+    """Regel 1 – jede gedruckte Formelzeile gleich der Summe ihrer Komponenten.
+
+    `nur_mit_gedruckten_komponenten` (IKVS-Layout): Eine Formel wird nur geprüft, wenn der
+    Plan mindestens eine ihrer Komponenten druckt. Hörsteler Teilfinanzpläne drucken z. B.
+    Z. 17 (Saldo laufende Verwaltung), aber nie Z. 09/16; diese Zeilen sichern Regel 2/3 und
+    die Haushaltsquerschnitte ab. Im ProFIS+-Layout bleibt jede Formelzeile geprüft.
+    """
     geprueft = 0
     abweichungen: list[Pruefpunkt] = []
     for datei, df in (("ergebnisplan", ergebnisplan), ("finanzplan", finanzplan)):
         planwerte = Planwerte(df, datei=datei)
+        gedruckt = {
+            (z["ebene"], z["code"] or "", z["zeile"], z["jahr"], z["wertart"])
+            for z in df.iter_rows(named=True)
+        }
         for zeile in df.iter_rows(named=True):
             plantyp = plantyp_fuer(datei, zeile["ebene"])
             formel = FORMELN.get(plantyp, {}).get(zeile["zeile"])
             if formel is None:
                 continue
             code = zeile["code"] or ""
+            if nur_mit_gedruckten_komponenten and not any(
+                (zeile["ebene"], code, komponente, zeile["jahr"], zeile["wertart"]) in gedruckt
+                for _, komponente in formel
+            ):
+                continue
             soll = zeile["betrag"]
             ist = sum(
                 vorzeichen
@@ -2665,7 +2686,11 @@ def pruefe_alles(
     pfad_befunde = befunde_pfad if befunde_pfad is not None else daten_wurzel / BEFUNDE_MD
     befunde = lies_befunde(pfad_befunde)
 
-    regel1 = _pruefe_regel1(ergebnisplan=ergebnisplan, finanzplan=finanzplan)
+    regel1 = _pruefe_regel1(
+        ergebnisplan=ergebnisplan,
+        finanzplan=finanzplan,
+        nur_mit_gedruckten_komponenten=jahrgang.software == "ikvs",
+    )
     regel2 = _pruefe_regel2(
         ergebnisplan=ergebnisplan,
         finanzplan=finanzplan,

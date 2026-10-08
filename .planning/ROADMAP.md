@@ -27,7 +27,7 @@ Ziel: Die App erklärt den Haushalt 2026 der Stadt Hörstel. Das Hörsteler PDF 
 Die Phasen werden ohne GSD-Befehle bearbeitet und hier von Hand nachgeführt.
 
 - [x] **Phase 8: Hörstel-Grundlage** — Jahrgang Hörstel, IKVS-Leser für die Gesamtpläne, Ostbevern als Testreferenz (HOE-01, HOE-02, HOE-03) (completed 2026-10-08)
-- [ ] **Phase 9: IKVS-Seiten und Teilpläne** — Seitenklassifikation ohne Kopfzeile, Hierarchie 2/5/7-stellig, Teilergebnis- und Teilfinanzpläne, Regeln 1–3, Sollwerte je PB (HOE-04, HOE-05, HOE-14)
+- [x] **Phase 9: IKVS-Seiten und Teilpläne** — Seitenklassifikation ohne Kopfzeile, Hierarchie 2/5/7-stellig, Teilergebnis- und Teilfinanzpläne, Regeln 1–3, Sollwerte je PB (HOE-04, HOE-05, HOE-14) (completed 2026-10-08)
 - [ ] **Phase 10: IKVS-Details** — Produktinformationen ohne Personennamen, Erläuterungen, Investitionsübersichten mit VE, Haushaltsquerschnitte (HOE-06 bis HOE-09)
 - [ ] **Phase 11: Manuelle Daten und App-Daten Hörstel** — Bildseiten (Stellenplan, Fraktionen, Eigenkapital) manuell, Vorberichtsdaten, `meta.json`, Texte; `alle.py` und CI auf Hörstel (HOE-10 bis HOE-12)
 - [ ] **Phase 12: App auf Hörstel umstellen** — Texte, Namen, Links, Deployment (HOE-13)
@@ -44,6 +44,8 @@ Die Phasen werden ohne GSD-Befehle bearbeitet und hier von Hand nachgeführt.
 ### Phase 9: IKVS-Seiten und Teilpläne
 **Goal**: `seiten.csv`, `hierarchie.csv`, `ergebnisplan.csv` und `finanzplan.csv` enthalten den vollständigen Hörsteler Haushalt; Regeln 1–3 sind grün.
 **Requirements**: HOE-04, HOE-05, HOE-14
+**Plans**: 1 plan (nachträglich dokumentiert)
+- [x] 09-01: IKVS-Seitenklassifikation, Teilpläne, Regeln 1–3, Sollwerte je PB
 **Success Criteria**:
 1. 69 Produkte, 16 PB und alle gedruckten PG werden mit Startseite erkannt
 2. Jeder Teilergebnis- und Teilfinanzplan ist gelesen; Regel 1 (Formeln), Regel 2 (Produkte → PG → PB) und Regel 3 (PB → Gesamt) ohne unbelegte Abweichung

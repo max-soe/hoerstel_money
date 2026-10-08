@@ -40,7 +40,14 @@ oder stark angepasst werden.
   - die Haushaltssatzung § 1–2 gegen die Gesamtpläne: 0 Abweichungen. Die VE aus § 3 folgen mit den Investitionsübersichten.
 - Die eingecheckten Daten unter `daten/` stammen weiterhin aus dem Ostbevern-Lauf. Sie werden erst neu erzeugt, wenn die Pipeline für Hörstel durchläuft.
 
-**Nächste Schritte:** Seitenklassifikation und Teilpläne im IKVS-Layout, danach Produktinformationen, Investitionsübersichten und Querschnitte. Parallel dazu die Ostbevern-gebundenen Tests auf Hörstel umstellen.
+**Schritt 2 erledigt: Seitenklassifikation und Teilpläne (Phase 9)**
+
+- `pipeline/ostbevern/ikvs_seiten.py` klassifiziert alle 592 Seiten ohne laufende Kopfzeile: Der Kontext (PB, Produkt) wird über die Trennseiten fortgeschrieben, jeder Plantitel wird dagegen geprüft. Hierarchie: 16 PB, 50 Produktgruppen, 69 Produkte; die PB-Startseiten stimmen mit dem Inhaltsverzeichnis überein.
+- Schritt 02 liest alle 85 Teilergebnis- und 85 Teilfinanzpläne. Produktgruppen haben keinen eigenen Teilplan und werden als Summe ihrer Produkte gebildet; ihre Erträge und Aufwendungen 2026 treffen die gedruckten Haushaltsquerschnitte exakt.
+- Prüfregeln 1–3: 11 Abweichungen über 1 €, alle im PDF so gedruckt. Neun davon sind Rundungsdifferenzen von 2 € bei den Ist-Werten 2024. Die übrigen betreffen die Transferaufwendungen: Die Teilpläne enthalten 5.800 € (2026) bzw. 4.400 € (2027) weniger als der Gesamtergebnisplan.
+- Ostbevern läuft weiterhin unverändert als ProFIS+-Referenz.
+
+**Nächste Schritte:** Produktinformationen (ohne Personennamen), Erläuterungen, Investitionsübersichten mit VE und Haushaltsquerschnitte als Kontrollquelle (Phase 10).
 
 ## Was getestet wurde
 

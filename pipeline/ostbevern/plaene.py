@@ -529,7 +529,7 @@ def extrahiere_plaene(
     schreibt beide CSVs einmal.
     """
     if jahrgang.software == ikvs.SOFTWARE:
-        return _extrahiere_ikvs_gesamtplaene(jahrgang, daten_wurzel=daten_wurzel)
+        return _extrahiere_ikvs(jahrgang, daten_wurzel=daten_wurzel)
 
     seiten = lies_seiten_csv(daten_wurzel / SEITEN_CSV)
     hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
@@ -569,23 +569,34 @@ def extrahiere_plaene(
     )
 
 
-def _extrahiere_ikvs_gesamtplaene(
+def _extrahiere_ikvs(
     jahrgang: Jahrgang, *, daten_wurzel: Path
 ) -> tuple[ExtraktionsErgebnis, ExtraktionsErgebnis]:
-    """IKVS-Layout: schreibt bisher nur die Gesamtpläne (ostbevern.ikvs).
+    """IKVS-Layout: Gesamt- und Teilpläne (PB, PG als Summe, Produkt) über `ostbevern.ikvs`.
 
-    Die Teilpläne folgen mit der IKVS-Seitenklassifikation (Schritt 01); bis dahin enthalten
-    beide CSVs ausschließlich GESAMT-Zeilen.
+    Liest `hierarchie.csv` aus Schritt 01; Fehler des IKVS-Lesers werden als PlaeneFehler
+    gemeldet.
     """
-    with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
-        ergebnisplan_df = pl.DataFrame(
-            ikvs.gesamtplan_datensaetze(dokument, jahrgang, datei="ergebnisplan"),
-            schema=PLAN_SPALTEN,
+    hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
+    try:
+        with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
+            gesamt_ergebnisplan = ikvs.gesamtplan_datensaetze(
+                dokument, jahrgang, datei="ergebnisplan"
+            )
+            gesamt_finanzplan = ikvs.gesamtplan_datensaetze(dokument, jahrgang, datei="finanzplan")
+            teilplaene = ikvs.lies_ikvs_teilplaene(dokument, jahrgang)
+        teil_ergebnisplan, teil_finanzplan = ikvs.teilplan_datensaetze(
+            teilplaene, hierarchie, jahrgang
         )
-        finanzplan_df = pl.DataFrame(
-            ikvs.gesamtplan_datensaetze(dokument, jahrgang, datei="finanzplan"),
-            schema=PLAN_SPALTEN,
-        )
+    except ikvs.IkvsFehler as fehler:
+        raise PlaeneFehler(str(fehler)) from fehler
+
+    ergebnisplan_df = pl.concat(
+        [pl.DataFrame(gesamt_ergebnisplan, schema=PLAN_SPALTEN), teil_ergebnisplan]
+    )
+    finanzplan_df = pl.concat(
+        [pl.DataFrame(gesamt_finanzplan, schema=PLAN_SPALTEN), teil_finanzplan]
+    )
 
     ergebnisplan_pfad = daten_wurzel / ERGEBNISPLAN_CSV
     finanzplan_pfad = daten_wurzel / FINANZPLAN_CSV

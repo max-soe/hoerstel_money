@@ -1,9 +1,9 @@
 # Sollwertdatei für den Haushalt 2026 der Stadt Hörstel (D-08).
 # Beträge sind int-Euro. Die Ist-Ergebnisse 2024 druckt der Gesamtplan mit Cent; sie sind
 # hier kaufmännisch auf ganze Euro gerundet (wie ostbevern.ikvs.lies_ikvs_betrag).
-# Übertragen aus dem PDF-Text der Seiten 7, 79 und 80/81. Die Tabellen für Teilpläne
-# und Produktverzeichnis bleiben leer, bis die IKVS-Teilplanextraktion steht.
-# Die frühere Ostbevern-Sollwertdatei liegt unter jahrgaenge/archiv/.
+# Übertragen aus dem PDF-Text der Seiten 3 (Inhaltsverzeichnis), 7, 79-81 und den
+# Teilergebnisplänen der Produktbereiche.
+# Die frühere Ostbevern-Sollwertdatei liegt unter jahrgaenge/archiv/ostbevern/.
 
 haushaltsjahr = 2026
 quelle = "raw_data/haushalt-2026.pdf (Stadt Hörstel); übertragen aus PDF S. 7, 79-81"
@@ -69,8 +69,54 @@ pdf_seite = 80
 "35" = 2293842
 "41" = -5944981
 
+# Teilergebnispläne je Produktbereich, Haushaltsjahr 2026 (Ansatz): Z. 10 (ordentliche
+# Erträge), Z. 17 (ordentliche Aufwendungen), Z. 29 (Ergebnis mit internen Leistungs-
+# beziehungen), übertragen von den PB-Teilergebnisplänen (Startseiten siehe [anhang_a]).
+# PB 07 druckt keine Erträge (Z. 10 = 0). Gegenprobe: Z. 10 und Z. 17 jeder Produktgruppe
+# treffen die unabhängig gedruckten Haushaltsquerschnitte S. 85-109.
 [teilergebnisplaene_pb]
+"01" = { ordentliche_ertraege = 2162786, ordentliche_aufwendungen = 12437877, ergebnis_mit_internen_verrechnungen = -3649953 }
+"02" = { ordentliche_ertraege = 572681, ordentliche_aufwendungen = 1656787, ergebnis_mit_internen_verrechnungen = -1308053 }
+"03" = { ordentliche_ertraege = 2642168, ordentliche_aufwendungen = 5430073, ergebnis_mit_internen_verrechnungen = -4154718 }
+"04" = { ordentliche_ertraege = 127968, ordentliche_aufwendungen = 563992, ergebnis_mit_internen_verrechnungen = -568604 }
+"05" = { ordentliche_ertraege = 2885630, ordentliche_aufwendungen = 3958011, ergebnis_mit_internen_verrechnungen = -2783399 }
+"06" = { ordentliche_ertraege = 104500, ordentliche_aufwendungen = 1619990, ergebnis_mit_internen_verrechnungen = -1739459 }
+"07" = { ordentliche_ertraege = 0, ordentliche_aufwendungen = 345000, ergebnis_mit_internen_verrechnungen = -345000 }
+"08" = { ordentliche_ertraege = 291470, ordentliche_aufwendungen = 977117, ergebnis_mit_internen_verrechnungen = -1577648 }
+"09" = { ordentliche_ertraege = 93500, ordentliche_aufwendungen = 421529, ergebnis_mit_internen_verrechnungen = -352655 }
+"10" = { ordentliche_ertraege = 11600, ordentliche_aufwendungen = 98817, ergebnis_mit_internen_verrechnungen = -97613 }
+"11" = { ordentliche_ertraege = 8649013, ordentliche_aufwendungen = 5109177, ergebnis_mit_internen_verrechnungen = 3205697 }
+"12" = { ordentliche_ertraege = 1237826, ordentliche_aufwendungen = 3546785, ergebnis_mit_internen_verrechnungen = -3654618 }
+"13" = { ordentliche_ertraege = 372739, ordentliche_aufwendungen = 471234, ergebnis_mit_internen_verrechnungen = -325365 }
+"14" = { ordentliche_ertraege = 56900, ordentliche_aufwendungen = 220565, ergebnis_mit_internen_verrechnungen = -171288 }
+"15" = { ordentliche_ertraege = 59551, ordentliche_aufwendungen = 456803, ergebnis_mit_internen_verrechnungen = -258268 }
+"16" = { ordentliche_ertraege = 39490503, ordentliche_aufwendungen = 24017000, ergebnis_mit_internen_verrechnungen = 15051778 }
 
+# Summe der 16 PB. Sie liegt bei den ordentlichen Aufwendungen 5.800 € unter dem
+# Gesamtergebnisplan (61.336.557 €, S. 79): Die Transferaufwendungen der Teilpläne ergeben
+# 28.766.960 €, der Gesamtplan druckt 28.772.760 €. Auch die 50 Haushaltsquerschnitte der
+# Produktgruppen (S. 85-109) summieren sich auf 61.330.757 €, der Querschnitt
+# "Gesamthaushalt" (S. 110) nennt dagegen 61.336.557 € (Befund des PDF, nicht der Extraktion).
 [teilergebnisplaene_pb_summe]
+ordentliche_ertraege = 58758835
+ordentliche_aufwendungen = 61330757
 
+# Produktbereiche mit Startseite laut Inhaltsverzeichnis (PDF S. 3). Das Verzeichnis führt
+# keine Produkte; deren Startseiten sind die Produktinformationen.
 [anhang_a]
+"01" = { name = "Innere Verwaltung", pdf_seite = 112 }
+"02" = { name = "Sicherheit und Ordnung", pdf_seite = 185 }
+"03" = { name = "Schulträgeraufgaben", pdf_seite = 213 }
+"04" = { name = "Kultur und Wissenschaft", pdf_seite = 248 }
+"05" = { name = "Soziale Leistungen", pdf_seite = 275 }
+"06" = { name = "Kinder-, Jugend- und Familienhilfe", pdf_seite = 326 }
+"07" = { name = "Gesundheitsdienste", pdf_seite = 346 }
+"08" = { name = "Sportförderung", pdf_seite = 353 }
+"09" = { name = "Räumliche Planung und Entwicklung, Geoinformation", pdf_seite = 382 }
+"10" = { name = "Bauen und Wohnen", pdf_seite = 390 }
+"11" = { name = "Ver- und Entsorgung", pdf_seite = 406 }
+"12" = { name = "Verkehrsflächen und -anlagen, ÖPNV", pdf_seite = 443 }
+"13" = { name = "Natur- und Landschaftspflege", pdf_seite = 488 }
+"14" = { name = "Umweltschutz", pdf_seite = 514 }
+"15" = { name = "Wirtschaft und Tourismus", pdf_seite = 524 }
+"16" = { name = "Allgemeine Finanzwirtschaft", pdf_seite = 552 }

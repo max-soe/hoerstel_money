@@ -264,6 +264,8 @@ ZEILEN["teilfinanzplan"] = {
         "Auszahlungen aus Investitionstätigkeit", "auszahlungen_investitionen", True
     ),
     "31": Zeilendefinition("Saldo aus Investitionstätigkeit", "saldo_investitionen", True),
+    # Nur im IKVS-Layout gedruckt (Hörstel, PB-Teilfinanzpläne); ProFIS+ druckt Z. 32 nie.
+    "32": Zeilendefinition("Finanzmittelüberschuss/-fehlbetrag", "finanzmittelueberschuss", True),
     "33": Zeilendefinition("Aufnahme und Rückflüsse von Darlehen", "kreditaufnahme", False),
     "34": Zeilendefinition("Saldo aus Finanzierungstätigkeit", "saldo_finanzierung", True),
     "35": Zeilendefinition("Tilgung und Gewährung von Darlehen", "tilgung", False),
@@ -337,6 +339,7 @@ FORMELN: dict[str, dict[str, tuple[tuple[int, str], ...]]] = {
         "23": ((1, "18"), (1, "19"), (1, "20"), (1, "21"), (1, "22")),
         "30": ((1, "24"), (1, "25"), (1, "26"), (1, "27"), (1, "28"), (1, "29")),
         "31": ((1, "23"), (-1, "30")),
+        "32": ((1, "17"), (1, "31")),
         "34": ((1, "33"), (-1, "35")),
     },
 }

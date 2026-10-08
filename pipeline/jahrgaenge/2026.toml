@@ -51,20 +51,24 @@ verpflichtungen_schulden = { von = 586, bis = 588 }
 wirtschaftsplaene = { von = 589, bis = 592 }
 
 # Kopfzeilen-Muster für die Seitenklassifikation (Spez. 5.3). Das IKVS-Layout hat keine
-# laufende Kopfzeile; die Muster beschreiben die Trenn- und Produktseiten des
-# Teilplanbereichs und werden erst von der IKVS-Seitenklassifikation (Schritt 01)
-# ausgewertet, die noch aussteht.
+# laufende Kopfzeile. Geprüft wird gegen den Text der ersten Inhaltszeile(n) einer Seite
+# (ostbevern.ikvs_seiten): Trennseiten drucken "Produktbereich" bzw. "Produkt" und darunter
+# Code und Name, die zusammengesetzt gegen produktbereich/produkt geprüft werden; die
+# Produktinformationen beginnen direkt mit "Produkt 0111101 Name". Die Produktgruppe steht
+# nur als Feld der Produktinformationen ("Produkt-" / "01111 Name" / "gruppe").
 [kopfzeilen]
 produktbereich = '^Produktbereich (\d{2}) (.+)$'
-produktgruppe = '^Produktgruppe (\d{5}) (.+)$'
+produktgruppe = '^(\d{5}) (.+)$'
 produkt = '^Produkt (\d{7}) (.+)$'
 fortsetzung = "Fortsetzung folgt"
 
+# Pflichtschlüssel der Jahrgangsdatei; ausgewertet nur vom ProFIS+-Layout. Die IKVS-
+# Seitentypen ergeben sich aus den Titeln unter [layout.ikvs_teilplaene].
 [kopfzeilen.seitentypen]
 produktinformationen = '^Produkt\d{7}'
 grundzahlen = '^Kennzahlen'
 teilergebnisplan = '^Teilergebnisplan\d'
-erlaeuterungen = '^Erläuterungen'
+erlaeuterungen = '^ErläuterungenundHinweise'
 teilfinanzplan = '^Teilfinanzplan\d'
 investitionen = '^InvestitionsübersichtB'
 
@@ -74,3 +78,17 @@ investitionen = '^InvestitionsübersichtB'
 [layout.ikvs_gesamtplaene]
 ergebnisplan_spalten = ["Ergebnis 2024", "Ansatz 2025", "Ansatz 2026", "Ansatz 2027", "Ansatz 2028", "Ansatz 2029"]
 finanzplan_spalten = ["Ergebnis 2024", "Ansatz 2025", "Ansatz 2026", "Ansatz 2027", "Ansatz 2028", "Ansatz 2029"]
+
+# [layout.ikvs_teilplaene]: Titel und Spaltenköpfe des Teilplanbereichs (S. 111-566).
+# Die Titel-Muster werden gegen Textzeile.text geprüft; Gruppe 1 ist der Code (2-stellig
+# PB, 7-stellig Produkt), Gruppe 2 der Name (kann auf der Folgezeile weiterlaufen).
+# abschnitt_ende_muster beendet einen offenen Teilplan (Investitionsübersicht,
+# Erläuterungen, Trenn- und Produktseiten). Die Spalten werden positionsweise auf die
+# kanonischen [spalten] abgebildet ("Plan 2027" = "Planung 2027").
+[layout.ikvs_teilplaene]
+teilergebnisplan_muster = '^Teilergebnisplan (\d{2}|\d{7}) - (.+)$'
+teilfinanzplan_muster = '^Teilfinanzplan (\d{2}|\d{7}) - (.+)$'
+investitionen_muster = '^Investitionsübersicht B (\d{7}) - (.+)$'
+erlaeuterungen_muster = '^Erläuterungen und Hinweise$'
+abschnitt_ende_muster = '^(Investitionsübersicht B \d{7} - |Erläuterungen und Hinweise$|Produktbereich$|Produkt$|Produkt \d{7} |Produktbereich \d{2} )'
+spalten = ["Ergebnis 2024", "Ansatz 2025", "Ansatz 2026", "Plan 2027", "Plan 2028", "Plan 2029"]

@@ -18,7 +18,7 @@ Die vollständige fachliche Spezifikation steht in `discussion/SPEZIFIKATION.md`
 
 Ziel: Die App erklärt den Haushalt 2026 der Stadt Hörstel. Phasen 8–12 in `ROADMAP.md`, Anforderungen HOE-01 bis HOE-14 in `REQUIREMENTS.md`. Der Meilenstein wird ohne GSD-Befehle bearbeitet und von Hand nachgeführt.
 
-Stand (2026-10-08): Phase 8 abgeschlossen. Der Jahrgang 2026 ist Hörstel (`software = "ikvs"`), die Gesamtpläne werden gelesen und gegen Satzung und Zeilenformeln geprüft. Ostbevern bleibt als ProFIS+-Referenz unter `pipeline/jahrgaenge/archiv/ostbevern/` und `raw_data/ostbevern/` testbar. Die ausgelieferte App zeigt noch Ostbevern.
+Stand (2026-10-08): Phasen 8 und 9 abgeschlossen. Der Jahrgang 2026 ist Hörstel (`software = "ikvs"`). Schritt 01 klassifiziert alle 592 Seiten (16 PB, 50 PG, 69 Produkte), Schritt 02 liest Gesamt- und alle 170 Teilpläne; Regeln 1–3 zeigen nur 11 belegte Abweichungen des PDF. Ostbevern bleibt als ProFIS+-Referenz unter `pipeline/jahrgaenge/archiv/ostbevern/` und `raw_data/ostbevern/` testbar. Die ausgelieferte App zeigt noch Ostbevern.
 
 ## Backlog (nach v2.0)
 
@@ -63,13 +63,16 @@ Jede Zahl in der App ist korrekt aus dem Haushalts-PDF abgeleitet und durch auto
 
 ### Active
 
-- HOE-04 bis HOE-14 (siehe `REQUIREMENTS.md`): IKVS-Seitenklassifikation und Teilpläne, Details, manuelle Daten, App-Umstellung auf Hörstel
+- HOE-06 bis HOE-13 (siehe `REQUIREMENTS.md`): Details, manuelle Daten, App-Umstellung auf Hörstel
 
 ### Validated in v2.0
 
 - ✓ Jahrgang 2026 = Hörstel mit `software = "ikvs"` (HOE-01) — Phase 8
 - ✓ Gesamtergebnis- und Gesamtfinanzplan im IKVS-Layout, Regel 1 und Satzung § 1–2 ohne Abweichung (HOE-02) — Phase 8
 - ✓ Ostbevern als ProFIS+-Referenz für Tests und CI (HOE-03) — Phase 8
+- ✓ Seitenklassifikation im IKVS-Layout mit fortgeschriebenem Kontext, Hierarchie 16 PB / 50 PG / 69 Produkte, PB-Startseiten wie Inhaltsverzeichnis (HOE-04) — Phase 9
+- ✓ Teilergebnis- und Teilfinanzpläne aller PB und Produkte, PG als Summe, Regeln 1–3 nur mit belegten Abweichungen (HOE-05) — Phase 9
+- ✓ Sollwerte je PB und Produktverzeichnis in `2026_sollwerte.toml`, Anhang B.3 ohne Abweichung (HOE-14) — Phase 9
 
 ### Out of Scope
 
@@ -146,6 +149,8 @@ Jede Zahl in der App ist korrekt aus dem Haushalts-PDF abgeleitet und durch auto
 | Kachelraster gegen die CI-Schrift kalibriert: `li`-Einzug von Web Awesome zurückgesetzt, Mindestspalte neu gegen DejaVu Sans Bold, e2e prüft alle Spaltensprünge und loggt die gerenderte Schrift | Lokale Kalibrierung lief mit anderer Fallback-Schrift als der GitHub-Runner (G-07-2) | ✓ Good — Phase 7 (07-14, UAT 2/2) |
 | v2.0: Wechsel auf Hörstel; zweite Leselogik `software = "ikvs"` statt Umbau der ProFIS+-Leser | Hörsteler PDF ist ein Word-Export von Axians IKVS mit anderem Seitenaufbau, Codesystem (7-stellige Produkte) und Zahlenformat; die ProFIS+-Leser bleiben als Referenz | — Pending (Phase 8: Gesamtpläne) |
 | v2.0: Gedruckte IKVS-Zeilennummern werden auf die kanonischen Zeilennummern abgebildet (z. B. Finanzplan „40 Liquide Mittel“ → 41), mittelfristige Jahre („Ansatz 2027“) gehen als Wertart `planung` ein | Prüfregeln, Formeln und App-Daten bleiben layoutunabhängig | ✓ Good — Phase 8 |
+| v2.0: Produktgruppen ohne eigenen Teilplan (IKVS) werden als Summe ihrer Produkte gebildet und als `synthetisch` markiert; PB-Teilfinanzplan Z. 17 wird als Z. 32 − Z. 31 abgeleitet | Hörstel druckt Teilpläne nur für PB und Produkte; Regel 2 prüft so Produkte → PB | ✓ Good — Phase 9 |
+| v2.0: Regel 1 prüft im IKVS-Layout nur Formeln mit mindestens einer gedruckten Komponente (Schalter `nur_mit_gedruckten_komponenten`) | Hörsteler Teilfinanzpläne drucken Z. 17, aber nie Z. 09/16; Ostbevern bleibt unverändert | ✓ Good — Phase 9 |
 | v2.0: Ostbevern bleibt Regressionsreferenz (archivierter Jahrgang, PDF unter `raw_data/ostbevern/`, `PIPELINE_JAHRGAENGE`) | Bestehende Tests sichern die ProFIS+-Leser und die gemeinsame Logik ab, bis Hörstel durchläuft | ✓ Good — Phase 8 |
 | Lighthouse nur als Einmal-Werkzeug im Scratch-Verzeichnis, nie in package.json/CI | Keine neue Abhängigkeit für einen einmaligen Nachweis | ✓ Good — Phase 7 (alle 11 Routen a11y 100) |
 
@@ -167,4 +172,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-08 after Phase 8 (v2.0 Hörstel, von Hand gepflegt)*
+*Last updated: 2026-10-08 after Phase 9 (v2.0 Hörstel, von Hand gepflegt)*
