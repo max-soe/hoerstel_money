@@ -47,7 +47,14 @@ oder stark angepasst werden.
 - Prüfregeln 1–3: 11 Abweichungen über 1 €, alle im PDF so gedruckt. Neun davon sind Rundungsdifferenzen von 2 € bei den Ist-Werten 2024. Die übrigen betreffen die Transferaufwendungen: Die Teilpläne enthalten 5.800 € (2026) bzw. 4.400 € (2027) weniger als der Gesamtergebnisplan.
 - Ostbevern läuft weiterhin unverändert als ProFIS+-Referenz.
 
-**Nächste Schritte:** Produktinformationen (ohne Personennamen), Erläuterungen, Investitionsübersichten mit VE und Haushaltsquerschnitte als Kontrollquelle (Phase 10).
+**Schritt 3 erledigt: Produktinformationen, Erläuterungen, Investitionen, Querschnitte (Phase 10)**
+
+- Produktinformationen aller 69 Produkte ohne Personennamen. Die Tabellen „Stellenplan“ (Vollzeitstellen) und „Kennzahlen“ landen als Grundzahlen, die Erläuterungen als Blöcke je Teilergebnisplan-Zeile mit dem Ansatz 2026.
+- 188 Investitionsmaßnahmen mit Ein- und Auszahlungen und VE. Die Summe der VE aus den Investitionsübersichten liegt 5.100 T€ unter der Satzung, weil die VE für den Neubau des Verwaltungsgebäudes nur in der VE-Übersicht (S. 586) steht.
+- Haushaltsquerschnitte aller 50 Produktgruppen und des Gesamthaushalts; sie stimmen ohne Ausnahme mit den Teilplänen überein (Regel 7).
+- Im PDF so gedruckte Abweichungen: zwei Produkte mit Investitionsübersichten, die nicht zum Teilfinanzplan passen (0212201, 1557302), und sieben Erläuterungen mit einem anderen Ansatz als der Teilergebnisplan.
+
+**Nächste Schritte:** Stellenplan und weitere Bildseiten manuell erfassen, Vorberichtsdaten und `meta.json` für Hörstel, `befunde.md` mit den gesammelten Befunden, `alle.py` und CI auf Hörstel umstellen (Phase 11).
 
 ## Was getestet wurde
 

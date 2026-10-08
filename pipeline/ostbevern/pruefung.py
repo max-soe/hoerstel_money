@@ -166,6 +166,17 @@ REGEL7_KENNZAHLEN: dict[str, tuple[str, str, tuple[tuple[int, str], ...]]] = {
 }
 
 
+# Regel 7 für den Querschnitt "Gesamthaushalt" (IKVS, Hörstel S. 110): eine GESAMTSUMME-Zeile
+# ohne PB wird gegen die Gesamtpläne geprüft. Der Gesamtfinanzplan nummeriert die
+# Finanzierungstätigkeit anders als der Teilfinanzplan (Z. 33-37 statt Z. 33-35).
+REGEL7_KENNZAHLEN_GESAMT: dict[str, tuple[str, str, tuple[tuple[int, str], ...]]] = {
+    **REGEL7_KENNZAHLEN,
+    "einzahlungen_finanzierung": ("finanzplan", "ansatz", ((1, "33"), (1, "34"))),
+    "auszahlungen_finanzierung": ("finanzplan", "ansatz", ((1, "35"), (1, "36"))),
+    "saldo_finanzierung": ("finanzplan", "ansatz", ((1, "37"),)),
+}
+
+
 class PruefungsFehler(ValueError):
     """Wird ausgelöst, wenn ein Prüfwert fehlt oder nicht eindeutig bestimmbar ist."""
 
@@ -306,6 +317,10 @@ class Planwerte:
 
     def wert(self, ebene: str, code: str, zeile: str, jahr: int, wertart: str) -> int:
         return self._wert((ebene, code, zeile, jahr, wertart), unterwegs=frozenset())
+
+    def ist_gedruckt(self, ebene: str, code: str, zeile: str, jahr: int, wertart: str) -> bool:
+        """True, wenn die Plan-CSV genau diesen Wert enthält (nicht über FORMELN hergeleitet)."""
+        return (ebene, code, zeile, jahr, wertart) in self._werte
 
     def _wert(self, schluessel: _PlanwerteSchluessel, *, unterwegs: frozenset) -> int:
         if schluessel in self._cache:
@@ -2303,6 +2318,19 @@ def _pruefe_regel6(
     geprueft = 0
     abweichungen: list[Pruefpunkt] = []
 
+    # IKVS (Hörstel): Teil- und Gesamtfinanzpläne drucken keine VE-Spalte, PB-
+    # Investitionslisten und VE-Fälligkeiten je Maßnahme gibt es nicht. Die VE-Werte der
+    # Maßnahmen prüft dann nur die Satzung (§ 3).
+    ikvs = jahrgang.software == "ikvs"
+    finanzplan_wertarten = {
+        wertart for wertart, _ in _spalten_zu_wertart(jahrgang.spalten["finanzplan"])
+    }
+    spalten_zu_wertart = (
+        [(wertart, jahr) for wertart, jahr in spalten_zu_wertart if wertart in finanzplan_wertarten]
+        if ikvs
+        else spalten_zu_wertart
+    )
+
     # (a) je Produkt
     for produkt in produkt_codes:
         investitionen_produkt = investitionen.filter(pl.col("produkt") == produkt)
@@ -2362,14 +2390,18 @@ def _pruefe_regel6(
                 abweichungen.append(punkt)
 
     # (c) PB-Gegenprobe (03-03, D-06)
-    geprueft_pb, abweichungen_pb, luecken = _pruefe_regel6_pb_gegenprobe(
-        investitionen=investitionen, investitionen_pb=investitionen_pb, hierarchie=hierarchie
-    )
-    geprueft += geprueft_pb
-    abweichungen += abweichungen_pb
+    luecken: list[Luecke] = []
+    if not ikvs:
+        geprueft_pb, abweichungen_pb, luecken = _pruefe_regel6_pb_gegenprobe(
+            investitionen=investitionen, investitionen_pb=investitionen_pb, hierarchie=hierarchie
+        )
+        geprueft += geprueft_pb
+        abweichungen += abweichungen_pb
 
     # (d) VE-Fälligkeiten
     ve_investitionen = investitionen.filter(pl.col("wertart") == "ve")
+    if ikvs:
+        ve_investitionen = ve_investitionen.clear()
     ve_schluessel = set(
         ve_investitionen.select(["produkt", "massnahme_id", "konto"]).unique().iter_rows()
     ) | set(ve_faelligkeiten.select(["produkt", "massnahme_id", "konto"]).unique().iter_rows())
@@ -2425,12 +2457,18 @@ def _pruefe_regel7(
     planwerte_ergebnisplan: Planwerte,
     planwerte_finanzplan: Planwerte,
     haushaltsjahr: int,
+    nur_mit_gedruckten_komponenten: bool = False,
 ) -> Regelergebnis:
     """Regel 7 – Haushaltsquerschnitte → PG-/PB-Teilpläne (PRUEF-07, D-15).
 
     Vergleicht jeden gedruckten Querschnittswert (CSV-only, `querschnitte.py` liest das
     PDF, dieses Modul nie) mit der über `REGEL7_KENNZAHLEN` hergeleiteten Formelkette aus
-    den eigenen PG-Teilplänen (GESAMTSUMME-Zeilen gegen den PB-Teilplan).
+    den eigenen PG-Teilplänen (GESAMTSUMME-Zeilen gegen den PB-Teilplan, eine
+    GESAMTSUMME-Zeile ohne PB gegen die Gesamtpläne).
+
+    `nur_mit_gedruckten_komponenten` (IKVS-Layout): Eine Kennzahl wird nur geprüft, wenn
+    der Plan mindestens eine ihrer Komponenten druckt. Hörsteler Teilfinanzpläne drucken
+    z. B. keine Ein- und Auszahlungen aus laufender Verwaltungstätigkeit (Z. 09/16).
     """
     planwerte_je_datei = {
         "ergebnisplan": planwerte_ergebnisplan,
@@ -2444,12 +2482,20 @@ def _pruefe_regel7(
         formel = REGEL7_KENNZAHLEN.get(zeile["kennzahl"])
         if formel is None:
             raise PruefungsFehler(f"Regel 7: keine Zuordnung für Kennzahl {zeile['kennzahl']!r}")
-        datei, wertart, komponenten = formel
-        planwerte = planwerte_je_datei[datei]
-        if zeile["gesamtsumme"]:
+        if zeile["gesamtsumme"] and zeile["pb"] is None:
+            ebene, code = "GESAMT", ""
+            formel = REGEL7_KENNZAHLEN_GESAMT[zeile["kennzahl"]]
+        elif zeile["gesamtsumme"]:
             ebene, code = "PB", zeile["pb"]
         else:
             ebene, code = "PG", zeile["pg"]
+        datei, wertart, komponenten = formel
+        planwerte = planwerte_je_datei[datei]
+        if nur_mit_gedruckten_komponenten and not any(
+            planwerte.ist_gedruckt(ebene, code, komponente, haushaltsjahr, wertart)
+            for _, komponente in komponenten
+        ):
+            continue
         ist = sum(
             vorzeichen * planwerte.wert(ebene, code, komponente, haushaltsjahr, wertart)
             for vorzeichen, komponente in komponenten
@@ -2494,6 +2540,10 @@ REGEL8_PFLICHTFELDER: tuple[str, ...] = (
     "ziele",
     "bindungsgrad_original",
 )
+# Pflichtfelder im IKVS-Layout (Hörstel): Es druckt weder Fachbereich, Gremium,
+# Klassifizierung, Ziele noch Bindungsgrad; die Zielgruppe fehlt bei einem Produkt
+# (0111106, S. 144). Beschreibung oder Leistungsliste prüft Regel 8 als "leistungen".
+REGEL8_PFLICHTFELDER_IKVS: tuple[str, ...] = ("auftragsgrundlage",)
 # Normalisiertes Bindungsgrad-Vokabular: dieselben drei Werte wie
 # produkte.BINDUNGSGRADE.values() (fachliche Regel hier eigenständig wiederholt, damit
 # pruefung.py unabhängig von produkte.py bleibt, D-06-Architekturprinzip).
@@ -2568,12 +2618,14 @@ def _pruefe_regel8(
             Luecke(regel=8, ebene="GESAMT", code="", merkmal="anzahl_produkte", pdf_seite=None)
         )
 
+    ikvs = jahrgang.software == "ikvs"
+    pflichtfelder = REGEL8_PFLICHTFELDER_IKVS if ikvs else REGEL8_PFLICHTFELDER
     for code in sorted(hierarchie_codes & produkte_codes):
         produkt = produkt_je_code[code]
         pdf_seiten = produkt.get("pdf_seiten") or []
         erste_seite = min(pdf_seiten) if pdf_seiten else None
 
-        for feld in REGEL8_PFLICHTFELDER:
+        for feld in pflichtfelder:
             geprueft += 1
             wert = produkt.get(feld)
             if not isinstance(wert, str) or not wert:
@@ -2583,16 +2635,23 @@ def _pruefe_regel8(
 
         geprueft += 1
         leistungen = produkt.get("leistungen")
-        if not isinstance(leistungen, list) or not leistungen:
+        hat_leistungen = isinstance(leistungen, list) and bool(leistungen)
+        if ikvs:
+            # IKVS: die Beschreibung ist entweder Fließtext oder eine Leistungsliste.
+            hat_leistungen = hat_leistungen or bool(produkt.get("beschreibung"))
+        if not hat_leistungen:
             luecken.append(
                 Luecke(regel=8, ebene="P", code=code, merkmal="leistungen", pdf_seite=erste_seite)
             )
 
-        geprueft += 1
-        if produkt.get("bindungsgrad") not in _REGEL8_BINDUNGSGRAD_VOKABULAR:
-            luecken.append(
-                Luecke(regel=8, ebene="P", code=code, merkmal="bindungsgrad", pdf_seite=erste_seite)
-            )
+        if not ikvs:
+            geprueft += 1
+            if produkt.get("bindungsgrad") not in _REGEL8_BINDUNGSGRAD_VOKABULAR:
+                luecken.append(
+                    Luecke(
+                        regel=8, ebene="P", code=code, merkmal="bindungsgrad", pdf_seite=erste_seite
+                    )
+                )
 
         geprueft += 1
         if not pdf_seiten:
@@ -2750,6 +2809,7 @@ def pruefe_alles(
         planwerte_ergebnisplan=Planwerte(ergebnisplan, datei="ergebnisplan"),
         planwerte_finanzplan=Planwerte(finanzplan, datei="finanzplan"),
         haushaltsjahr=jahrgang.haushaltsjahr,
+        nur_mit_gedruckten_komponenten=jahrgang.software == "ikvs",
     )
     regel8 = _pruefe_regel8(
         produkte=produkte,

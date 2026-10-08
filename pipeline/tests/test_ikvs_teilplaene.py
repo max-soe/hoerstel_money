@@ -15,7 +15,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from ostbevern.ikvs import _lies_tabellenkopf
+from ostbevern.ikvs import lies_tabellenkopf
 from ostbevern.konfiguration import (
     STANDARD_JAHR,
     STANDARD_JAHRGAENGE_VERZEICHNIS,
@@ -102,7 +102,7 @@ def test_tabellenkopf_einzeilig() -> None:
             )
         ),
     )
-    kopf = _lies_tabellenkopf([zeile], 0, _SPALTEN, 113)
+    kopf = lies_tabellenkopf([zeile], 0, _SPALTEN, 113)
     assert kopf is not None
     spalten, anzahl = kopf
     assert anzahl == 1
@@ -127,7 +127,7 @@ def test_tabellenkopf_dreizeilig() -> None:
     )
     unten = _woerter(143.4, ("2024", 165.0, 185.0))
     zeilen = [oben, mitte, unten]
-    kopf = _lies_tabellenkopf(zeilen, 0, _SPALTEN, 511)
+    kopf = lies_tabellenkopf(zeilen, 0, _SPALTEN, 511)
     assert kopf is not None
     _, anzahl = kopf
     assert anzahl == 3
@@ -135,7 +135,7 @@ def test_tabellenkopf_dreizeilig() -> None:
 
 def test_tabellenkopf_ist_keine_planzeile() -> None:
     zeile = _woerter(150.0, ("17", 42.0, 51.0), ("-", 53.0, 56.0), ("Saldo", 58.0, 80.0))
-    assert _lies_tabellenkopf([zeile], 0, _SPALTEN, 511) is None
+    assert lies_tabellenkopf([zeile], 0, _SPALTEN, 511) is None
 
 
 @pytest.fixture(scope="module")

@@ -24,6 +24,7 @@ from pathlib import Path
 
 import polars as pl
 
+from ostbevern import ikvs_produkte
 from ostbevern.freitext import ersetze_eurozeichen, verbinde_zeilen
 from ostbevern.konfiguration import Jahrgang, layout_text
 from ostbevern.pdf import PdfDokument, Textzeile, Wort, WortRahmen
@@ -1024,6 +1025,9 @@ def extrahiere_produkte(
     """Liest Produktinformationen, Grundzahlen und Erläuterungen aller 63 Produkte und
     schreibt produkte.json, grundzahlen.csv sowie erlaeuterungen.csv (EXTR-06, EXTR-07,
     EXTR-08, D-04, D-09)."""
+    if jahrgang.software == "ikvs":
+        return _extrahiere_ikvs(jahrgang, daten_wurzel=daten_wurzel)
+
     seiten = lies_seiten_csv(daten_wurzel / SEITEN_CSV)
     hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
     ergebnisplan = lies_plan_csv(daten_wurzel / ERGEBNISPLAN_CSV)
@@ -1135,6 +1139,38 @@ def extrahiere_produkte(
     grundzahlen_pfad = daten_wurzel / GRUNDZAHLEN_CSV
     schreibe_grundzahlen_csv(grundzahlen_df, grundzahlen_pfad)
 
+    return (
+        ExtraktionsErgebnis(zeilen_geschrieben=len(datensaetze), pfad=produkte_pfad),
+        ExtraktionsErgebnis(zeilen_geschrieben=grundzahlen_df.height, pfad=grundzahlen_pfad),
+        ExtraktionsErgebnis(zeilen_geschrieben=erlaeuterungen_df.height, pfad=erlaeuterungen_pfad),
+    )
+
+
+def _extrahiere_ikvs(
+    jahrgang: Jahrgang, *, daten_wurzel: Path
+) -> tuple[ExtraktionsErgebnis, ExtraktionsErgebnis, ExtraktionsErgebnis]:
+    """IKVS-Layout: Produktinformationen, Kennzahlen und Erläuterungen über
+    `ostbevern.ikvs_produkte`; schreibt dieselben drei Dateien wie das ProFIS+-Layout."""
+    seiten = lies_seiten_csv(daten_wurzel / SEITEN_CSV)
+    hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
+    try:
+        with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
+            infos, grundzahlen = ikvs_produkte.lies_ikvs_produktinformationen(
+                dokument, jahrgang, seiten
+            )
+            erlaeuterungen = ikvs_produkte.lies_ikvs_erlaeuterungen(dokument, jahrgang, seiten)
+        datensaetze = ikvs_produkte.produkte_datensaetze(infos, erlaeuterungen, hierarchie)
+    except ikvs_produkte.IkvsProdukteFehler as fehler:
+        raise ProdukteFehler(str(fehler)) from fehler
+
+    produkte_pfad = daten_wurzel / PRODUKTE_JSON
+    grundzahlen_pfad = daten_wurzel / GRUNDZAHLEN_CSV
+    erlaeuterungen_pfad = daten_wurzel / ERLAEUTERUNGEN_CSV
+    grundzahlen_df = ikvs_produkte.grundzahlen_df(grundzahlen)
+    erlaeuterungen_df = ikvs_produkte.erlaeuterungen_df(erlaeuterungen)
+    schreibe_produkte_json(datensaetze, produkte_pfad)
+    schreibe_grundzahlen_csv(grundzahlen_df, grundzahlen_pfad)
+    schreibe_erlaeuterungen_csv(erlaeuterungen_df, erlaeuterungen_pfad)
     return (
         ExtraktionsErgebnis(zeilen_geschrieben=len(datensaetze), pfad=produkte_pfad),
         ExtraktionsErgebnis(zeilen_geschrieben=grundzahlen_df.height, pfad=grundzahlen_pfad),

@@ -17,10 +17,10 @@ Grundlage: `discussion/HOERSTEL_MACHBARKEIT.md` (Strukturvergleich ProFIS+/IKVS,
 
 - [x] **HOE-04**: Seitenklassifikation im IKVS-Layout ohne laufende Kopfzeile (Kontext wird von Seite zu Seite fortgeschrieben): 16 Produktbereiche, 5-stellige Produktgruppen, 69 Produkte mit 7-stelligem Code; `seiten.csv` und `hierarchie.csv`
 - [x] **HOE-05**: Teilergebnis- und Teilfinanzpläne (PB und Produkt) im IKVS-Layout (nur belegte Zeilen gedruckt, umbrochene Bezeichnungen); Regeln 1–3 grün
-- [ ] **HOE-06**: Produktinformationen (Beschreibung, Auftragsgrundlage, Zielgruppe, Vollzeitstellen, Kennzahlen); der Produktverantwortliche (Personenname) wird beim Parsen verworfen
-- [ ] **HOE-07**: Erläuterungen im Format „Bezeichnung / Ansatz 2025 = X €, Ansatz 2026 = Y € / Text“
-- [ ] **HOE-08**: Investitionsübersichten B mit Maßnahmen (`111.02-004`), Ein-/Auszahlungen und VE; Satzung § 3 (VE) grün
-- [ ] **HOE-09**: Haushaltsquerschnitte je Produktgruppe (S. 85–110) als Kontrollquelle (Regel 7)
+- [x] **HOE-06**: Produktinformationen (Beschreibung, Auftragsgrundlage, Zielgruppe, Vollzeitstellen, Kennzahlen); der Produktverantwortliche (Personenname) wird beim Parsen verworfen
+- [x] **HOE-07**: Erläuterungen im Format „Bezeichnung / Ansatz 2025 = X €, Ansatz 2026 = Y € / Text“
+- [x] **HOE-08**: Investitionsübersichten B mit Maßnahmen (`111.02-004`), Ein-/Auszahlungen und VE; Satzung § 3 (VE) nachvollzogen (5.100 T€ VE stehen nur in der VE-Übersicht S. 586, Befund)
+- [x] **HOE-09**: Haushaltsquerschnitte je Produktgruppe (S. 85–110) als Kontrollquelle (Regel 7)
 
 ### Daten und App
 
@@ -40,10 +40,10 @@ Grundlage: `discussion/HOERSTEL_MACHBARKEIT.md` (Strukturvergleich ProFIS+/IKVS,
 | HOE-04 | Phase 9 | Complete |
 | HOE-05 | Phase 9 | Complete |
 | HOE-14 | Phase 9 | Complete |
-| HOE-06 | Phase 10 | Pending |
-| HOE-07 | Phase 10 | Pending |
-| HOE-08 | Phase 10 | Pending |
-| HOE-09 | Phase 10 | Pending |
+| HOE-06 | Phase 10 | Complete |
+| HOE-07 | Phase 10 | Complete |
+| HOE-08 | Phase 10 | Complete |
+| HOE-09 | Phase 10 | Complete |
 | HOE-10 | Phase 11 | Pending |
 | HOE-11 | Phase 11 | Pending |
 | HOE-12 | Phase 11 | Pending |

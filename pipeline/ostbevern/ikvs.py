@@ -252,6 +252,28 @@ def normalisiere(text: str) -> str:
     return _WHITESPACE_MUSTER.sub("", text).replace("-", "")
 
 
+def verbinde_teile(teile: Sequence[str]) -> str:
+    """Verbindet umbrochene Textteile (IKVS): Endet ein Teil mit "-", ist das bei
+    Kleinbuchstaben danach eine Silbentrennung ("Grund-" + "stück" = "Grundstück"), bei
+    Großbuchstaben oder Ziffern ein Bindestrich-Kompositum ("RW-" + "Kanal" = "RW-Kanal")
+    und vor "und"/"oder" eine Ergänzung ("Industrie- und Gewerbegebiete")."""
+    ergebnis = ""
+    for teil in (t.strip() for t in teile):
+        if not teil:
+            continue
+        if not ergebnis:
+            ergebnis = teil
+        elif ergebnis.endswith("-") and teil.split(" ", 1)[0] in ("und", "oder"):
+            ergebnis = f"{ergebnis} {teil}"
+        elif ergebnis.endswith("-") and teil[0].islower():
+            ergebnis = f"{ergebnis[:-1]}{teil}"
+        elif ergebnis.endswith("-"):
+            ergebnis = f"{ergebnis}{teil}"
+        else:
+            ergebnis = f"{ergebnis} {teil}"
+    return ergebnis
+
+
 def lies_ikvs_betrag(text: str) -> int:
     """Liest einen IKVS-Betrag als int-Euro: "--" ist 0, Cent werden kaufmännisch gerundet."""
     if text == _LEERWERT:
@@ -262,18 +284,18 @@ def lies_ikvs_betrag(text: str) -> int:
     return int(dezimal.quantize(Decimal(1), rounding=ROUND_HALF_UP))
 
 
-def _ist_wert_wort(text: str) -> bool:
+def ist_wert_wort(text: str) -> bool:
     return text in (_LEERWERT, _MINUS) or bool(_BETRAG_MUSTER.match(text))
 
 
 @dataclass(frozen=True)
-class _Spalten:
+class Spalten:
     """Spaltengeometrie eines Tabellenkopfs: Untergrenze (Wortmitte) je Spalte, aufsteigend."""
 
     grenzen: tuple[float, ...]
 
     @classmethod
-    def aus_mitten(cls, mitten: Sequence[float]) -> _Spalten:
+    def aus_mitten(cls, mitten: Sequence[float]) -> Spalten:
         halbe_abstaende = [(b - a) / 2 for a, b in zip(mitten, mitten[1:], strict=False)]
         grenzen = [mitten[0] - halbe_abstaende[0]] + [
             mitte + halb for mitte, halb in zip(mitten, halbe_abstaende, strict=False)
@@ -289,22 +311,24 @@ class _Spalten:
         return treffer
 
 
-def _lies_tabellenkopf(
+def lies_tabellenkopf(
     zeilen: Sequence[Textzeile], index: int, gedruckte_spalten: Sequence[str], pdf_seite: int
-) -> tuple[_Spalten, int] | None:
+) -> tuple[Spalten, int] | None:
     """Erkennt einen Tabellenkopf ab Position `index` und liefert (Geometrie, Zeilenanzahl).
 
-    Der Kopf besteht aus den Bezeichnungen ("Ergebnis", "Ansatz", "Plan") und Jahreszahlen der
-    gedruckten Spalten, verteilt auf eine bis drei Textzeilen: einzeilig ("Ergebnis 2024
-    Ansatz 2025 ...", Teilpläne), zweizeilig (Bezeichnungen über Jahren, Gesamtpläne) oder
-    dreizeilig ("Ergebnis" / übrige Spalten / "2024", z. B. S. 511). Bezeichnungen und Jahre
-    werden je nach x-Position einander zugeordnet; die Spaltenmitte ist die Mitte beider
-    Wörter. Ein Kopf mit den erwarteten Bezeichnungen, aber anderen Jahren bricht ab.
+    Der Kopf besteht aus den Bezeichnungen ("Ergebnis", "Ansatz", "Plan", "VE") und
+    Jahreszahlen der gedruckten Spalten, verteilt auf eine bis drei Textzeilen: einzeilig
+    ("Ergebnis 2024 Ansatz 2025 ...", Teilpläne), zweizeilig (Bezeichnungen über Jahren,
+    Gesamtpläne) oder dreizeilig ("Ergebnis" / übrige Spalten / "2024", z. B. S. 511).
+    Eine Spalte ohne Jahr (gedruckt nur "VE", Investitionsübersichten) hat nur ihre
+    Bezeichnung. Bezeichnungen und Jahre werden nach x-Position einander zugeordnet; die
+    Spaltenmitte ist die Mitte beider Wörter. Ein Kopf mit den erwarteten Bezeichnungen,
+    aber anderen Jahren bricht ab.
     """
-    bezeichnungen = [kopf.split()[0] for kopf in gedruckte_spalten]
-    jahre = [kopf.split()[1] for kopf in gedruckte_spalten]
+    teile = [kopf.split() for kopf in gedruckte_spalten]
+    bezeichnungen = [t[0] for t in teile]
+    jahre = [t[1] for t in teile if len(t) > 1]
     erlaubt = set(bezeichnungen) | set(jahre)
-    anzahl = len(gedruckte_spalten)
 
     woerter: list[Wort] = []
     for zeilenanzahl in range(1, 4):
@@ -318,20 +342,26 @@ def _lies_tabellenkopf(
             (w for w in woerter if not w.text.isdigit()), key=lambda w: w.x0
         )
         jahr_woerter = sorted((w for w in woerter if w.text.isdigit()), key=lambda w: w.x0)
-        if len(bezeichnung_woerter) != anzahl or len(jahr_woerter) != anzahl:
+        if len(bezeichnung_woerter) != len(bezeichnungen) or len(jahr_woerter) != len(jahre):
             continue
-        gelesen = [
-            f"{b.text} {j.text}" for b, j in zip(bezeichnung_woerter, jahr_woerter, strict=True)
-        ]
+        jahr_iter = iter(jahr_woerter)
+        gelesen: list[str] = []
+        mitten: list[float] = []
+        for bezeichnung_wort, teil in zip(bezeichnung_woerter, teile, strict=True):
+            if len(teil) > 1:
+                jahr_wort = next(jahr_iter)
+                gelesen.append(f"{bezeichnung_wort.text} {jahr_wort.text}")
+                x0 = min(bezeichnung_wort.x0, jahr_wort.x0)
+                x1 = max(bezeichnung_wort.x1, jahr_wort.x1)
+            else:
+                gelesen.append(bezeichnung_wort.text)
+                x0, x1 = bezeichnung_wort.x0, bezeichnung_wort.x1
+            mitten.append((x0 + x1) / 2)
         if gelesen != list(gedruckte_spalten):
             raise IkvsFehler(
                 f"S. {pdf_seite}: Spaltenköpfe {gelesen} weichen von {list(gedruckte_spalten)} ab"
             )
-        mitten = [
-            (min(b.x0, j.x0) + max(b.x1, j.x1)) / 2
-            for b, j in zip(bezeichnung_woerter, jahr_woerter, strict=True)
-        ]
-        return _Spalten.aus_mitten(mitten), zeilenanzahl
+        return Spalten.aus_mitten(mitten), zeilenanzahl
     return None
 
 
@@ -422,14 +452,14 @@ class _Tabellenleser:
             self.gelesen.append(self._offen.schliesse())
             self._offen = None
 
-    def lies(self, zeile: Textzeile, spalten: _Spalten, pdf_seite: int) -> None:
+    def lies(self, zeile: Textzeile, spalten: Spalten, pdf_seite: int) -> None:
         bezeichnung_woerter: list[Wort] = []
         wert_woerter: list[tuple[int, Wort]] = []
         for wort in zeile.woerter:
             spalte = spalten.index(wort)
             if spalte is None:
                 bezeichnung_woerter.append(wort)
-            elif _ist_wert_wort(wort.text):
+            elif ist_wert_wort(wort.text):
                 wert_woerter.append((spalte, wort))
             else:
                 raise IkvsFehler(
@@ -478,7 +508,7 @@ def lies_ikvs_plantabelle(
 ) -> list[IkvsPlanzeile]:
     """Liest eine Gesamtplan-Seite im IKVS-Layout gegen das IKVS-Zeilen-Wörterbuch."""
     for index in range(len(zeilen)):
-        kopf = _lies_tabellenkopf(zeilen, index, gedruckte_spalten, pdf_seite)
+        kopf = lies_tabellenkopf(zeilen, index, gedruckte_spalten, pdf_seite)
         if kopf is not None:
             spalten, anzahl = kopf
             start = index + anzahl
@@ -495,13 +525,17 @@ def lies_ikvs_plantabelle(
     return leser.gelesen
 
 
-def _pruefe_spaltenabbildung(gedruckte_spalten: Sequence[str], spalten: Sequence[str]) -> None:
+def pruefe_spaltenabbildung(gedruckte_spalten: Sequence[str], spalten: Sequence[str]) -> None:
+    """Gedruckte und kanonische Spalten passen positionsweise: gleiches Jahr, oder die
+    gedruckte Spalte hat kein Jahr und heißt wie die Wertart (z. B. "VE" = "VE 2026")."""
     if len(gedruckte_spalten) != len(spalten):
         raise IkvsFehler(
             f"{len(gedruckte_spalten)} gedruckte, aber {len(spalten)} kanonische Spalten"
         )
     for gedruckt, kanonisch in zip(gedruckte_spalten, spalten, strict=True):
-        if gedruckt.split()[-1] != str(zerlege_spaltenkopf(kanonisch)[1]):
+        teile = gedruckt.split()
+        erwartet = kanonisch.split()[1] if len(teile) > 1 else kanonisch.split()[0]
+        if teile[-1] != erwartet:
             raise IkvsFehler(f"Spalte {gedruckt!r} passt nicht zu {kanonisch!r}")
 
 
@@ -558,7 +592,7 @@ def gesamtplan_datensaetze(
     bereich = jahrgang.seitenbereiche[plantyp]
     gedruckte_spalten = layout_liste(jahrgang, "ikvs_gesamtplaene", f"{datei}_spalten")
     spalten = jahrgang.spalten[datei]
-    _pruefe_spaltenabbildung(gedruckte_spalten, spalten)
+    pruefe_spaltenabbildung(gedruckte_spalten, spalten)
 
     planzeilen: list[IkvsPlanzeile] = []
     for pdf_seite in range(bereich.von, bereich.bis + 1):
@@ -617,8 +651,8 @@ def lies_ikvs_teilplaene(dokument: PdfDokument, jahrgang: Jahrgang) -> list[Ikvs
     """
     bereich = jahrgang.seitenbereiche["teilplaene"]
     gedruckte_spalten = layout_liste(jahrgang, "ikvs_teilplaene", "spalten")
-    _pruefe_spaltenabbildung(gedruckte_spalten, jahrgang.spalten["ergebnisplan"])
-    _pruefe_spaltenabbildung(gedruckte_spalten, jahrgang.spalten["finanzplan"])
+    pruefe_spaltenabbildung(gedruckte_spalten, jahrgang.spalten["ergebnisplan"])
+    pruefe_spaltenabbildung(gedruckte_spalten, jahrgang.spalten["finanzplan"])
     titel_muster = {
         plantyp: re.compile(layout_text(jahrgang, "ikvs_teilplaene", f"{plantyp}_muster"))
         for plantyp in ("teilergebnisplan", "teilfinanzplan")
@@ -629,7 +663,7 @@ def lies_ikvs_teilplaene(dokument: PdfDokument, jahrgang: Jahrgang) -> list[Ikvs
     offen: _OffenerTeilplan | None = None
     for pdf_seite in range(bereich.von, bereich.bis + 1):
         zeilen = [z for z in dokument.zeilen(pdf_seite)[1:] if z.text != str(pdf_seite)]
-        spalten: _Spalten | None = None
+        spalten: Spalten | None = None
         index = 0
         while index < len(zeilen):
             zeile = zeilen[index]
@@ -654,7 +688,7 @@ def lies_ikvs_teilplaene(dokument: PdfDokument, jahrgang: Jahrgang) -> list[Ikvs
             if offen is None:
                 index += 1
                 continue
-            kopf = _lies_tabellenkopf(zeilen, index, gedruckte_spalten, pdf_seite)
+            kopf = lies_tabellenkopf(zeilen, index, gedruckte_spalten, pdf_seite)
             if kopf is not None:
                 spalten, anzahl = kopf
                 offen.hat_kopf = True

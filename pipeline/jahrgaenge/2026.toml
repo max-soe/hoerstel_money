@@ -92,3 +92,92 @@ investitionen_muster = '^Investitionsübersicht B (\d{7}) - (.+)$'
 erlaeuterungen_muster = '^Erläuterungen und Hinweise$'
 abschnitt_ende_muster = '^(Investitionsübersicht B \d{7} - |Erläuterungen und Hinweise$|Produktbereich$|Produkt$|Produkt \d{7} |Produktbereich \d{2} )'
 spalten = ["Ergebnis 2024", "Ansatz 2025", "Ansatz 2026", "Plan 2027", "Plan 2028", "Plan 2029"]
+
+# [layout.ikvs_querschnitte]: Haushaltsquerschnitte je Produktgruppe und für den
+# Gesamthaushalt (S. 85-110). Die Spaltentexte (mehrzeilig gedruckt, zusammengesetzt und
+# ohne Leerzeichen/Bindestriche verglichen) werden positionsweise den Kennzahlen
+# zugeordnet. wertezeile_woerter sind die Wörter der Zeilenbeschriftung "Plan 2026", die
+# im Finanzplanungsblock auch allein auf einer Zeile stehen.
+[layout.ikvs_querschnitte]
+produktgruppe_muster = '^(\d{5}) - (.+)$'
+gesamt_titel = "Gesamthaushalt"
+ergebnisplan_titel = "Haushaltsquerschnitt - Ergebnishaushalt"
+finanzplan_titel = "Haushaltsquerschnitt - Finanzplanung"
+wertezeile_woerter = ["Plan", "2026"]
+ergebnisplan_spalten = [
+    "Außerordentliches Ergebnis",
+    "Ergebnis der laufenden Verwaltungstätigkeit",
+    "Ergebnis des Teilhaushaltes (ohne ILV)",
+    "Finanzergebnis",
+    "Ordentliche Aufwendungen",
+    "Ordentliche Erträge",
+    "Ordentliches Ergebnis",
+]
+ergebnisplan_kennzahlen = [
+    "ausserordentliches_ergebnis",
+    "ergebnis_laufende_verwaltung",
+    "ergebnis_teilhaushalt",
+    "finanzergebnis",
+    "ordentliche_aufwendungen",
+    "ordentliche_ertraege",
+    "ordentliches_ergebnis",
+]
+finanzplan_spalten = [
+    "Auszahlungen aus Investitionstätigkeit",
+    "Auszahlungen aus lfd. Verwaltungstätigkeit",
+    "Einzahlungen aus Investitionstätigkeit",
+    "Einzahlungen aus lfd. Verwaltungstätigkeit",
+    "Finanzmittelüberschuss /-fehlbetrag",
+    "Saldo aus Investitionstätigkeit",
+    "Saldo aus laufender Verwaltungstätigkeit",
+    "Auszahlungen aus Finanzierungstätigkeit gesamt",
+    "Einzahlungen aus Finanzierungstätigkeit",
+    "Saldo aus Finanzierungstätigkeit",
+]
+finanzplan_kennzahlen = [
+    "auszahlungen_investitionen",
+    "auszahlungen_laufende_verwaltung",
+    "einzahlungen_investitionen",
+    "einzahlungen_laufende_verwaltung",
+    "finanzmittelueberschuss",
+    "saldo_investitionen",
+    "saldo_laufende_verwaltung",
+    "auszahlungen_finanzierung",
+    "einzahlungen_finanzierung",
+    "saldo_finanzierung",
+]
+
+# [layout.ikvs_investitionen]: Investitionsübersichten B (Titel siehe
+# [layout.ikvs_teilplaene].investitionen_muster). Die VE-Spalte ist ohne Jahr gedruckt
+# und entspricht der kanonischen Spalte "VE 2026". massnahme_muster erkennt die
+# Maßnahmennummer am Zeilenanfang ("111.02-004", "111.02/1/002", "541.01-3-004"; S. 372
+# druckt "424.02.-006" mit überzähligem Punkt).
+[layout.ikvs_investitionen]
+spalten = ["Ergebnis 2024", "Ansatz 2025", "Ansatz 2026", "VE", "Plan 2027", "Plan 2028", "Plan 2029"]
+massnahme_muster = '^\d{3}\.\d{2}\.?[-/][\d/-]+$'
+
+# [layout.ikvs_produktinformationen]: Feldbeschriftungen der Produktinformationen (jede
+# allein auf einer Zeile, gegen Textzeile.text geprüft) und Spaltenköpfe der Tabellen
+# "Stellenplan" und "Kennzahlen". verantwortlich wird nur erkannt, um den Personennamen
+# sofort zu verwerfen (D-09). kennzahl_praefix_muster entfernt die vorangestellte
+# Produktnummer ("01.111.07 ") aus der Kennzahlbezeichnung.
+[layout.ikvs_produktinformationen]
+verantwortlich = "Produktverantwortlicher"
+beschreibung = "Beschreibung"
+auftragsgrundlage = "Auftragsgrundlage"
+zielgruppe = "Zielgruppe"
+stellenplan = "Stellenplan"
+kennzahlen = "Kennzahlen"
+ergaenzend = "Ergänzende Erläuterungen"
+stellenplan_spalten = ["Plan 2024", "Plan 2025", "Plan 2026", "Plan 2027", "Plan 2028", "Plan 2029"]
+kennzahlen_spalten = ["Ist 2024", "Plan 2025", "Plan 2026", "Plan 2027", "Plan 2028", "Plan 2029"]
+kennzahl_praefix_muster = '^\d{2}\.\d{3}\.\d{2}\s+'
+
+# [layout.ikvs_erlaeuterungen]: Titel der Erläuterungsseiten und die Ansatzzeile unter
+# jeder Überschrift ("Ansatz 2025 = 4.349 €, Ansatz 2026 = 200 €"). Gedruckt sind auch
+# Varianten ohne Komma oder Leerzeichen ("=915.590 €", "235.990€") und mit verschriebenem
+# ersten Jahr ("Ansatz 20245=", S. 559). Welcher Wert der Haushaltsjahr-Ansatz ist,
+# entscheidet ostbevern.ikvs_produkte._ansatz_haushaltsjahr.
+[layout.ikvs_erlaeuterungen]
+titel = "Erläuterungen und Hinweise"
+ansatz_muster = '^Ansatz (?P<jahr1>\d{4,5}) ?= ?(?P<betrag1>-?\d{1,3}(?:\.\d{3})*) ?€,? Ansatz (?P<jahr2>\d{4}) ?= ?(?P<betrag2>-?\d{1,3}(?:\.\d{3})*) ?€$'
