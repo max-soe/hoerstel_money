@@ -3,7 +3,7 @@
 # hier kaufmännisch auf ganze Euro gerundet (wie ostbevern.ikvs.lies_ikvs_betrag).
 # Übertragen aus dem PDF-Text der Seiten 3 (Inhaltsverzeichnis), 7, 79-81 und den
 # Teilergebnisplänen der Produktbereiche.
-# Die frühere Ostbevern-Sollwertdatei liegt unter jahrgaenge/archiv/ostbevern/.
+# Die frühere Ostbevern-Sollwertdatei liegt unter referenz/ostbevern/jahrgaenge/.
 
 haushaltsjahr = 2026
 quelle = "raw_data/haushalt-2026.pdf (Stadt Hörstel); übertragen aus PDF S. 7, 79-81"

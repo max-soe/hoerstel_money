@@ -11,7 +11,7 @@ Grundlage: `discussion/HOERSTEL_MACHBARKEIT.md` (Strukturvergleich ProFIS+/IKVS,
 
 - [x] **HOE-01**: Der Jahrgang 2026 beschreibt den Haushalt der Stadt Hörstel (592 Seiten, Word-Export von Axians IKVS): `software = "ikvs"`, Seitenbereiche, kanonische und gedruckte Spaltenköpfe in `pipeline/jahrgaenge/2026.toml`
 - [x] **HOE-02**: Gesamtergebnisplan (S. 79) und Gesamtfinanzplan (S. 80–81) werden im IKVS-Layout gelesen und auf die kanonischen Zeilennummern abgebildet; Regel 1 (Zeilenformeln) und Satzung § 1–2 (S. 7) ohne Abweichung
-- [x] **HOE-03**: Ostbevern bleibt als Referenz für das ProFIS+-Layout testbar: archivierter Jahrgang unter `jahrgaenge/archiv/ostbevern/`, PDF unter `raw_data/ostbevern/`, Tests und CI-Reproduzierbarkeit über `PIPELINE_JAHRGAENGE`
+- [x] **HOE-03**: Ostbevern bleibt als Referenz für das ProFIS+-Layout testbar: Referenzstand (Jahrgang, `daten/`, App-Daten) unter `pipeline/referenz/ostbevern/`, PDF unter `raw_data/ostbevern/`, Tests und CI-Reproduzierbarkeit über `PIPELINE_REFERENZ` (Phase 11; in Phase 8 noch `jahrgaenge/archiv/` und `PIPELINE_JAHRGAENGE`)
 
 ### Extraktion IKVS
 

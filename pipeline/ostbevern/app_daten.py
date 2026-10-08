@@ -17,7 +17,7 @@ from pathlib import Path
 
 import polars as pl
 
-from ostbevern.konfiguration import PROJEKT_WURZEL, lade_jahrgang, layout_text
+from ostbevern.konfiguration import APP_WURZEL, lade_jahrgang, layout_text
 from ostbevern.manuell import investitionskredite_ende, lies_meta_json, pro_kopf_euro
 from ostbevern.pruefung import (
     REGEL5_GEP_ZEILEN,
@@ -76,7 +76,7 @@ class AppDatenFehler(ValueError):
     """Wird ausgelöst, wenn die Eingabedaten für die App-JSON-Erzeugung inkonsistent sind."""
 
 
-APP_DATEN_WURZEL = PROJEKT_WURZEL / "app" / "src" / "data"
+APP_DATEN_WURZEL = APP_WURZEL / "src" / "data"
 HAUSHALT_JSON = Path("haushalt.json")
 STELLENPLAN_JSON = Path("stellenplan.json")
 TEXTE_JSON = Path("texte.json")

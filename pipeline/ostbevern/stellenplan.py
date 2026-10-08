@@ -22,6 +22,7 @@ from pathlib import Path
 
 import polars as pl
 
+from ostbevern import ikvs_stellenplan
 from ostbevern.konfiguration import Jahrgang, layout_text
 from ostbevern.pdf import PdfDokument, Textzeile, Wort
 from ostbevern.plaene import ExtraktionsErgebnis
@@ -910,7 +911,19 @@ def extrahiere_stellenplan(
 
     Öffnet das PDF selbst und liest direkt über `jahrgang.seitenbereiche["stellenplan"]`
     (kein `seiten.csv`-Zwischenschritt, Research Pitfall 7). `hierarchie.csv` wird aus
-    demselben `daten_wurzel` gelesen (PB-Codes für die Stellenübersichten, D-20)."""
+    demselben `daten_wurzel` gelesen (PB-Codes für die Stellenübersichten, D-20).
+
+    Im IKVS-Layout (Hörstel) ist der Stellenplan nur als Bild gedruckt; dort wird die
+    geprüfte Abschrift aus `daten_wurzel/manuell` übernommen (`ostbevern.ikvs_stellenplan`)."""
+    if jahrgang.software == "ikvs":
+        try:
+            df = ikvs_stellenplan.lies_ikvs_stellenplan(jahrgang, daten_wurzel=daten_wurzel)
+        except ikvs_stellenplan.IkvsStellenplanFehler as fehler:
+            raise StellenplanFehler(str(fehler)) from fehler
+        pfad = daten_wurzel / STELLENPLAN_CSV
+        schreibe_stellenplan_csv(df, pfad)
+        return ExtraktionsErgebnis(zeilen_geschrieben=df.height, pfad=pfad)
+
     hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
     with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
         werte = lies_stellenplan(dokument, jahrgang, hierarchie=hierarchie)

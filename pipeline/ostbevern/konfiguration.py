@@ -23,17 +23,20 @@ STANDARD_JAHR = 2026
 PIPELINE_WURZEL = Path(__file__).resolve().parent.parent
 PROJEKT_WURZEL = PIPELINE_WURZEL.parent
 STANDARD_JAHRGAENGE_VERZEICHNIS = PIPELINE_WURZEL / "jahrgaenge"
-# Die Umgebungsvariable PIPELINE_JAHRGAENGE (Pfad relativ zu pipeline/ oder absolut) lenkt
-# alle Lesezugriffe auf ein anderes Jahrgangsverzeichnis um. So laufen Tests und die
-# CI-Reproduzierbarkeitsprüfung gegen den archivierten Ostbevern-Jahrgang
-# (jahrgaenge/archiv/ostbevern, ProFIS+-Referenz), solange Hörstel noch nicht vollständig
-# gelesen wird. Ausgewertet beim Import, damit die Standardargumente unten passen.
-_VERZEICHNIS_UEBERSCHREIBUNG = os.environ.get("PIPELINE_JAHRGAENGE")
+# Die Umgebungsvariable PIPELINE_REFERENZ (Pfad relativ zu pipeline/ oder absolut) lenkt die
+# ganze Pipeline auf einen Referenzstand um: Jahrgangsdateien (`jahrgaenge/`), Daten
+# (`daten/`) und App-Ausgaben (`app/src/data/`, `app/public/quellen/`) liegen dann unter
+# dieser Wurzel statt im Projekt. So laufen Tests und die CI-Reproduzierbarkeitsprüfung des
+# ProFIS+-Layouts gegen den Ostbevern-Referenzstand (`referenz/ostbevern`), während das
+# Projekt selbst den Hörsteler Haushalt verarbeitet. Ausgewertet beim Import, damit die
+# Standardargumente und die importierten Konstanten übereinstimmen.
+_REFERENZ = os.environ.get("PIPELINE_REFERENZ")
+REFERENZ_WURZEL = (PIPELINE_WURZEL / _REFERENZ).resolve() if _REFERENZ else None
 JAHRGAENGE_VERZEICHNIS = (
-    (PIPELINE_WURZEL / _VERZEICHNIS_UEBERSCHREIBUNG).resolve()
-    if _VERZEICHNIS_UEBERSCHREIBUNG
-    else STANDARD_JAHRGAENGE_VERZEICHNIS
+    REFERENZ_WURZEL / "jahrgaenge" if REFERENZ_WURZEL else STANDARD_JAHRGAENGE_VERZEICHNIS
 )
+DATEN_WURZEL = (REFERENZ_WURZEL or PROJEKT_WURZEL) / "daten"
+APP_WURZEL = (REFERENZ_WURZEL or PROJEKT_WURZEL) / "app"
 
 # Strukturelle Pipeline-Konzepte (keine Jahrgangsdaten): Plantypen und die
 # Kapitel, die jede Jahrgangsdatei mindestens enthalten muss.

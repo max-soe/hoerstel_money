@@ -6,7 +6,7 @@
 # Ostbevern-Jahrgang ein ProFIS+-Export. Bisher liest die Pipeline aus diesem Layout nur
 # die Gesamtpläne (ostbevern.ikvs); die übrigen Schritte folgen. Die frühere
 # Ostbevern-Jahrgangsdatei liegt als Referenz für das ProFIS+-Layout unter
-# jahrgaenge/archiv/ostbevern/2026.toml.
+# referenz/ostbevern/jahrgaenge/2026.toml.
 
 haushaltsjahr = 2026
 software = "ikvs"

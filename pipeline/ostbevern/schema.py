@@ -13,9 +13,9 @@ from pathlib import Path
 
 import polars as pl
 
-from ostbevern.konfiguration import PROJEKT_WURZEL
-
-DATEN_WURZEL = PROJEKT_WURZEL / "daten"
+# DATEN_WURZEL wird hier für die bestehenden Importe weitergereicht; festgelegt (und über
+# PIPELINE_REFERENZ umlenkbar) ist sie in ostbevern.konfiguration.
+from ostbevern.konfiguration import DATEN_WURZEL as DATEN_WURZEL
 
 SEITEN_CSV = Path("zwischen/seiten.csv")
 HIERARCHIE_CSV = Path("aufbereitet/hierarchie.csv")
@@ -82,6 +82,13 @@ GLOSSAR_MD = MANUELL_WURZEL / "texte" / "glossar.md"
 # Stellenplan (Phase 4, Plan 04-03, D-18 bis D-20, EXTR-10): aus dem PDF extrahiert
 # (S. 284-290), daher unter aufbereitet/ wie investitionen.csv, nicht manuell/.
 STELLENPLAN_CSV = Path("aufbereitet/stellenplan.csv")
+# Stellenplan im IKVS-Layout (Phase 11, HOE-10): Hörstel druckt den Stellenplan nur als Bild
+# (S. 568-574). Teil A/B und Nachwuchskräfte sind im STELLENPLAN_SPALTEN-Format (ohne
+# Produktbereich) abgeschrieben, die Stellenübersichten je Produkt mit ihren gedruckten
+# Summen im STELLENUEBERSICHT_SPALTEN-Format. Schritt 05 prüft beide und schreibt daraus
+# STELLENPLAN_CSV (Übersicht je Produktbereich summiert).
+STELLENPLAN_MANUELL_CSV = MANUELL_WURZEL / "stellenplan.csv"
+STELLENUEBERSICHT_CSV = MANUELL_WURZEL / "stellenuebersicht.csv"
 
 
 class SchemaFehler(ValueError):
@@ -587,3 +594,23 @@ def schreibe_stellenplan_csv(df: pl.DataFrame, pfad: Path) -> None:
 def lies_stellenplan_csv(pfad: Path) -> pl.DataFrame:
     """Liest stellenplan.csv über `lies_csv` mit STELLENPLAN_SPALTEN."""
     return lies_csv(pfad, STELLENPLAN_SPALTEN)
+
+
+# Stellenübersicht je Produkt (IKVS, Phase 11): eine Zeile je gedruckter Zelle
+# (`ist_summe` = false) und je gedruckter Summe (`ist_summe` = true): Produktsumme (Gruppe
+# leer), Spaltensumme "Insgesamt" (Produkt leer) und Gesamtsumme (beide leer). `teil` der
+# Zellen und Spaltensummen ist der Stellenplan-Teil der Gruppe, `teil` der Produkt- und
+# Gesamtsummen die gedruckte Tabelle (beamte oder tarif, inkl. Sozial- und Erziehungsdienst).
+STELLENUEBERSICHT_SPALTEN: dict[str, pl.PolarsDataType] = {
+    "teil": pl.Utf8,
+    "produkt": pl.Utf8,
+    "gruppe": pl.Utf8,
+    "stellen_hundertstel": pl.Int64,
+    "ist_summe": pl.Boolean,
+    "pdf_seite": pl.Int64,
+}
+
+
+def lies_stellenuebersicht_csv(pfad: Path) -> pl.DataFrame:
+    """Liest stellenuebersicht.csv über `lies_csv` mit STELLENUEBERSICHT_SPALTEN."""
+    return lies_csv(pfad, STELLENUEBERSICHT_SPALTEN)

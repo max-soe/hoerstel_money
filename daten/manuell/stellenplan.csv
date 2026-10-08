@@ -1,0 +1,85 @@
+teil,position,gruppe,amtsbezeichnung,verguetung,produktbereich,merkmal,jahr,stichtag,stellen_hundertstel,personen,vermerk,pdf_seite
+beamte,1,B4,Wahlbeamte,,,stellen,2026,,100,,,568
+beamte,1,B4,Wahlbeamte,,,stellen,2025,,100,,,568
+beamte,1,B4,Wahlbeamte,,,besetzt,2025,2025-06-30,100,,,568
+beamte,2,A14,Laufbahngruppe 2.2,,,stellen,2026,,200,,,568
+beamte,2,A14,Laufbahngruppe 2.2,,,stellen,2025,,200,,,568
+beamte,2,A14,Laufbahngruppe 2.2,,,besetzt,2025,2025-06-30,200,,,568
+beamte,3,A13 LG 2.1,Laufbahngruppe 2.1,,,stellen,2026,,200,,,568
+beamte,3,A13 LG 2.1,Laufbahngruppe 2.1,,,stellen,2025,,200,,,568
+beamte,3,A13 LG 2.1,Laufbahngruppe 2.1,,,besetzt,2025,2025-06-30,200,,,568
+beamte,4,A12,Laufbahngruppe 2.1,,,stellen,2026,,375,,,568
+beamte,4,A12,Laufbahngruppe 2.1,,,stellen,2025,,375,,,568
+beamte,4,A12,Laufbahngruppe 2.1,,,besetzt,2025,2025-06-30,375,,,568
+beamte,5,A11,Laufbahngruppe 2.1,,,stellen,2026,,234,,,568
+beamte,5,A11,Laufbahngruppe 2.1,,,stellen,2025,,234,,,568
+beamte,5,A11,Laufbahngruppe 2.1,,,besetzt,2025,2025-06-30,234,,,568
+beamte,6,A10,Laufbahngruppe 2.1,,,stellen,2026,,521,,,568
+beamte,6,A10,Laufbahngruppe 2.1,,,stellen,2025,,493,,,568
+beamte,6,A10,Laufbahngruppe 2.1,,,besetzt,2025,2025-06-30,398,,,568
+beamte,7,A9Z,Laufbahngruppe 1.2,,,stellen,2026,,278,,,568
+beamte,7,A9Z,Laufbahngruppe 1.2,,,stellen,2025,,188,,,568
+beamte,7,A9Z,Laufbahngruppe 1.2,,,besetzt,2025,2025-06-30,278,,,568
+beamte,8,A9 LG 1.2,Laufbahngruppe 1.2,,,stellen,2025,,90,,,568
+beamte,9,A8,Laufbahngruppe 1.2,,,stellen,2026,,73,,,568
+beamte,9,A8,Laufbahngruppe 1.2,,,stellen,2025,,73,,,568
+beamte,9,A8,Laufbahngruppe 1.2,,,besetzt,2025,2025-06-30,73,,,568
+tarif,1,14,,,,stellen,2026,,100,,,569
+tarif,1,14,,,,stellen,2025,,100,,,569
+tarif,1,14,,,,besetzt,2025,2025-06-30,100,,,569
+tarif,2,12,,,,stellen,2026,,200,,,569
+tarif,2,12,,,,stellen,2025,,100,,,569
+tarif,2,12,,,,besetzt,2025,2025-06-30,200,,,569
+tarif,3,11,,,,stellen,2026,,854,,,569
+tarif,3,11,,,,stellen,2025,,654,,,569
+tarif,3,11,,,,besetzt,2025,2025-06-30,546,,,569
+tarif,4,10,,,,stellen,2026,,264,,,569
+tarif,4,10,,,,stellen,2025,,254,,,569
+tarif,4,10,,,,besetzt,2025,2025-06-30,254,,,569
+tarif,5,09c,,,,stellen,2026,,659,,,569
+tarif,5,09c,,,,stellen,2025,,587,,,569
+tarif,5,09c,,,,besetzt,2025,2025-06-30,587,,,569
+tarif,6,09b,,,,stellen,2026,,892,,,569
+tarif,6,09b,,,,stellen,2025,,992,,,569
+tarif,6,09b,,,,besetzt,2025,2025-06-30,892,,,569
+tarif,7,09a,,,,stellen,2026,,900,,,569
+tarif,7,09a,,,,stellen,2025,,1000,,,569
+tarif,7,09a,,,,besetzt,2025,2025-06-30,900,,,569
+tarif,8,08,,,,stellen,2026,,599,,,569
+tarif,8,08,,,,stellen,2025,,599,,,569
+tarif,8,08,,,,besetzt,2025,2025-06-30,599,,,569
+tarif,9,07,,,,stellen,2026,,1297,,,569
+tarif,9,07,,,,stellen,2025,,1138,,,569
+tarif,9,07,,,,besetzt,2025,2025-06-30,1185,,,569
+tarif,10,06,,,,stellen,2026,,3312,,,569
+tarif,10,06,,,,stellen,2025,,3359,,,569
+tarif,10,06,,,,besetzt,2025,2025-06-30,3229,,,569
+tarif,11,05,,,,stellen,2026,,785,,,569
+tarif,11,05,,,,stellen,2025,,685,,,569
+tarif,11,05,,,,besetzt,2025,2025-06-30,685,,,569
+tarif,12,04,,,,stellen,2025,,100,,,569
+tarif,12,04,,,,besetzt,2025,2025-06-30,100,,,569
+tarif,13,03,,,,stellen,2026,,200,,,569
+tarif,13,03,,,,stellen,2025,,200,,,569
+tarif,13,03,,,,besetzt,2025,2025-06-30,200,,,569
+tarif,14,02,,,,stellen,2026,,59,,,569
+tarif,14,02,,,,stellen,2025,,72,,,569
+tarif,14,02,,,,besetzt,2025,2025-06-30,72,,,569
+sozial_erziehungsdienst,15,S12,,,,stellen,2026,,100,,,569
+sozial_erziehungsdienst,15,S12,,,,stellen,2025,,100,,,569
+sozial_erziehungsdienst,15,S12,,,,besetzt,2025,2025-06-30,100,,,569
+sozial_erziehungsdienst,16,S11b,,,,stellen,2026,,300,,,569
+sozial_erziehungsdienst,16,S11b,,,,stellen,2025,,300,,,569
+sozial_erziehungsdienst,16,S11b,,,,besetzt,2025,2025-06-30,272,,,569
+nachwuchs,1,Auszubildende/r Verwaltungsfachangestellte/r,,AusbildungsVerg,,beschaeftigt,2025,2025-10-01,,3,,574
+nachwuchs,1,Auszubildende/r Verwaltungsfachangestellte/r,,AusbildungsVerg,,vorgesehen,2026,,,3,,574
+nachwuchs,2,Inspektoranwärter/in,,AnwBezüge g.D.,,beschaeftigt,2025,2025-10-01,,4,,574
+nachwuchs,2,Inspektoranwärter/in,,AnwBezüge g.D.,,vorgesehen,2026,,,4,,574
+nachwuchs,3,Azubi FK f. Abwassertechnik,,AusbildungsVerg,,beschaeftigt,2025,2025-10-01,,0,,574
+nachwuchs,3,Azubi FK f. Abwassertechnik,,AusbildungsVerg,,vorgesehen,2026,,,1,,574
+nachwuchs,4,Auszubildende/r Straßenwärter,,AusbildungsVerg,,beschaeftigt,2025,2025-10-01,,3,,574
+nachwuchs,4,Auszubildende/r Straßenwärter,,AusbildungsVerg,,vorgesehen,2026,,,3,,574
+nachwuchs,5,Azubi Informatikkauffrau/mann,,AusbildungsVerg,,beschaeftigt,2025,2025-10-01,,1,,574
+nachwuchs,5,Azubi Informatikkauffrau/mann,,AusbildungsVerg,,vorgesehen,2026,,,1,,574
+nachwuchs,6,Azubi FA f. Bäderbetriebe,,AusbildungsVerg,,beschaeftigt,2025,2025-10-01,,0,,574
+nachwuchs,6,Azubi FA f. Bäderbetriebe,,AusbildungsVerg,,vorgesehen,2026,,,1,,574

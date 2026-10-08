@@ -53,7 +53,7 @@ from ostbevern.app_daten import (
 )
 from ostbevern.belegbilder import bild_name, rendere_seiten
 from ostbevern.konfiguration import (
-    PROJEKT_WURZEL,
+    APP_WURZEL,
     Jahrgang,
     lade_jahrgang,
     layout_liste,
@@ -89,7 +89,7 @@ from ostbevern.schema import (
 from ostbevern.zahlen import ZahlenFehler, lies_betrag, lies_kennzahl
 from ostbevern.zeilen import normalisiere_bezeichnung
 
-BELEGBILDER_WURZEL = PROJEKT_WURZEL / "app" / "public" / "quellen"
+BELEGBILDER_WURZEL = APP_WURZEL / "public" / "quellen"
 QUELLEN_JSON = Path("quellen.json")
 # Fingerprint der Schwärzungsrechtecke je gerenderter Seite (WR-01): Ändert sich die Schwärzung,
 # wird das vorhandene Bild der Seite neu gerendert.

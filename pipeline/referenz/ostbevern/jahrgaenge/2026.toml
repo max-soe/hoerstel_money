@@ -2,8 +2,8 @@
 # Jeder PDF-spezifische Wert steht hier, nie im Python-Code. Die Pipeline liest
 # diese Datei ausschließlich über ostbevern.konfiguration.lade_jahrgang.
 #
-# Archiviert als Referenz für das ProFIS+-Layout: Tests und die CI-Reproduzierbarkeits-
-# prüfung laden diesen Jahrgang über PIPELINE_JAHRGAENGE=jahrgaenge/archiv/ostbevern.
+# Referenz für das ProFIS+-Layout: Tests und die CI-Reproduzierbarkeitsprüfung laden
+# diesen Jahrgang samt daten/ und App-Daten über PIPELINE_REFERENZ=referenz/ostbevern.
 # Der aktive Jahrgang 2026 (Hörstel) steht in jahrgaenge/2026.toml.
 
 haushaltsjahr = 2026

@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: Hörstel
 status: In progress
-stopped_at: Phase 10 complete (von Hand gepflegt, ohne GSD-Befehle)
+stopped_at: Phase 11 Plan 02 complete (von Hand gepflegt, ohne GSD-Befehle)
 last_updated: "2026-10-08T00:00:00.000Z"
 last_activity: 2026-10-08
-last_activity_desc: Phase 10 abgeschlossen (Produktinformationen, Erläuterungen, Investitionen, Querschnitte, Regeln 6-8)
+last_activity_desc: Phase 11, Pläne 01-02 (Ostbevern-Referenz ausgelagert, Stellenplan Hörstel)
 progress:
   total_phases: 5
   completed_phases: 3
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-08)
 ## Current Position
 
 Milestone: v2.0 Hörstel (Phases 8-12)
-Phase: 10 of 8-12 (IKVS-Details) — complete
+Phase: 11 of 8-12 (Manuelle Daten und App-Daten Hörstel) — 2 of 5 plans
 Plan: 10-01 complete
-Status: Ready for Phase 11 (Manuelle Daten und App-Daten Hörstel)
-Last activity: 2026-10-08 — Phase 10 abgeschlossen
+Status: In progress (Plan 11-03: Vorberichtstabellen und manuelle Daten)
+Last activity: 2026-10-08 — Pläne 11-01 und 11-02 abgeschlossen
 
 Hinweis: Dieser Meilenstein wird in einer Cloud-Session ohne GSD-Befehle bearbeitet. ROADMAP, REQUIREMENTS, STATE und die Phasen-Summaries unter `.planning/phases/` werden von Hand nachgeführt; PLAN-, VERIFICATION- und UAT-Dateien gibt es für diese Phasen nicht.
 
@@ -79,10 +79,10 @@ None.
 ### Blockers/Concerns
 
 Aus v2.0 (Phase 8):
-- `alle.py` läuft für Hörstel bis einschließlich Querschnitte (Schritte 01–04); Schritt 05 (Stellenplan) ist für Hörstel nur manuell möglich (Bildseiten), danach fehlen manuelle Daten, `befunde.md` und die Hörsteler `pruefe_alles`-Anpassungen (Phase 11). `daten/` und `app/src/data/` stammen weiter aus Ostbevern; die CI-Reproduzierbarkeit prüft bis Phase 11 den Ostbevern-Referenzjahrgang.
-- Stellenplan (S. 568–574), Fraktionszuwendungen (S. 576/577) und Eigenkapitalentwicklung (S. 588) sind Bilder ohne Textebene: nur manuelle Erfassung oder OCR.
+- `alle.py` läuft für Hörstel bis einschließlich Querschnitte (Schritte 01–04); Schritt 05 liest seit 11-02 die geprüfte Stellenplan-Abschrift aus `daten/manuell/`; danach fehlen manuelle Daten, `befunde.md` und die Hörsteler `pruefe_alles`-Anpassungen (Phase 11). Der Ostbevern-Stand liegt seit 11-01 unter `pipeline/referenz/ostbevern/` (`PIPELINE_REFERENZ`); die Ostbevern-Dateien im Projekt-`daten/` und `app/src/data/` werden bis 11-05 durch Hörstel ersetzt, die CI-Reproduzierbarkeit prüft bis dahin den Referenzstand.
+- Fraktionszuwendungen (S. 576/577) und Eigenkapitalentwicklung (S. 588) sind Bilder ohne Textebene und werden in 11-03 abgeschrieben (Stellenplan erledigt in 11-02).
 - Hörstel druckt Ist-Ergebnisse 2024 in den Gesamtplänen mit Cent; gerundet wird kaufmännisch auf Euro (bisher ohne Formelabweichung).
-- Gedruckte Abweichungen sind bisher nur in den Tests (`tests/test_ikvs_teilplaene.py`, `tests/test_ikvs_details.py`) und in den Summaries 09-01/10-01 belegt; sie müssen in Phase 11 in die Hörsteler `befunde.md`: 11 aus Regeln 1–3 (u. a. 5.800 €/4.400 € Transferaufwendungen), 11 aus Regel 6 (Produkte 0212201, 1557302), 7 Erläuterungsansätze, und die VE von 5.100 T€, die nur in der VE-Übersicht S. 586 steht (Satzung § 3).
+- Gedruckte Abweichungen sind bisher nur in den Tests (`tests/test_ikvs_teilplaene.py`, `tests/test_ikvs_details.py`) und in den Summaries 09-01/10-01 belegt; sie müssen in Phase 11 in die Hörsteler `befunde.md`: 11 aus Regeln 1–3 (u. a. 5.800 €/4.400 € Transferaufwendungen), 11 aus Regel 6 (Produkte 0212201, 1557302), 7 Erläuterungsansätze, 11 Rundungsdifferenzen der Stellenübersicht (Regel 10, Summary 11-02) und die VE von 5.100 T€, die nur in der VE-Übersicht S. 586 steht (Satzung § 3).
 - Regel 4 (Satzung § 3 VE) prüft im ProFIS+-Layout Gesamtfinanzplan-VE; für Hörstel muss sie in Phase 11 auf die Investitionsübersichten plus VE-Übersicht umgestellt werden.
 
 Aus v1.0 übernommen (offen):
@@ -107,9 +107,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-10-08
-Stopped at: Phase 10 complete
-Resume file: .planning/phases/10-ikvs-details/10-01-SUMMARY.md
+Stopped at: Phase 11 Plan 02 complete
+Resume file: .planning/phases/11-manuelle-daten-und-app-daten-hoerstel/11-02-SUMMARY.md
 
 ## Operator Next Steps
 
-- Phase 11 (Manuelle Daten und App-Daten Hörstel) beginnen; Details in ROADMAP.md und `discussion/HOERSTEL_MACHBARKEIT.md`
+- Plan 11-03 (Vorberichtstabellen, Fraktionszuwendungen, Eigenkapital, Verbindlichkeiten, VE-Übersicht, `meta.json`, Eckwerte); Planliste in ROADMAP.md

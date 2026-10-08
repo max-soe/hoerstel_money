@@ -25,7 +25,7 @@ oder stark angepasst werden.
 
 **Schritt 1 erledigt: Gesamtpläne im IKVS-Layout**
 
-- `pipeline/jahrgaenge/2026.toml` und `2026_sollwerte.toml` beschreiben jetzt Hörstel. Die Ostbevern-Dateien liegen als Referenz für das ProFIS+-Layout unter `pipeline/jahrgaenge/archiv/`.
+- `pipeline/jahrgaenge/2026.toml` und `2026_sollwerte.toml` beschreiben jetzt Hörstel. Die Ostbevern-Dateien liegen als Referenz für das ProFIS+-Layout unter `pipeline/referenz/ostbevern/` (Jahrgang, `daten/`, App-Daten; seit Phase 11, aktiviert über `PIPELINE_REFERENZ`).
 - Neuer Schlüssel `software = "ikvs"` in der Jahrgangsdatei (Standard `"profis"`), gelesen über `Jahrgang.software`.
 - `pipeline/ostbevern/ikvs.py` liest Gesamtergebnisplan (S. 79) und Gesamtfinanzplan (S. 80–81). Gelöst sind dabei:
   - umbrochene Bezeichnungen mit Beträgen in einer Zwischenzeile,
