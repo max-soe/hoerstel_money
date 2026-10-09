@@ -8,6 +8,7 @@
 
 import { haushalt } from '@/data/daten'
 import type { VorberichtPosten, VorberichtTabelle } from '@/data/typen'
+import { haushaltsjahrIndex } from '@/lib/jahr'
 import { baueKreisumlage } from '@/lib/kreisumlage'
 import { belegSchluessel, findeBeleg } from '@/lib/quelle'
 
@@ -54,14 +55,6 @@ const SOZIALLEISTUNGEN_SCHLUESSEL = ['sozialleistungen', 'sozialtransferaufwendu
 /** Name der Kachel; der Vorbericht nennt den Posten nur „Sozialleistungen“. */
 export const SOZIALLEISTUNGEN_BEZEICHNUNG = 'Gesetzliche Sozialleistungen'
 
-function jahrIndex(): number {
-  const index = haushalt.jahre.indexOf(haushalt.haushaltsjahr)
-  if (index < 0) {
-    throw new Error(`Haushaltsjahr ${String(haushalt.haushaltsjahr)} steht nicht in haushalt.jahre`)
-  }
-  return index
-}
-
 /** Eine Vorberichtstabelle; eine fehlende Tabelle ist ein Datenfehler und wirft. */
 export function vorberichtTabelle(name: string): VorberichtTabelle {
   const tabelle = haushalt.vorbericht[name]
@@ -92,7 +85,7 @@ export function vorberichtPosten(tabelle: string, schluessel: string): Vorberich
 export function alsZuschuss(
   tabelle: string,
   posten: VorberichtPosten,
-  index: number = jahrIndex(),
+  index: number = haushaltsjahrIndex(),
 ): Zuschuss {
   return {
     schluessel: posten.posten,
@@ -132,7 +125,7 @@ function gruppeAusTabelle(name: string, index: number): ZuschussGruppe | null {
  * Jahrgang die Tabelle nicht druckt.
  */
 export function kitaZuschuesse(): ZuschussGruppe | null {
-  return gruppeAusTabelle(KITA_TABELLE, jahrIndex())
+  return gruppeAusTabelle(KITA_TABELLE, haushaltsjahrIndex())
 }
 
 /**
@@ -143,7 +136,7 @@ export function weitereZuschuesse(): {
   transfer: ZuschussGruppe
   lfdZwecke: ZuschussGruppe | null
 } {
-  const index = jahrIndex()
+  const index = haushaltsjahrIndex()
   const vorhanden = vorberichtTabelle(TRANSFER_TABELLE).posten
   const posten = TRANSFER_ZUSCHUESSE.flatMap((schluessel) => {
     const eintrag = vorhanden.find((p) => p.posten === schluessel)
@@ -155,16 +148,26 @@ export function weitereZuschuesse(): {
   }
 }
 
+/** Die Summe einer Gruppe; `berechnet` sagt, ob sie die App gebildet hat (D-12, TXT-05). */
+export interface ZuschussSumme {
+  wert: number
+  /** `true`, wenn der Wert die Summe der Einzelposten ist; `false`, wenn er im PDF gedruckt steht. */
+  berechnet: boolean
+}
+
 /**
- * Die Summe einer Gruppe für die Zeile „zusammen“: die gedruckte Gesamtzeile, sonst die Summe der
- * vorhandenen Werte; ohne einen einzigen Wert `null` (kein erfundenes 0).
+ * Die Summe einer Gruppe für die Zeile „zusammen“: die gedruckte Gesamtzeile (`berechnet` false),
+ * sonst die Summe der vorhandenen Werte (`berechnet` true, die App hat sie gebildet); ohne einen
+ * einzigen Wert `null` (kein erfundenes 0).
  */
-export function zusammen(gruppe: ZuschussGruppe): number | null {
+export function zusammen(gruppe: ZuschussGruppe): ZuschussSumme | null {
   if (gruppe.gesamt !== null) {
-    return gruppe.gesamt
+    return { wert: gruppe.gesamt, berechnet: false }
   }
   const werte = gruppe.posten.flatMap((p) => (p.wert === null ? [] : [p.wert]))
-  return werte.length === 0 ? null : werte.reduce((summe, wert) => summe + wert, 0)
+  return werte.length === 0
+    ? null
+    : { wert: werte.reduce((summe, wert) => summe + wert, 0), berechnet: true }
 }
 
 export interface NichtBeeinflussbar {
@@ -199,7 +202,7 @@ function klBeleg(code: string, pdfSeite: number | null): string | null {
  * gesetzlichen Sozialleistungen. KL erscheint nur hier, nie als Bindungsgrad-Segment.
  */
 export function nichtBeeinflussbar(): NichtBeeinflussbar {
-  const index = jahrIndex()
+  const index = haushaltsjahrIndex()
   const kl = baueKreisumlage(index)
   const klPosten: Zuschuss[] = kl.unterposten.map((u) => ({
     schluessel: u.code,

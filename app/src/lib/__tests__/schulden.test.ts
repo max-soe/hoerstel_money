@@ -4,14 +4,17 @@ import { describe, expect, it } from 'vitest'
 import { BERECHNET_DECAL, SCHULDEN_FARBEN } from '@/charts/echartsTheme'
 import { euro, euroKurz, jahr as formatiereJahr } from '@/charts/format'
 import { haushalt, investitionen } from '@/data/daten'
-import { quellenZeile } from '@/lib/kennzahlen'
+import { jahreListe, quellenZeile } from '@/lib/hilfsfunktionen'
 import { belegSchluessel, findeBeleg } from '@/lib/quelle'
+// Warum Quelltext: Der Block „die Seite rendert die Kacheln“ unten pinnt bewusst die Verdrahtung
+// (06/IN-09): Die Seite ruft `schuldenKacheln()` auf und baut sie nicht selbst. Er beschränkt sich
+// auf diese beiden stabilen Aussagen. Ohne DOM in der Testumgebung (`environment: 'node'`, kein
+// DOM-Paket) lässt sich das nicht an der gerenderten Seite prüfen (D-14).
 import investitionenSeiteQuelle from '@/pages/InvestitionenPage.vue?raw'
 import {
   achsenZusatz,
   baueSchuldenstand,
   hatBerechneteJahre,
-  jahreListe,
   jahreOhneLiquiditaetskredite,
   liquiditaetsSatz,
   schuldenKacheln,

@@ -2,20 +2,26 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
-import { euro, jahr as formatiereJahr } from '@/charts/format'
+import {
+  betragMitHinweis,
+  euro,
+  euroKurz,
+  jahr as formatiereJahr,
+  RD_PRAEFIX,
+  RUND_PRAEFIX,
+} from '@/charts/format'
 import { haushalt, texte } from '@/data/daten'
 import {
   baueGeldfluss,
   sankeyHoehe,
-  betragMitHinweis,
   baueGeldflussBalken,
   geldflussOption,
+  geldflussZeilen,
   lesehilfeSatz,
-  RD_PRAEFIX,
   welcheLesetexte,
   zielCodeAusKlick,
 } from '@/lib/geldfluss'
-import type { Geldfluss } from '@/lib/geldfluss'
+import type { Geldfluss, GeldflussKnoten } from '@/lib/geldfluss'
 import { findeKlKnoten } from '@/lib/kreisumlage'
 import { findeText, textFuerJahr } from '@/lib/texte'
 
@@ -183,18 +189,34 @@ describe('Vorbericht-Beträge im Geldfluss (WR-01: „rd.“ und „berechnet“
   const fluss = baueGeldfluss(index)
   const nachId = (id: string) => fluss.knoten.find((k) => k.id === id)
 
-  it('markiert die Vorbericht-Knoten als gerundet und die Reste zusätzlich als berechnet', () => {
-    for (const id of ['gewerbesteuer', 'einkommensteuer', 'grundsteuer', 'schluesselzuweisung']) {
+  // G-09-03: „Grundsteuer (A+B)“ ist eine von der App gebildete Summe aus zwei gedruckten
+  // Posten und trägt wie die Reste das Etikett „berechnet“; früher stand sie bei den
+  // unveränderten Vorbericht-Posten, obwohl kein Vorbericht-Wert diese Summe druckt.
+  it('markiert die Vorbericht-Knoten als gerundet und Reste und Summen zusätzlich als berechnet', () => {
+    for (const id of ['gewerbesteuer', 'einkommensteuer', 'schluesselzuweisung']) {
       const knoten = nachId(`ertrag:${id}`)
       expect(knoten?.gerundet, id).toBe(true)
       expect(knoten?.berechnet, id).toBe(false)
     }
-    for (const id of ['uebrige_steuern', 'sonstige_zuwendungen']) {
+    for (const id of ['grundsteuer', 'uebrige_steuern', 'sonstige_zuwendungen']) {
       const knoten = nachId(`ertrag:${id}`)
       expect(knoten?.gerundet, id).toBe(true)
       expect(knoten?.berechnet, id).toBe(true)
     }
   })
+
+  it.each(ALLE_JAHRE)(
+    'G-09-03: Jahr %i: Gruppensummen aus mehreren Vorbericht-Posten sind berechnet, einzelne Posten nicht',
+    (_jahr, jahrIndex) => {
+      const woher = geldflussZeilen(baueGeldfluss(jahrIndex), 'links')
+      const berechnet = (id: string) => woher.find((z) => z.id === `ertrag:${id}`)?.berechnet
+      // „Grundsteuer (A+B)“ ist die von der App gebildete Summe aus zwei gedruckten Posten.
+      expect(berechnet('grundsteuer'), 'grundsteuer').toBe(true)
+      // Gewerbesteuer und Einkommensteuer sind je ein gedruckter Posten.
+      expect(berechnet('gewerbesteuer'), 'gewerbesteuer').toBe(false)
+      expect(berechnet('einkommensteuer'), 'einkommensteuer').toBe(false)
+    },
+  )
 
   it('lässt Ergebnisplan-Knoten ohne Hinweis', () => {
     for (const knoten of fluss.knoten) {
@@ -222,17 +244,24 @@ describe('Vorbericht-Beträge im Geldfluss (WR-01: „rd.“ und „berechnet“
     const kantenTooltip = (quelle: string, ziel: string) => {
       const kante = fluss.kanten.find((k) => k.quelle === quelle && k.ziel === ziel)
       expect(kante, `${quelle} → ${ziel}`).toBeDefined()
-      return tooltip.formatter({
-        dataType: 'edge',
-        data: { source: kante?.quelle, target: kante?.ziel, value: kante?.wert },
-      })
+      return {
+        html: tooltip.formatter({
+          dataType: 'edge',
+          data: { source: kante?.quelle, target: kante?.ziel, value: kante?.wert },
+        }),
+        wert: kante?.wert ?? Number.NaN,
+      }
     }
     // Ertrag (gerundet) → Gemeinde: Kante erbt das Flag des Ertragsknotens (links).
-    expect(kantenTooltip('ertrag:gewerbesteuer', 'mitte:gemeinde')).toContain(RD_PRAEFIX)
+    expect(kantenTooltip('ertrag:gewerbesteuer', 'mitte:gemeinde').html).toContain(RD_PRAEFIX)
     // Gemeinde → Kreisumlage (Ergebnisplan-Wert): Kante erbt das Flag des Zielknotens (rechts).
     const kl = fluss.knoten.find((k) => k.art === 'kl')
     expect(kl?.gerundet).toBe(false)
-    expect(kantenTooltip('mitte:gemeinde', kl?.id ?? '')).not.toContain(RD_PRAEFIX)
+    const klKante = kantenTooltip('mitte:gemeinde', kl?.id ?? '')
+    expect(klKante.html).not.toContain(RD_PRAEFIX)
+    // 05/IN-03: nicht nur „kein rd.“, sondern positiv der Betrag der Kante im Tooltip.
+    expect(klKante.wert).toBeGreaterThan(0)
+    expect(klKante.html).toContain(euro(klKante.wert))
   })
 
   it('übernimmt die Flags in die Balkensegmente', () => {
@@ -242,9 +271,20 @@ describe('Vorbericht-Beträge im Geldfluss (WR-01: „rd.“ und „berechnet“
     expect(segment?.berechnet).toBe(true)
   })
 
-  it('betragMitHinweis setzt „rd.“ nur bei gerundeten Beträgen', () => {
+  it('betragMitHinweis (aus charts/format) setzt „rd.“ nur bei gerundeten Beträgen', () => {
     expect(betragMitHinweis(7_800_000, true)).toBe(`${RD_PRAEFIX}${euro(7_800_000)}`)
     expect(betragMitHinweis(7_800_000, false)).toBe(euro(7_800_000))
+  })
+
+  it('beschriftet gerundete Knoten im Diagramm mit „rd.“ vor dem gekürzten Betrag', () => {
+    const option = geldflussOption(fluss, { wertartText: 'Ansatz 2026' })
+    const serie = (option.series as unknown[])[0] as {
+      label: { formatter: (params: unknown) => string }
+    }
+    const knoten = nachId('ertrag:gewerbesteuer')
+    expect(serie.label.formatter({ name: knoten?.id })).toContain(RD_PRAEFIX)
+    const ziel = fluss.knoten.find((k) => k.art === 'kl')
+    expect(serie.label.formatter({ name: ziel?.id })).not.toContain(RD_PRAEFIX)
   })
 })
 
@@ -475,6 +515,127 @@ describe('lesehilfeSatz: Satz aus den Daten des gewählten Jahres (D-11, T-05-34
           expect(lesehilfeSatz(b.fluss, b.jahr, 'Ansatz')).not.toContain(euro(defizit.wert))
         }
       }
+    }
+  })
+})
+
+// Echte Jahre erreichen nur die Fälle A und B; C und D entstehen hier aus konstruierten Flüssen
+// (CONTEXT-Datentabelle). `genau` darf nur in Fall D stehen (TXT-01, 05/IN-06).
+describe('lesehilfeSatz: vier Fälle der Bilanz (D-06, TXT-01, 05/IN-06)', () => {
+  function knoten(
+    art: GeldflussKnoten['art'],
+    wert: number,
+    seite: GeldflussKnoten['seite'],
+    gerundet = false,
+  ): GeldflussKnoten {
+    return {
+      id: `test:${art}`,
+      name: art,
+      wert,
+      seite,
+      art,
+      code: null,
+      farbe: '#000',
+      gerundet,
+      berechnet: false,
+    }
+  }
+
+  function fluss(knotenListe: GeldflussKnoten[], pdfSeite: number | null = 51): Geldfluss {
+    const links = knotenListe.filter((k) => k.seite === 'links').reduce((s, k) => s + k.wert, 0)
+    const rechts = knotenListe.filter((k) => k.seite === 'rechts').reduce((s, k) => s + k.wert, 0)
+    return { knoten: knotenListe, kanten: [], summeLinks: links, summeRechts: rechts, pdfSeite }
+  }
+
+  const ERTRAG = knoten('ertrag', 29_855_569, 'links')
+
+  it('Fall A: Defizit und Minderaufwand links, ohne „genau“', () => {
+    const satz = lesehilfeSatz(
+      fluss([
+        ERTRAG,
+        knoten('defizit', 1_000_000, 'links'),
+        knoten('minderaufwand', 600_000, 'links'),
+      ]),
+      2026,
+      'Ansatz',
+    )
+    expect(satz).toContain(`Das Defizit von ${euro(1_000_000)}`)
+    expect(satz).toContain('steht ebenfalls links')
+    expect(satz).toContain(`Der globale Minderaufwand von ${euro(600_000)}`)
+    expect(satz).not.toContain('genau')
+  })
+
+  it('Fall B: Überschuss rechts und Minderaufwand links, Minderaufwand-Satz ohne „ebenfalls“', () => {
+    const satz = lesehilfeSatz(
+      fluss([
+        ERTRAG,
+        knoten('minderaufwand', 600_000, 'links'),
+        knoten('ueberschuss', 200_000, 'rechts'),
+      ]),
+      2026,
+      'Ansatz',
+    )
+    expect(satz).toContain(`Der globale Minderaufwand von ${euro(600_000)}`)
+    expect(satz).toContain(`Der Überschuss von ${euro(200_000)}`)
+    expect(satz).not.toContain('ebenfalls')
+    expect(satz).not.toContain('genau')
+  })
+
+  it('Fall C: nur der Minderaufwand gleicht aus, die Lesehilfe sagt nicht „genau“', () => {
+    const satz = lesehilfeSatz(
+      fluss([ERTRAG, knoten('minderaufwand', 600_000, 'links')]),
+      2026,
+      'Ansatz',
+    )
+    expect(satz).toContain(
+      `Die Aufwendungen sind höher als die Erträge. Erst der globale Minderaufwand von ${euro(600_000)} gleicht beide Seiten aus.`,
+    )
+    expect(satz).toContain('Er steht links und senkt die geplanten Aufwendungen rechnerisch')
+    expect(satz).not.toContain('genau')
+    expect(satz).not.toContain('ebenfalls')
+    expect(satz).not.toContain(`${RUND_PRAEFIX}${euro(600_000)}`)
+  })
+
+  it('Fall C: „rund“ steht vor dem Minderaufwand nur bei einem gerundeten Betrag', () => {
+    const satz = lesehilfeSatz(
+      fluss([ERTRAG, knoten('minderaufwand', 600_000, 'links', true)]),
+      2026,
+      'Ansatz',
+    )
+    expect(satz).toContain(
+      `Erst der globale Minderaufwand von ${RUND_PRAEFIX}${euro(600_000)} gleicht`,
+    )
+  })
+
+  it('Fall D: nur hier „genau“', () => {
+    const satz = lesehilfeSatz(fluss([ERTRAG]), 2026, 'Ansatz')
+    expect(satz).toContain('Erträge und Aufwendungen gleichen sich in diesem Jahr genau aus.')
+    expect(satz).not.toContain('Minderaufwand')
+  })
+
+  it.each([
+    [
+      'A',
+      [ERTRAG, knoten('defizit', 1_000_000, 'links'), knoten('minderaufwand', 600_000, 'links')],
+    ],
+    ['B', [ERTRAG, knoten('minderaufwand', 600_000, 'links'), knoten('ueberschuss', 1, 'rechts')]],
+    ['C', [ERTRAG, knoten('minderaufwand', 600_000, 'links')]],
+    ['D', [ERTRAG]],
+  ])(
+    'Fall %s: Satz 1 nennt „rund“ mit geschütztem Leerzeichen, am Ende die Quelle',
+    (_fall, liste) => {
+      const modell = fluss(liste)
+      const satz = lesehilfeSatz(modell, 2026, 'Ansatz')
+      expect(satz).toContain(`${RUND_PRAEFIX}${euroKurz(modell.summeLinks)}`)
+      expect(satz.endsWith('Quelle: PDF-Seite 51.')).toBe(true)
+    },
+  )
+
+  it('„genau“ steht in keinem echten Jahr', () => {
+    for (const [jahr, index] of ALLE_JAHRE) {
+      expect(lesehilfeSatz(baueGeldfluss(index), jahr, 'Ansatz'), String(jahr)).not.toContain(
+        'genau',
+      )
     }
   })
 })

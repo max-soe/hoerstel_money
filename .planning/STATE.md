@@ -6,7 +6,7 @@ status: In progress
 stopped_at: Phase 12 complete (Milestone v2.0) (von Hand gepflegt, ohne GSD-Befehle)
 last_updated: "2026-10-09T00:00:00.000Z"
 last_activity: 2026-10-09
-last_activity_desc: 12-04 abgeschlossen (Browser-Tests, Sichtprüfung, Darstellungsfehler behoben); Phase 12 und v2.0 fertig
+last_activity_desc: Upstream v1.0.1 (bitwerkstatt/ostbevern_money) auf Branch claude/upstream-v1.0.1 integriert, siehe .planning/UPSTREAM.md; Phase 12 und v2.0 fertig
 progress:
   total_phases: 5
   completed_phases: 4
@@ -70,7 +70,7 @@ Hinweis: Dieser Meilenstein wird in einer Cloud-Session ohne GSD-Befehle bearbei
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table (Stand v2.0, Phase 8). Die Phasen-Entscheidungen von v1.0 sind in `.planning/milestones/v1.0-phases/` archiviert.
+Decisions are logged in PROJECT.md Key Decisions table (Stand v2.0, Phase 8). Der Abgleich mit dem Ursprungsprojekt (Remote `upstream`) ist in `.planning/UPSTREAM.md` festgehalten. Die Phasen-Entscheidungen von v1.0 sind in `.planning/milestones/v1.0-phases/` archiviert.
 
 ### Pending Todos
 

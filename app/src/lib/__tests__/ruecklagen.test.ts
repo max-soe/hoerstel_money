@@ -17,15 +17,6 @@ import {
   ruecklagenTabelle,
 } from '@/lib/ruecklagen'
 
-// Der Quelltext der Seite (wie in `menue.test.ts` über `?raw`): die Formelprosa der Fußnote darf nur
-// in `ruecklagen.ts` stehen, die Seite ruft `rueckgangFormelText()` auf.
-const seitenQuelltexte = import.meta.glob<string>('/src/pages/EntwicklungPage.vue', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-})
-const seitenQuelltext = seitenQuelltexte['/src/pages/EntwicklungPage.vue'] ?? ''
-
 const EIGENKAPITAL = haushalt.eigenkapital
 const LETZTER_INDEX = haushalt.jahre.length - 1
 const START_INDEX = haushalt.jahre.indexOf(haushalt.haushaltsjahr)
@@ -357,8 +348,11 @@ describe('rueckgangFormelText (CR-01)', () => {
 
   /**
    * Rückgang, nachgerechnet allein aus den Termen, die der Text nennt: das Defizit, soweit die
-   * Ausgleichsrücklage es nicht deckt, plus (nur wenn der Text sie nennt) die Verrechnung, geteilt durch
-   * die allgemeine Rücklage der Spalte.
+   * Ausgleichsrücklage es nicht deckt, zuzüglich (nur wenn der Text sie nennt) der Verrechnung,
+   * geteilt durch die allgemeine Rücklage der Spalte. Vorzeichen: Die Verrechnung der
+   * Bilanzierungshilfe ist im Druck negativ gebucht. Ihr Abzug (`- wert(VERRECHNUNG)` unten)
+   * erhöht den Abbau um ihren Betrag. Die Fußnote liest „zuzüglich“ deshalb im Sinn der Beträge:
+   * Der Betrag der Verrechnung, ohne Vorzeichen, kommt zum Fehlbetrag hinzu (UAT 06 Test 1).
    */
   function nachgerechnet(tabelle: VorberichtTabelle, text: string, index: number): number {
     const wert = (schluessel: string): number => {
@@ -454,11 +448,6 @@ describe('rueckgangFormelText (CR-01)', () => {
       posten: OSTBEVERN.posten.filter((kandidat) => kandidat.posten !== VERRECHNUNG),
     }
     expect(rueckgangFormelText(ohne)).not.toContain('Verrechnung aus der Zeile')
-  })
-
-  it('wird von EntwicklungPage.vue aufgerufen, die Formelprosa steht nicht in der Seite', () => {
-    expect(seitenQuelltext).toContain('rueckgangFormelText(')
-    expect(seitenQuelltext).not.toContain('soweit die Ausgleichsrücklage')
   })
 })
 

@@ -3,12 +3,12 @@
 // `haushalt.json` gelesen; nur die beiden Pro-Kopf-Werte sind berechnet (`proKopf`,
 // gerundet). Die Seite zeigt die Zahlen über `charts/format.ts`.
 
-import { jahr as formatJahr } from '@/charts/format'
 import { haushalt, investitionen } from '@/data/daten'
 import type { Knoten } from '@/data/typen'
 import { proKopf } from '@/lib/berechnung'
+import { einwohnerZahl } from '@/lib/einwohner'
 import { baueErtragsarten } from '@/lib/ertragsarten'
-import { wertartFuerJahr, wertartName } from '@/lib/jahr'
+import { haushaltsjahrIndex, wertartFuerJahr, wertartName } from '@/lib/jahr'
 import { belegSchluessel } from '@/lib/quelle'
 
 export interface Kennzahl {
@@ -34,33 +34,10 @@ export interface Kennzahl {
   herleitung: string | null
 }
 
-/** Zeile unter einem Wert: „{Wertart} {jahr} · PDF-Seite {n}“ (D-10, UI-SPEC KennzahlKachel). */
-export function quellenZeile(wertart: string, jahr: number, pdfSeiten: readonly number[]): string {
-  const seiten = pdfSeiten.join(', ')
-  const wort = pdfSeiten.length === 1 ? 'PDF-Seite' : 'PDF-Seiten'
-  return `${wertart} ${formatJahr(jahr)} · ${wort} ${seiten}`
-}
-
-function jahrIndex(): number {
-  const index = haushalt.jahre.indexOf(haushalt.haushaltsjahr)
-  if (index < 0) {
-    throw new Error(`Haushaltsjahr ${String(haushalt.haushaltsjahr)} steht nicht in haushalt.jahre`)
-  }
-  return index
-}
-
 function wertAn(werte: readonly number[] | undefined, index: number, name: string): number {
   const wert = werte?.[index]
   if (wert === undefined) {
     throw new Error(`Kein Wert für ${name} im Jahresindex ${String(index)}`)
-  }
-  return wert
-}
-
-function einwohnerZahl(): number {
-  const wert = haushalt.meta.einwohner.wert
-  if (typeof wert !== 'number') {
-    throw new Error('meta.einwohner.wert muss eine Zahl sein')
   }
   return wert
 }
@@ -86,7 +63,7 @@ function zeilenBezug(schluessel: string): string {
 }
 
 export function baueKennzahlen(): Kennzahl[] {
-  const index = jahrIndex()
+  const index = haushaltsjahrIndex()
   const jahr = haushalt.haushaltsjahr
   const wertart = wertartName(wertartFuerJahr(jahr))
   const gesamt = haushalt.ergebnisplan.GESAMT
@@ -216,7 +193,7 @@ function seiteVon(code: string, name: string, pdfSeite: number | null): number {
  * Daten; weder ein Produktbereichscode noch ein Name steht im Code.
  */
 export function baueEinstiege(): Einstiege {
-  const index = jahrIndex()
+  const index = haushaltsjahrIndex()
   const jahr = haushalt.haushaltsjahr
   const wertart = wertartName(wertartFuerJahr(jahr))
 

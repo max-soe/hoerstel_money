@@ -195,6 +195,11 @@ def lade_jahrgang(jahr: int, *, verzeichnis: Path = JAHRGAENGE_VERZEICHNIS) -> J
                 f"Jahrgangsdatei {pfad}: anzahlen.{teil_schluessel} muss eine Ganzzahl "
                 f"sein, nicht {wert!r}"
             )
+        if wert < 0:
+            raise KonfigurationsFehler(
+                f"Jahrgangsdatei {pfad}: anzahlen.{teil_schluessel} darf nicht negativ sein, "
+                f"nicht {wert!r}"
+            )
 
     software = rohdaten.get("software", "profis")
     if software not in SOFTWARE_LAYOUTS:

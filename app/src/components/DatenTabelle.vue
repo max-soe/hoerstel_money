@@ -1,15 +1,25 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch, watchEffect } from 'vue'
 import { EURO_OPTIONEN, KEIN_WERT } from '@/charts/format'
 import QuelleKnopf from '@/components/QuelleKnopf.vue'
-import { sichtbareSpalten, type DatenSpalte, type DatenZeile } from '@/components/datenTabelle'
+import {
+  sichtbareSpalten,
+  tabellenRahmen,
+  type DatenSpalte,
+  type DatenZeile,
+} from '@/components/datenTabelle'
 import { findeBeleg } from '@/lib/quelle'
 
+// Bewusste Abweichung von den Münster-Props (D-16, D-19): `beschriftung`, `spalten` und `zeilen`
+// sind Pflicht, der Slot-Modus (Default-Slot mit eigener Tabelle) ist entfernt. Jede Tabelle der
+// App ist eine Datentabelle; ohne Pflicht-Beschriftung gäbe es keinen Namen für den scrollbaren
+// Rahmen (A11Y-01, A11Y-03). Die Slots `zelle` und `zeilenzusatz` bleiben.
 const props = withDefaults(
   defineProps<{
-    beschriftung?: string
-    spalten?: readonly DatenSpalte[]
-    zeilen?: readonly DatenZeile[]
+    /** Name der Tabelle: wird zur unsichtbaren Caption und ist der einzige Ort des Namens. */
+    beschriftung: string
+    spalten: readonly DatenSpalte[]
+    zeilen: readonly DatenZeile[]
     laedt?: boolean
     /** Überschrift des Leerzustands (UI-SPEC Copywriting). */
     leerTitel?: string
@@ -41,10 +51,7 @@ defineSlots<{
    * ohne den Standardinhalt der Zelle zu ersetzen.
    */
   zeilenzusatz?(props: { zeile: DatenZeile }): unknown
-  default?(): unknown
 }>()
-
-const istDatenModus = computed(() => props.zeilen !== undefined)
 
 // Eine Spalte `art: 'quelle'` (Phase 7, D-01) erscheint nur, wenn mindestens eine Zeile einen
 // auflösbaren Beleg hat; die Tabelle zeichnet ihre Zelle selbst (außerhalb des Slots `zelle`),
@@ -53,7 +60,7 @@ function hatBeleg(wert: string | number | null): boolean {
   return typeof wert === 'string' && findeBeleg(wert) !== null
 }
 
-const sichtbar = computed(() => sichtbareSpalten(props.spalten ?? [], props.zeilen ?? [], hatBeleg))
+const sichtbar = computed(() => sichtbareSpalten(props.spalten, props.zeilen, hatBeleg))
 
 /**
  * Bezeichnung des Werts für den Namen des Knopfes: der Wert der ersten sichtbaren Spalte,
@@ -70,25 +77,15 @@ function herleitungVon(zeile: DatenZeile, spalte: DatenSpalte): string | null {
   const wert = zeile[`${spalte.schluessel}Herleitung`]
   return typeof wert === 'string' ? wert : null
 }
-const istLeer = computed(() => istDatenModus.value && (props.zeilen?.length ?? 0) === 0)
-
-// `spalten` ist unabhängig von `zeilen` optional, wird im Datenmodus aber
-// zwingend für Kopf- und Datenzellen benötigt. Ohne `spalten` rendert die
-// Tabelle still eine leere Kopf-/Datenzeile ohne <th>/<td> — daher ein
-// lautes Dev-Warning statt eines unsichtbaren Fehlers.
-if (import.meta.env.DEV) {
-  watchEffect(() => {
-    if (istDatenModus.value && !props.spalten?.length) {
-      console.warn('DatenTabelle: `zeilen` wurde ohne `spalten` übergeben.')
-    }
-  })
-}
+const istLeer = computed(() => props.zeilen.length === 0)
 
 // Ein waagerecht scrollbarer Bereich muss per Tastatur erreichbar und benannt sein; eine
 // Tabelle, die in die Breite passt, braucht das nicht (kein überflüssiger Tabstopp, keine
-// doppelte Namensansage neben der unsichtbaren Caption). Daher gilt der Fokus (tabindex) nur,
-// solange der Inhalt breiter ist als der Rahmen; Rolle und Name zusätzlich nur mit
-// `beschriftung` (ein aria-label ohne Rolle wäre ungültig).
+// Region ohne Not). Daher bekommt der Rahmen Fokus, Rolle und Namen nur gemeinsam und nur,
+// solange der Inhalt einer gerenderten Tabelle breiter ist als der Rahmen (`tabellenRahmen`).
+// Der Name kommt genau einmal: per `aria-labelledby` aus der Caption der Tabelle (D-20), kein
+// `aria-label` daneben.
+const captionId = useId()
 const rahmen = ref<HTMLElement | null>(null)
 const ueberlaeuft = ref(false)
 let beobachter: ResizeObserver | undefined
@@ -121,13 +118,38 @@ onMounted(() => {
   beobachteInhalt()
 })
 
-watch([() => props.laedt, istLeer, istDatenModus], () => void nextTick(beobachteInhalt))
+watch([() => props.laedt, istLeer], () => void nextTick(beobachteInhalt))
 
 onBeforeUnmount(() => {
   beobachter?.disconnect()
 })
 
-const scrollbarBenannt = computed(() => ueberlaeuft.value && !!props.beschriftung)
+// Nur eine gerenderte Tabelle trägt eine Caption, auf die der Rahmen verweisen kann. Der Rahmen
+// einer überlaufenden Tabelle bleibt aber immer per Tastatur erreichbar und benannt (WCAG 2.1.1,
+// 08/WR-02): Ist die Beschriftung leer, heißt die Caption „Tabelle“ (`tabellenRahmen`), statt dass
+// Rolle und Tabstopp entfallen. In der Entwicklung warnt `watchEffect` unten trotzdem, weil ein
+// leerer Name die Region nur als „Tabelle“ ansagen lässt.
+const rahmenLage = computed(() =>
+  tabellenRahmen(
+    {
+      ueberlaeuft: ueberlaeuft.value,
+      laedt: props.laedt ?? false,
+      leer: istLeer.value,
+      beschriftung: props.beschriftung,
+    },
+    captionId,
+  ),
+)
+
+if (import.meta.env.DEV) {
+  watchEffect(() => {
+    if (props.beschriftung.trim() === '') {
+      console.warn(
+        'DatenTabelle: `beschriftung` ist leer, die Tabelle wird nur als „Tabelle“ angesagt.',
+      )
+    }
+  })
+}
 
 /**
  * Prüft zur Laufzeit, dass ein Zellwert tatsächlich eine Zahl ist, bevor er
@@ -145,13 +167,7 @@ function alsZahl(wert: string | number | null | undefined): number {
 </script>
 
 <template>
-  <div
-    ref="rahmen"
-    class="om-tabelle-rahmen"
-    :role="scrollbarBenannt ? 'region' : undefined"
-    :aria-label="scrollbarBenannt ? beschriftung : undefined"
-    :tabindex="ueberlaeuft ? 0 : undefined"
-  >
+  <div ref="rahmen" class="om-tabelle-rahmen" v-bind="rahmenLage.attribute">
     <div v-if="laedt" class="om-tabelle-skeleton">
       <wa-skeleton effect="sheen"></wa-skeleton>
       <wa-skeleton effect="sheen"></wa-skeleton>
@@ -161,10 +177,10 @@ function alsZahl(wert: string | number | null | undefined): number {
       <h3>{{ leerTitel }}</h3>
       <p>{{ leerText }}</p>
     </div>
-    <table v-else-if="istDatenModus" class="om-tabelle">
-      <caption v-if="beschriftung" class="om-visually-hidden">
+    <table v-else class="om-tabelle">
+      <caption :id="captionId" class="om-visually-hidden">
         {{
-          beschriftung
+          rahmenLage.name
         }}
       </caption>
       <thead>
@@ -249,14 +265,6 @@ function alsZahl(wert: string | number | null | undefined): number {
           </template>
         </tr>
       </tbody>
-    </table>
-    <table v-else class="om-tabelle">
-      <caption v-if="beschriftung">
-        {{
-          beschriftung
-        }}
-      </caption>
-      <slot />
     </table>
     <p v-if="fussnote && !laedt && !istLeer" class="om-tabelle__fussnote">{{ fussnote }}</p>
   </div>

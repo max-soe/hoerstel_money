@@ -5,7 +5,7 @@
 // Produkt keine passende Grundzahl (Hörstel), zeigt die Reihe nur die Vorberichtsjahre. Die Wertart
 // je Planjahr kommt aus `haushalt.wertarten`.
 
-import { formatiere, jahr as formatiereJahr } from '@/charts/format'
+import { betragMitHinweis, jahr as formatiereJahr, KEIN_WERT } from '@/charts/format'
 import { haushalt, produkte } from '@/data/daten'
 import type { Grundzahl, Produkt } from '@/data/typen'
 import { WERTART_NAMEN } from '@/lib/jahr'
@@ -251,8 +251,7 @@ export function quellenFussnote(punkte: readonly Zeitpunkt[]): string {
   return `Quelle: ${teile.join(', ')}`
 }
 
-/** Betrag einer Reihe für Tooltip und Tabelle: „rd. “ vor einem in T€ gerundeten Wert, „–“ ohne Wert. */
+/** Betrag einer Reihe für Tooltip und Tabelle: „rd.“ vor einem in T€ gerundeten Wert, „–“ ohne Wert. */
 export function betragText(punkt: Pick<Zeitpunkt, 'wert' | 'gerundet'>): string {
-  const text = formatiere(punkt.wert, 'euro')
-  return punkt.wert !== null && punkt.gerundet ? `rd. ${text}` : text
+  return punkt.wert === null ? KEIN_WERT : betragMitHinweis(punkt.wert, punkt.gerundet)
 }

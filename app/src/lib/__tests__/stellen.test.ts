@@ -162,6 +162,72 @@ describe('stellenSummen', () => {
     expect(() => stellenSummen(kaputt)).toThrow()
   })
 
+  describe('Seiten je Kachel (D-11, 06/IN-07)', () => {
+    /** Konstruierter Stellenplan: je Merkmal und Jahr andere PDF-Seiten (die Echtdaten haben sie nicht). */
+    function zeile(
+      merkmal: string,
+      jahr: number,
+      pdfSeite: number,
+      position: number,
+    ): Stellenplan['zeilen'][number] {
+      return {
+        teil: 'tarif',
+        position,
+        gruppe: String(position),
+        amtsbezeichnung: null,
+        verguetung: null,
+        produktbereich: null,
+        merkmal,
+        jahr,
+        stichtag: merkmal === 'besetzt' ? '2025-06-30' : null,
+        stellen: 1,
+        personen: null,
+        vermerk: null,
+        pdf_seite: pdfSeite,
+      }
+    }
+    const konstruiert: Stellenplan = {
+      haushaltsjahr: 2026,
+      einheit_stellen: 'vzae',
+      zeilen: [
+        zeile('stellen', 2026, 284, 1),
+        zeile('stellen', 2026, 289, 2),
+        zeile('stellen', 2025, 284, 1),
+        zeile('stellen', 2025, 285, 2),
+        zeile('besetzt', 2026, 286, 1),
+      ],
+    }
+
+    it('nennt je Kachel nur die eigenen Seiten und in pdfSeiten weiter die Vereinigung', () => {
+      const summen = stellenSummen(konstruiert)
+      expect(summen.seitenHaushaltsjahr).toEqual([284, 289])
+      expect(summen.seitenVorjahr).toEqual([284, 285])
+      expect(summen.seitenBesetzt).toEqual([286])
+      expect(summen.pdfSeiten).toEqual([284, 285, 286, 289])
+    })
+
+    it('liefert ohne Vorjahreszeilen kein Vorjahr und keine Seiten dafür (nie 0)', () => {
+      const ohneVorjahr: Stellenplan = {
+        ...konstruiert,
+        zeilen: konstruiert.zeilen.filter((z) => z.jahr !== 2025),
+      }
+      const summen = stellenSummen(ohneVorjahr)
+      expect(summen.vorjahr).toBeNull()
+      expect(summen.seitenVorjahr).toEqual([])
+      expect(summen.seitenHaushaltsjahr).toEqual([284, 289])
+      expect(summen.pdfSeiten).toEqual([284, 286, 289])
+    })
+
+    it('liefert ohne besetzte Zeilen keine Seiten für die Kachel Besetzt', () => {
+      const summen = stellenSummen({
+        ...konstruiert,
+        zeilen: konstruiert.zeilen.filter((z) => z.merkmal !== 'besetzt'),
+      })
+      expect(summen.besetzt).toBeNull()
+      expect(summen.seitenBesetzt).toEqual([])
+    })
+  })
+
   describe.runIf(stellenplan.haushaltsjahr === 2026)('Jahrgang 2026', () => {
     it('Haushaltsjahr 12502, Vorjahr 12193, besetzt 11779, Stichtag 30.06.2025 (S. 568/569)', () => {
       const summen = stellenSummen()
@@ -254,6 +320,38 @@ describe('nachwuchs', () => {
     expect(nachwuchs(nurVorgesehen).haushaltsjahr).not.toBeNull()
   })
 
+  it('06/IN-07: zitiert nur die Seiten der Jahre mit Personenzahl (D-11)', () => {
+    const zeile = (
+      merkmal: string,
+      jahr: number,
+      personen: number | null,
+      pdfSeite: number,
+    ): Stellenplan['zeilen'][number] => ({
+      teil: 'nachwuchs',
+      position: 1,
+      gruppe: 'Nachwuchskraft',
+      amtsbezeichnung: null,
+      verguetung: 'Anwaerterbezuege',
+      produktbereich: null,
+      merkmal,
+      jahr,
+      stichtag: null,
+      stellen: null,
+      personen,
+      vermerk: null,
+      pdf_seite: pdfSeite,
+    })
+    const konstruiert: Stellenplan = {
+      haushaltsjahr: 2026,
+      einheit_stellen: 'vzae',
+      zeilen: [zeile('beschaeftigt', 2025, null, 291), zeile('vorgesehen', 2026, 6, 290)],
+    }
+    const n = nachwuchs(konstruiert)
+    expect(n.vorjahr).toBeNull()
+    expect(n.haushaltsjahr).toBe(6)
+    expect(n.pdfSeiten).toEqual([290])
+  })
+
   it('geht nie in eine Stellensumme ein', () => {
     const ohneNachwuchs = ohne((z) => z.teil !== 'nachwuchs')
     expect(stellenNachTeil(ohneNachwuchs)).toEqual(stellenNachTeil())
@@ -273,6 +371,10 @@ describe('nachwuchs', () => {
 // Stellen und Personalaufwand je Aufgabenbereich (STEL-02, STEL-03, D-16)
 // ---------------------------------------------------------------------------------------------
 
+// Warum Quelltext: Gesichert wird die Fachregel „kein Aufwand je Stelle“ (D-16): `stellen.ts` darf
+// keine solche Größe exportieren und keine solche Division enthalten. Das Fehlen einer Funktion
+// lässt sich nicht als Verhalten prüfen, es gibt nichts aufzurufen; zudem fehlt in der
+// Testumgebung (`environment: 'node'`) ein DOM-Paket (D-14).
 const quelltexte = import.meta.glob<string>('/src/lib/stellen.ts', {
   query: '?raw',
   import: 'default',

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { euro, jahr as formatiereJahr, KEIN_WERT, prozent } from '@/charts/format'
+import { betragMitHinweis, euro, jahr as formatiereJahr, KEIN_WERT, prozent } from '@/charts/format'
 import DatenTabelle from '@/components/DatenTabelle.vue'
 import type { DatenSpalte, DatenZeile } from '@/components/datenTabelle'
 import { haushalt } from '@/data/daten'
@@ -9,6 +9,7 @@ import type { Modus } from '@/lib/ansicht'
 import { proKopf } from '@/lib/berechnung'
 import { klickZiel, type EbenenEintrag } from '@/lib/drilldown'
 import { ebenenBeleg } from '@/lib/ebenenBeleg'
+import { einwohnerZahl } from '@/lib/einwohner'
 
 const props = defineProps<{
   eintraege: readonly EbenenEintrag[]
@@ -25,8 +26,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   waehle: [code: string]
 }>()
-
-const einwohner = haushalt.meta.einwohner.wert
 
 const spalten = computed<DatenSpalte[]>(() => {
   const liste: DatenSpalte[] = [
@@ -48,6 +47,9 @@ const spalten = computed<DatenSpalte[]>(() => {
 // Die Zeilen tragen nur Zahlen und Texte (`DatenZeile`); Wahrheitswerte stehen als 0/1.
 const zeilen = computed<DatenZeile[]>(() => {
   const jahrIndex = haushalt.jahre.indexOf(props.jahr)
+  // Die Einwohnerzahl wird nur für die Spalte „pro Einwohner“ gebraucht; fehlt sie, wirft
+  // `einwohnerZahl()` laut (D-09) statt eine Spalte voller „–“ zu zeigen.
+  const einwohner = props.modus === 'zuschussbedarf' ? einwohnerZahl() : null
   return props.eintraege.map((e) => {
     const beleg = ebenenBeleg(e, jahrIndex, props.modus)
     return {
@@ -55,7 +57,7 @@ const zeilen = computed<DatenZeile[]>(() => {
       name: e.name,
       betrag: e.wert,
       anteil: e.anteil,
-      proKopf: typeof einwohner === 'number' ? proKopf(e.wert, einwohner) : null,
+      proKopf: einwohner === null ? null : proKopf(e.wert, einwohner),
       ziel: klickZiel(e),
       farbe: e.farbe,
       kl: e.istKl ? 1 : 0,
@@ -73,10 +75,6 @@ function codeVon(zeile: DatenZeile): string {
 
 function produktZiel(zeile: DatenZeile) {
   return { name: 'produkt', params: { code: codeVon(zeile) }, query: props.produktQuery }
-}
-
-function betragText(betrag: number, gerundet: boolean): string {
-  return gerundet ? `rd. ${euro(betrag)}` : euro(betrag)
 }
 </script>
 
@@ -114,7 +112,7 @@ function betragText(betrag: number, gerundet: boolean): string {
         }}</span>
       </template>
       <template v-else-if="spalte.schluessel === 'betrag'">
-        {{ betragText(wert, zeile.gerundet === 1) }}
+        {{ betragMitHinweis(wert, zeile.gerundet === 1) }}
         <span v-if="zeile.ueberschuss === 1" class="om-ebenen-hinweis">(Überschuss)</span>
       </template>
       <template v-else-if="spalte.schluessel === 'anteil'">{{ prozent(wert) }}</template>

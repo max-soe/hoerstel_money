@@ -4,19 +4,19 @@
 Titel: Die Schlüsselzuweisung steigt deutlich
 Quelle: S. 22
 
-Die Schlüsselzuweisung ist Geld vom Land NRW für Städte und Gemeinden, deren eigene Steuerkraft im Vergleich zu ihrem Finanzbedarf gering ist. Für {{jahr.haushaltsjahr|jahr}} rechnet Hörstel mit {{vorbericht.zuwendungen.schluesselzuweisung.2026|mio}}, im Vorjahr waren es {{vorbericht.zuwendungen.schluesselzuweisung.2025|mio}}. Das ist ein Plus von {{abgeleitet.schluesselzuweisung_anstieg_haushaltsjahr|mio}}. Der Ansatz stammt laut Vorbericht aus der Modellrechnung des Landes und der kommunalen Spitzenverbände zum Finanzausgleich {{jahr.haushaltsjahr|jahr}}. Für die Folgejahre plant die Stadt zunächst mit {{vorbericht.zuwendungen.schluesselzuweisung.2027|mio}} im Jahr 2027, danach wieder mit weniger: {{vorbericht.zuwendungen.schluesselzuweisung.2029|mio}} im Jahr 2029.
+Die Schlüsselzuweisung ist Geld vom Land NRW für Städte und Gemeinden, deren eigene Steuerkraft im Vergleich zu ihrem Finanzbedarf gering ist. Für {{jahr.haushaltsjahr|jahr}} rechnet Hörstel mit {{vorbericht.zuwendungen.schluesselzuweisung.2026|mio}}, im Vorjahr ({{jahr.vorjahr|jahr}}) waren es {{vorbericht.zuwendungen.schluesselzuweisung.2025|mio}}. Das ist ein Plus von {{abgeleitet.schluesselzuweisung_anstieg_haushaltsjahr|mio}}. Der Ansatz stammt laut Vorbericht aus der Modellrechnung des Landes und der kommunalen Spitzenverbände zum Finanzausgleich {{jahr.haushaltsjahr|jahr}}. Für die Folgejahre plant die Stadt zunächst mit {{vorbericht.zuwendungen.schluesselzuweisung.2027|mio}} im Jahr {{jahr.haushaltsjahr_plus_1|jahr}}, danach wieder mit weniger: {{vorbericht.zuwendungen.schluesselzuweisung.2029|mio}} im Jahr {{jahr.letztes_jahr|jahr}}.
 
 ## gewerbesteuer
 Titel: Gewerbesteuer – die wichtigste und unsicherste Einnahme
 Quelle: S. 16, S. 18
 
-Die Gewerbesteuer ist die größte einzelne Einnahme der Stadt. Sie hängt von der wirtschaftlichen Lage der Betriebe vor Ort ab und schwankt deshalb stark. Im Jahr 2024 kamen tatsächlich {{vorbericht.steuerarten.gewerbesteuer.2024|mio}} herein. Für {{jahr.haushaltsjahr|jahr}} plant Hörstel mit {{vorbericht.steuerarten.gewerbesteuer.2026|mio}}, bei einem Hebesatz von {{meta.hebesaetze.gewerbesteuer|prozent}}. Der Rat hat den Hebesatz ab {{jahr.haushaltsjahr|jahr}} auf den fiktiven Hebesatz angehoben, den das Land für den Finanzausgleich ansetzt. Der Vorbericht nennt den Ansatz ausdrücklich mit erheblichen Risiken verbunden, weil die wirtschaftliche Lage unsicher ist.
+Die Gewerbesteuer ist die größte einzelne Einnahme der Stadt. Sie hängt von der wirtschaftlichen Lage der Betriebe vor Ort ab und schwankt deshalb stark. Im Jahr {{jahr.fest_2024|jahr}} kamen tatsächlich {{vorbericht.steuerarten.gewerbesteuer.2024|mio}} herein. Für {{jahr.haushaltsjahr|jahr}} plant Hörstel mit {{vorbericht.steuerarten.gewerbesteuer.2026|mio}}, bei einem Hebesatz von {{meta.hebesaetze.gewerbesteuer|prozent}}. Der Rat hat den Hebesatz ab {{jahr.haushaltsjahr|jahr}} auf den fiktiven Hebesatz angehoben, den das Land für den Finanzausgleich ansetzt. Der Vorbericht nennt den Ansatz ausdrücklich mit erheblichen Risiken verbunden, weil die wirtschaftliche Lage unsicher ist.
 
 ## kreisumlage
 Titel: Die Umlagen an den Kreis – der größte Ausgabenblock
 Quelle: S. 33, S. 34, S. 35
 
-Hörstel gehört zum Kreis Steinfurt und finanziert dessen Aufgaben über Umlagen mit. Die allgemeine Kreisumlage beträgt {{jahr.haushaltsjahr|jahr}} {{vorbericht.transferaufwendungen.kreisumlage.2026|mio}}, im Vorjahr waren es {{vorbericht.transferaufwendungen.kreisumlage.2025|mio}}. Dazu kommt die Jugendamtsumlage, eine zusätzliche Kreisumlage für die Mehrbelastung durch das Jugendamt des Kreises: {{vorbericht.transferaufwendungen.jugendamtsumlage.2026|mio}}. Zusammen sind das die größten Ausgaben im Haushalt, deutlich mehr als zum Beispiel die Personalkosten der Stadt. Die Höhe legt der Kreis fest, die Stadt kann sie nicht selbst beeinflussen.
+Hörstel gehört zum Kreis Steinfurt und finanziert dessen Aufgaben über Umlagen mit. Die allgemeine Kreisumlage beträgt {{jahr.haushaltsjahr|jahr}} {{vorbericht.transferaufwendungen.kreisumlage.2026|mio}}, im Vorjahr ({{jahr.vorjahr|jahr}}) waren es {{vorbericht.transferaufwendungen.kreisumlage.2025|mio}}. Dazu kommt die Jugendamtsumlage, eine zusätzliche Kreisumlage für die Mehrbelastung durch das Jugendamt des Kreises: {{vorbericht.transferaufwendungen.jugendamtsumlage.2026|mio}}. Zusammen sind das die größten Ausgaben im Haushalt, deutlich mehr als zum Beispiel die Personalkosten der Stadt. Die Höhe legt der Kreis fest, die Stadt kann sie nicht selbst beeinflussen.
 
 ## grundsteuer_hebesaetze
 Titel: Die Hebesätze der Grundsteuer und Gewerbesteuer
@@ -40,19 +40,19 @@ Der globale Minderaufwand ist ein pauschaler Kürzungsbetrag, den eine Gemeinde 
 Titel: Das Defizit und seine Deckung aus der Ausgleichsrücklage
 Quelle: S. 8, S. 40, S. 588
 
-Hörstel plant für {{jahr.haushaltsjahr|jahr}} mit einem Defizit von {{abgeleitet.jahresergebnis_defizit_haushaltsjahr|euro}}. Gedeckt wird dieses Minus aus der Ausgleichsrücklage, einem Teil des Eigenkapitals: Die Haushaltssatzung setzt ihre Inanspruchnahme auf {{meta.vorbericht_werte.satzung_inanspruchnahme_ausgleichsruecklage|euro}} fest (§ 4). Laut Vorbericht beläuft sich die Ausgleichsrücklage zu Beginn des Jahres auf rund {{eigenkapital.ausgleichsruecklage.2025|mio}}. Damit gilt der Haushalt als ausgeglichen, obwohl die Ausgaben höher sind als die Einnahmen.
+Hörstel plant für {{jahr.haushaltsjahr|jahr}} mit einem Defizit von {{abgeleitet.jahresergebnis_defizit_haushaltsjahr|euro}}. Gedeckt wird dieses Minus aus der Ausgleichsrücklage, einem Teil des Eigenkapitals: Die Haushaltssatzung setzt ihre Inanspruchnahme auf {{meta.vorbericht_werte.satzung_inanspruchnahme_ausgleichsruecklage|euro}} fest (§ 4). Laut Vorbericht beläuft sich die Ausgleichsrücklage zum Jahresende {{jahr.vorjahr|jahr}} auf rund {{eigenkapital.ausgleichsruecklage.2025|mio}}. Damit gilt der Haushalt als ausgeglichen, obwohl die Ausgaben höher sind als die Einnahmen.
 
 ## schulden
 Titel: Der Schuldenstand steigt deutlich
 Quelle: S. 62, S. 587
 
-Zu den Schulden zählt diese App die Kredite, die Hörstel für Investitionen aufgenommen hat. Zu Beginn des Jahres {{jahr.haushaltsjahr|jahr}} waren das laut Übersicht über die Verbindlichkeiten {{schulden.gesamt.2025|mio}}, pro Kopf rund {{schulden.pro_kopf.2025|euro}}. Für Ende {{jahr.haushaltsjahr|jahr}} rechnet die Stadt mit {{schulden.gesamt.2026|mio}} oder {{schulden.pro_kopf.2026|euro}} pro Kopf. Allein {{jahr.haushaltsjahr|jahr}} sollen neue Investitionskredite über {{gfp.kreditaufnahme.2026|mio}} aufgenommen werden.
+Zu den Schulden zählt diese App die Kredite, die Hörstel für Investitionen aufgenommen hat. Zum Jahresende {{jahr.vorjahr|jahr}} waren das laut Übersicht über die Verbindlichkeiten {{schulden.gesamt.2025|mio}}, pro Kopf rund {{schulden.pro_kopf.2025|euro}}. Für Ende {{jahr.haushaltsjahr|jahr}} rechnet die Stadt mit {{schulden.gesamt.2026|mio}} oder {{schulden.pro_kopf.2026|euro}} pro Kopf. Allein {{jahr.haushaltsjahr|jahr}} sollen neue Investitionskredite über {{gfp.kreditaufnahme.2026|mio}} aufgenommen werden.
 
 ## verpflichtungsermaechtigungen
 Titel: Verpflichtungsermächtigungen – Geld für später
 Quelle: S. 7, S. 586
 
-Eine Verpflichtungsermächtigung erlaubt es Hörstel, schon heute einen Vertrag für eine Investition abzuschließen, auch wenn das Geld erst in einem späteren Haushaltsjahr fließt. Der Rat hat dafür insgesamt {{ve.gesamt|mio}} genehmigt (§ 3 der Satzung). Davon werden {{ve.faellig.2027|mio}} im Jahr 2027, {{ve.faellig.2028|mio}} im Jahr 2028 und {{ve.faellig.2029|mio}} im Jahr 2029 fällig. Der größte Einzelposten ist der Neubau eines Verwaltungsgebäudes. Diese Beträge belasten die Haushalte der späteren Jahre, nicht den von {{jahr.haushaltsjahr|jahr}}.
+Eine Verpflichtungsermächtigung erlaubt es Hörstel, schon heute einen Vertrag für eine Investition abzuschließen, auch wenn das Geld erst in einem späteren Haushaltsjahr fließt. Der Rat hat dafür insgesamt {{ve.gesamt|mio}} genehmigt (§ 3 der Satzung). Davon werden {{ve.faellig.2027|mio}} im Jahr {{jahr.haushaltsjahr_plus_1|jahr}}, {{ve.faellig.2028|mio}} im Jahr {{jahr.haushaltsjahr_plus_2|jahr}} und {{ve.faellig.2029|mio}} im Jahr {{jahr.letztes_jahr|jahr}} fällig. Der größte Einzelposten ist der Neubau eines Verwaltungsgebäudes. Diese Beträge belasten die Haushalte der späteren Jahre, nicht den von {{jahr.haushaltsjahr|jahr}}.
 
 ## nicht_im_haushalt
 Titel: Was nicht im Haushalt steht – die Beteiligungen der Stadt

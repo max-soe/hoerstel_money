@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { euroKurz, jahr as formatJahr, prozent } from '@/charts/format'
+import { euroKurz, jahr as formatJahr, kurzMitHinweis, prozent } from '@/charts/format'
 import BerechnetEtikett from '@/components/BerechnetEtikett.vue'
 import KennzahlKachel from '@/components/KennzahlKachel.vue'
 import { haushalt } from '@/data/daten'
 import { klAnteil } from '@/lib/bindungsgrad'
+import { quellenZeile } from '@/lib/hilfsfunktionen'
 import { wertartFuerJahr, wertartName } from '@/lib/jahr'
-import { quellenZeile } from '@/lib/kennzahlen'
 import { nichtBeeinflussbar } from '@/lib/zuschuesse'
 
 // RAT-02, D-02: große Posten, die der Rat nicht steuern kann. Die Kacheln nennen nur Betrag,
@@ -54,7 +54,7 @@ const kacheln = computed(() =>
   posten.value.posten.map((p) => ({
     schluessel: p.schluessel,
     bezeichnung: p.name,
-    wert: p.wert === null ? '' : `rd. ${euroKurz(p.wert)}`,
+    wert: p.wert === null ? '' : kurzMitHinweis(p.wert, p.gerundet),
     quelle: p.beleg ?? undefined,
     zeile:
       p.pdfSeite === null
