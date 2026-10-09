@@ -41,7 +41,7 @@ const listenSegmente = [
 ]
 const listenLead = mitBindungsgrad
   ? 'Öffne einen Bindungsgrad, um seine Produkte mit dem Zuschussbedarf zu sehen.'
-  : `Öffne die Liste, um die Produkte mit ihrem Zuschussbedarf zu sehen. ${finanzierungsName} (Steuern und Schlüsselzuweisung) bringt Geld ein, das diese Kosten bezahlt, und steht deshalb nicht darin.`
+  : `Öffne die Liste, um die Produkte mit ihrem Zuschussbedarf zu sehen. Das Produkt „${finanzierungsName}“ mit Steuern und Schlüsselzuweisung bringt Geld ein, das diese Kosten bezahlt, und steht deshalb nicht darin.`
 </script>
 
 <template>
@@ -54,8 +54,8 @@ const listenLead = mitBindungsgrad
         <BindungsgradBalken :modell="bindungsgrad" :wertart-text="wertartText" />
         <template #fuss>
           <p class="om-rat-entscheidet__hinweis">
-            Im Balken stehen nur Produkte, die mehr kosten, als sie selbst einnehmen.
-            {{ finanzierungsName }} (Steuern und Schlüsselzuweisung) bringt Geld ein, das diese
+            Im Balken stehen nur Produkte, die mehr kosten, als sie selbst einnehmen. Das Produkt
+            „{{ finanzierungsName }}“ mit Steuern und Schlüsselzuweisung bringt Geld ein, das diese
             Kosten bezahlt, und steht deshalb nicht im Balken. Die Summe im Balken ist deshalb nicht
             der Zuschussbedarf des ganzen Haushalts.
           </p>
@@ -88,7 +88,14 @@ const listenLead = mitBindungsgrad
       />
     </section>
     <UeberschussListe :produkte="bindungsgrad.ueberschuss" :wertart-text="wertartText" />
-    <NichtBeeinflussbarBlock :balken-summe="bindungsgrad.summe" />
+    <NichtBeeinflussbarBlock
+      :balken-summe="bindungsgrad.summe"
+      :vergleichs-bezug="
+        mitBindungsgrad
+          ? 'der Summe im Balken oben'
+          : 'dem Zuschussbedarf aller Produkte in der Liste oben'
+      "
+    />
     <ZuschussListe />
     <HinweisNichtImHaushalt variante="kurz" />
   </div>

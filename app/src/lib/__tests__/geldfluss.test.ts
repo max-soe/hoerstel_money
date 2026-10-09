@@ -6,6 +6,7 @@ import { euro, jahr as formatiereJahr } from '@/charts/format'
 import { haushalt, texte } from '@/data/daten'
 import {
   baueGeldfluss,
+  sankeyHoehe,
   betragMitHinweis,
   baueGeldflussBalken,
   geldflussOption,
@@ -526,5 +527,24 @@ describe('welcheLesetexte: jahrpassende Erklärtexte (D-11, Pitfall 6, T-05-34)'
       'geldfluss_lesehilfe',
       'defizit_ruecklagen',
     ])
+  })
+})
+
+describe('sankeyHoehe (Beschriftungen ohne Überlappung)', () => {
+  it('ist mindestens 640 px und wächst mit der volleren Seite um 52 px je Knoten', () => {
+    for (const index of haushalt.jahre.keys()) {
+      const fluss = baueGeldfluss(index)
+      const rechts = fluss.knoten.filter((k) => k.seite === 'rechts').length
+      const links = fluss.knoten.filter((k) => k.seite === 'links').length
+      expect(sankeyHoehe(fluss)).toBe(Math.max(640, Math.max(links, rechts) * 52))
+    }
+    const leer: Geldfluss = {
+      knoten: [],
+      kanten: [],
+      summeLinks: 0,
+      summeRechts: 0,
+      pdfSeite: null,
+    }
+    expect(sankeyHoehe(leer)).toBe(640)
   })
 })

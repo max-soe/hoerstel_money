@@ -36,6 +36,9 @@ const ZEILENHOEHE = 40
 /** Platz für Wertachse und Ränder in px (UI-SPEC E3 overflow). */
 const RAHMENHOEHE = 48
 /** Breite der Kategoriebeschriftung in px; längere Namen brechen um (UI-SPEC E3 long-text). */
+/** Zeilenhöhe der Namen an der Kategorienachse in px (zwei Zeilen passen in 40 px). */
+const NAMEN_ZEILENHOEHE = 16
+
 const NAMEN_BREITE = 160
 /** Schmalere Kategoriebeschriftung bis 699 px, damit neben der Beschriftung noch Balken bleiben. */
 const NAMEN_BREITE_SCHMAL = 140
@@ -132,6 +135,12 @@ export function horizontaleBalkenOption(
       axisLabel: {
         width: schmal ? NAMEN_BREITE_SCHMAL : NAMEN_BREITE,
         overflow: 'break',
+        // Höchstens zwei Zeilen je Balken (Zeilenhöhe 40 px), danach „…“: lange Namen (z. B.
+        // Hörsteler Maßnahmen) überlappen sonst die Nachbarzeilen. Der volle Name steht im
+        // Tooltip und in der Tabelle.
+        lineHeight: NAMEN_ZEILENHOEHE,
+        height: 2 * NAMEN_ZEILENHOEHE,
+        lineOverflow: 'truncate',
         interval: 0,
       },
     },

@@ -1,6 +1,17 @@
+import { readFileSync } from 'node:fs'
+
 import { expect, test, type Page } from '@playwright/test'
 
 import { routen } from './routen'
+
+// Seitenformate und Rechtecke der Belege, für die Wahl einer Querformatseite (keine Seitenzahl
+// ist getippt).
+const quellen = JSON.parse(
+  readFileSync(new URL('../src/data/quellen.json', import.meta.url), 'utf-8'),
+) as {
+  seiten: Record<string, { breite: number; hoehe: number }>
+  belege: Record<string, { pdf_seite: number; bbox: number[] | null }>
+}
 
 // Nutzbarkeit bei 360 × 640 (A11Y-03, Projekt `mobil`, nicht im CI-Smoke-Pfad, D-12):
 // - kein waagerechtes Scrollen der Seite (`scrollWidth <= innerWidth`),
@@ -224,18 +235,41 @@ test.describe('360 × 640 mit geöffneter Leiste und geöffnetem Menü (A11Y-03)
   test('eine Querformatseite scrollt nur im eigenen Rahmen, nicht die Seite', async ({ page }) => {
     await page.goto('/#/stellenplan')
     await expect(page.locator('h1')).toBeVisible()
-    const bereich = page
-      .locator('wa-details')
-      .filter({ has: page.locator('.om-quelle-knopf') })
-      .first()
-    await bereich.locator('summary').click()
-    await page
-      .locator('table')
-      .getByRole('button', { name: /^Quelle anzeigen: / })
-      .first()
-      .click()
+    // Alle Tabellenbereiche mit Quelle-Knöpfen öffnen und den ersten Quelle-Knopf der Seite wählen,
+    // dessen Seite laut quellen.json im Querformat liegt (Ostbevern: die Stellenplantabellen,
+    // Hörstel: die Stellenübersicht, z. B. die Nachwuchskräfte).
+    const bereiche = page.locator('wa-details').filter({ has: page.locator('.om-quelle-knopf') })
+    for (let index = 0; index < (await bereiche.count()); index += 1) {
+      await bereiche.nth(index).locator('summary').click()
+    }
+    const knoepfe = page.getByRole('button', { name: /^Quelle anzeigen: .*PDF-Seite \d+$/ })
+    let gewaehlt = -1
+    let seite = 0
+    for (let index = 0; index < (await knoepfe.count()); index += 1) {
+      const name = (await knoepfe.nth(index).getAttribute('aria-label')) ?? ''
+      const nummer = Number(/PDF-Seite (\d+)$/.exec(name)?.[1])
+      const masse = quellen.seiten[String(nummer)]
+      if (masse !== undefined && masse.breite > masse.hoehe) {
+        gewaehlt = index
+        seite = nummer
+        break
+      }
+    }
+    // Hörstel belegt die Stellenübersicht im Querformat (S. 570–574) nur per Fußnote; dann gibt
+    // es auf /stellenplan keinen Knopf zu einer Querformatseite, und der Fall ist nicht prüfbar.
+    test.skip(
+      gewaehlt < 0,
+      'Kein Quelle-Knopf auf /stellenplan zeigt auf eine Querformatseite dieses Jahrgangs',
+    )
+    await knoepfe.nth(gewaehlt).click()
     await expect(page.locator('#om-quelle-drawer img.om-quelle-seite__bild')).toBeVisible()
-    await expect(page.locator('#om-quelle-drawer .om-quelle-seite__markierung')).toBeVisible()
+    const mitRechteck = Object.entries(quellen.belege).some(
+      ([schluessel, beleg]) =>
+        schluessel.startsWith('sp:') && beleg.pdf_seite === seite && beleg.bbox !== null,
+    )
+    if (mitRechteck) {
+      await expect(page.locator('#om-quelle-drawer .om-quelle-seite__markierung')).toBeVisible()
+    }
     await warteAufRuhe(page)
 
     const lage = await page.evaluate(() => {

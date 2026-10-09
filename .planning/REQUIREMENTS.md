@@ -27,7 +27,7 @@ Grundlage: `discussion/HOERSTEL_MACHBARKEIT.md` (Strukturvergleich ProFIS+/IKVS,
 - [x] **HOE-10**: Stellenplan, Fraktionszuwendungen und Eigenkapitalentwicklung (Bildseiten ohne Textebene) manuell mit Seitenbeleg erfasst
 - [x] **HOE-11**: Manuelle Vorberichtsdaten, `meta.json` (Einwohnerzahl Hörstel), Eckwerte in der Sollwertdatei und Erklärtexte für Hörstel
 - [x] **HOE-12**: `alle.py` läuft für Hörstel durch; `daten/` und `app/src/data/` stammen aus Hörstel; die CI-Reproduzierbarkeit prüft den Hörsteler Jahrgang
-- [ ] **HOE-13**: App-Texte, Namen und Links auf Hörstel umgestellt (Stadt statt Gemeinde, PDF-Link, Repository, Deployment)
+- [x] **HOE-13**: App-Texte, Namen und Links auf Hörstel umgestellt (Stadt statt Gemeinde, PDF-Link, Repository, Deployment)
 - [x] **HOE-14**: Hörsteler Sollwertdatei mit PB-Teilergebnisplänen und Produktverzeichnis (die Eckwerte folgen mit HOE-11)
 
 ## Traceability
@@ -47,7 +47,7 @@ Grundlage: `discussion/HOERSTEL_MACHBARKEIT.md` (Strukturvergleich ProFIS+/IKVS,
 | HOE-10 | Phase 11 | Complete |
 | HOE-11 | Phase 11 | Complete |
 | HOE-12 | Phase 11 | Complete |
-| HOE-13 | Phase 12 | Pending |
+| HOE-13 | Phase 12 | Complete |
 
 ---
 *Last updated: 2026-10-09*

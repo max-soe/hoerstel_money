@@ -18,7 +18,7 @@ Die vollständige fachliche Spezifikation steht in `discussion/SPEZIFIKATION.md`
 
 Ziel: Die App erklärt den Haushalt 2026 der Stadt Hörstel. Phasen 8–12 in `ROADMAP.md`, Anforderungen HOE-01 bis HOE-14 in `REQUIREMENTS.md`. Der Meilenstein wird ohne GSD-Befehle bearbeitet und von Hand nachgeführt.
 
-Stand (2026-10-09): Phasen 8 bis 11 abgeschlossen. Der Jahrgang 2026 ist Hörstel (`software = "ikvs"`). `alle.py` liest alle 592 Seiten (16 PB, 50 PG, 69 Produkte), übernimmt die abgeschriebenen Bildseiten und Vorberichtsdaten aus `daten/manuell/` und schreibt `daten/`, `app/src/data/` und die Belegbilder; alle 10 Prüfregeln sind grün, 38 im PDF gedruckte Abweichungen sind in `befunde.md` belegt. Ostbevern bleibt als ProFIS+-Referenz unter `pipeline/referenz/ostbevern/` (`PIPELINE_REFERENZ`) und `raw_data/ostbevern/` testbar. Die App ist noch auf Ostbevern zugeschnitten (Phase 12).
+Stand (2026-10-09): Phasen 8 bis 12 abgeschlossen. Der Jahrgang 2026 ist Hörstel (`software = "ikvs"`). `alle.py` liest alle 592 Seiten (16 PB, 50 PG, 69 Produkte), übernimmt die abgeschriebenen Bildseiten und Vorberichtsdaten aus `daten/manuell/` und schreibt `daten/`, `app/src/data/` und die Belegbilder; alle 10 Prüfregeln sind grün, 38 im PDF gedruckte Abweichungen sind in `befunde.md` belegt. Ostbevern bleibt als ProFIS+-Referenz unter `pipeline/referenz/ostbevern/` (`PIPELINE_REFERENZ`) und `raw_data/ostbevern/` testbar. Die App erklärt den Hörsteler Haushalt (Phase 12): Name und Art der Kommune kommen aus `[layout.kommune]`, Impressum Max Soest, PDF-Link auf hoerstel.de; vitest, Browser-Tests mit axe und Sichtprüfung sind grün.
 
 ## Backlog (nach v2.0)
 
@@ -77,13 +77,14 @@ Jede Zahl in der App ist korrekt aus dem Haushalts-PDF abgeleitet und durch auto
 - ✓ Erläuterungen als Blöcke je Teilergebnisplan-Zeile mit Ansatz 2026 (HOE-07) — Phase 10
 - ✓ Investitionsübersichten (188 Maßnahmen) mit Saldo-Gegenproben, Regel 6 nur mit belegten Abweichungen (HOE-08) — Phase 10
 - ✓ Haushaltsquerschnitte je PG und Gesamthaushalt, Regel 7 ohne Abweichung (HOE-09) — Phase 10
+- ✓ App auf Hörstel umgestellt: Daten, Tests, Texte, Namen, Impressum, PDF-Link, Browser-Tests (HOE-13) — Phase 12
 
 ### Out of Scope
 
 - Spiele (Planspiel, Was kostet …?, Schätzduell) — auf v2 verschoben; v1 endet mit den Kontextseiten. Planspiel-Rechenregeln (Hebesatzwirkung auf Umlagen/Schlüsselzuweisung) müssen vorher fachlich geklärt werden
 - Andere Haushaltsjahre außer den Spalten im PDF 2026 — v1 ist ein Jahrgang; die Pipeline wird aber für spätere Jahrgänge vorbereitet
 - Backend, Nutzerkonten — alles statisch auf GitHub Pages
-- Tiefe Darstellung der Wirtschaftspläne BBO (Hallenbad) und TEO AöR (Abwasser) — nur Hinweis „Was nicht im Haushalt steht“; eigene Seite ggf. in einer späteren Version
+- Tiefe Darstellung der Wirtschaftspläne eigener Gesellschaften (Ostbevern: BBO, TEO AöR; Hörstel: Hörsteler Energie GmbH, Stadtmarketing Hörstel UG) — nur Hinweis „Was nicht im Haushalt steht“; eigene Seite ggf. in einer späteren Version
 - Fachbereichsbudgets (S. 377–400) — organisatorische Doppelung der Produktsicht
 - Gehaltsschätzung im Stellenplan — bewusst einfacher als Münsters Stellenatlas
 - CSV-Verarbeitung im Browser — die App liest nur generierte JSON-Dateien

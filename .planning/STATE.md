@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: Hörstel
 status: In progress
-stopped_at: Phase 12, Plan 03 complete (von Hand gepflegt, ohne GSD-Befehle)
+stopped_at: Phase 12 complete (Milestone v2.0) (von Hand gepflegt, ohne GSD-Befehle)
 last_updated: "2026-10-09T00:00:00.000Z"
 last_activity: 2026-10-09
-last_activity_desc: 12-03 abgeschlossen (Name der Kommune aus den Daten, Texte, Impressum, PDF-Link, README)
+last_activity_desc: 12-04 abgeschlossen (Browser-Tests, Sichtprüfung, Darstellungsfehler behoben); Phase 12 und v2.0 fertig
 progress:
   total_phases: 5
   completed_phases: 4
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-09)
 ## Current Position
 
 Milestone: v2.0 Hörstel (Phases 8-12)
-Phase: 12 of 8-12 (App auf Hörstel umstellen) — Plans 01–03 complete
+Phase: 12 of 8-12 (App auf Hörstel umstellen) — complete
 Plan: 11-05 complete
-Status: Ready for 12-04 (Browser-Tests und Sichtprüfung)
-Last activity: 2026-10-09 — 12-03 abgeschlossen
+Status: Milestone v2.0 complete — bereit für Merge nach main und Veröffentlichung
+Last activity: 2026-10-09 — Phase 12 abgeschlossen
 
 Hinweis: Dieser Meilenstein wird in einer Cloud-Session ohne GSD-Befehle bearbeitet. ROADMAP, REQUIREMENTS, STATE und die Phasen-Summaries unter `.planning/phases/` werden von Hand nachgeführt; PLAN-, VERIFICATION- und UAT-Dateien gibt es für diese Phasen nicht.
 
@@ -79,7 +79,7 @@ None.
 ### Blockers/Concerns
 
 Aus v2.0:
-- Die App ist auf Hörstel umgestellt (Daten, Tests, Texte, Impressum, PDF-Link; Stand 12-03). Offen: Browser-Tests und Sichtprüfung (12-04), Prüfung des PDF-Links mit `#page=n` im Browser. Die CI läuft nur für `main` und Pull Requests.
+- Die App ist auf Hörstel umgestellt und geprüft (vitest, Playwright mit axe, Sichtprüfung; Stand 12-04). Offen: Lighthouse-Lauf (Docker), PDF-Link mit `#page=n` von Hand prüfen, Merge nach `main` für die Veröffentlichung; die CI läuft nur für `main` und Pull Requests.
 - Quellenbelege Hörstel: 899 von 2.768 Belegen ohne Markierung (597 davon berechnete Produktgruppen-Zeilen, 171 Stellenplan auf Bildseiten, Rest Vorberichtsgrafiken und umbrochene Tabellenzeilen); die App zeigt dann die Seite ohne Markierung.
 - Hörstel druckt Ist-Ergebnisse 2024 mit Cent; gerundet wird kaufmännisch auf Euro (Rundungsbefunde in `befunde.md`).
 
@@ -104,7 +104,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-10-08
-Stopped at: Phase 12, Plan 03 complete
+Stopped at: Phase 12 complete
 Resume file: .planning/phases/11-manuelle-daten-und-app-daten-hoerstel/11-05-SUMMARY.md
 
 ## Operator Next Steps

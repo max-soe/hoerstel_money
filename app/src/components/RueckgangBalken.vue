@@ -73,7 +73,8 @@ const option = computed<EChartsOption>(() => {
     yAxis: {
       type: 'value',
       min: 0,
-      max: achsenMaximum,
+      // Ohne Schwellenlinie wählt ECharts ein rundes Maximum (sonst überlappen die obersten Achsenwerte).
+      max: schwellen === null ? undefined : achsenMaximum,
       axisLabel: { formatter: (wert: number) => prozent(wert) },
     },
     tooltip: {

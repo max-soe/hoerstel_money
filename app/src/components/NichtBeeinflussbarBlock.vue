@@ -15,10 +15,15 @@ import { nichtBeeinflussbar } from '@/lib/zuschuesse'
 // Die Kacheln der Weitergabe an Kreis und Land stammen aus `lib/kreisumlage.ts` und zeigen
 // dieselben Werte wie /ausgaben.
 
-const props = defineProps<{
-  /** Summe aller Segmente des Bindungsgrad-Balkens in Euro; ohne Angabe entfällt der Vergleichssatz. */
-  balkenSumme?: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** Summe aller Segmente des Bindungsgrad-Balkens in Euro; ohne Angabe entfällt der Vergleichssatz. */
+    balkenSumme?: number
+    /** Worauf sich der Anteil bezieht; ohne Bindungsgrad-Balken (Hörstel) die Produktliste. */
+    vergleichsBezug?: string
+  }>(),
+  { balkenSumme: undefined, vergleichsBezug: 'der Summe im Balken oben' },
+)
 
 defineSlots<{
   /** Platz für weitere Hinweise unter dem Vergleichssatz. */
@@ -83,7 +88,7 @@ const kacheln = computed(() =>
     <div class="om-nicht-beeinflussbar__vergleich">
       <p v-if="vergleich !== null" class="om-nicht-beeinflussbar__satz">
         Die Weitergabe an Kreis und Land beträgt {{ vergleich.betrag }}. Das entspricht
-        {{ vergleich.anteil }}<BerechnetEtikett /> der Summe im Balken oben.
+        {{ vergleich.anteil }}<BerechnetEtikett /> {{ vergleichsBezug }}.
       </p>
       <slot name="vergleich" />
     </div>

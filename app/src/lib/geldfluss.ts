@@ -488,6 +488,81 @@ function tooltipInhalt(
   return null
 }
 
+/** Mindesthöhe des Sankey in px (UI-SPEC) und Platz je Knoten der volleren Seite. */
+const SANKEY_MINDESTHOEHE = 640
+const SANKEY_PLATZ_JE_KNOTEN = 52
+
+/**
+ * Höhe des Sankey: mindestens 640 px, bei vielen Knoten auf einer Seite (Hörstel: 16
+ * Aufgabenbereiche, Kreis und Land, Zinsen, Differenz) etwa 52 px je Knoten, damit die
+ * zweizeiligen Beschriftungen nicht übereinanderliegen.
+ */
+export function sankeyHoehe(geldfluss: Geldfluss): number {
+  const anzahl = (seite: KnotenSeite) => geldfluss.knoten.filter((k) => k.seite === seite).length
+  return Math.max(
+    SANKEY_MINDESTHOEHE,
+    Math.max(anzahl('links'), anzahl('rechts')) * SANKEY_PLATZ_JE_KNOTEN,
+  )
+}
+
+/** Rand, Knotenabstand und Beschriftung des Sankey (müssen zu `geldflussOption` passen). */
+const SANKEY_OBEN = 44
+const SANKEY_UNTEN = 16
+const SANKEY_KNOTENABSTAND = 8
+const BESCHRIFTUNG_ZEILENHOEHE = 18
+/** Zeichen je Zeile bei 160 px Umbruchbreite und 14 px Schrift (geschätzt, eher knapp). */
+const BESCHRIFTUNG_ZEICHEN_JE_ZEILE = 19
+
+/** Geschätzte Höhe der Beschriftung „{Name}\n{Betrag}“ in px. */
+function beschriftungsHoehe(knoten: GeldflussKnoten): number {
+  const namensZeilen = Math.max(1, Math.ceil(knoten.name.length / BESCHRIFTUNG_ZEICHEN_JE_ZEILE))
+  return (namensZeilen + 1) * BESCHRIFTUNG_ZEILENHOEHE
+}
+
+/**
+ * IDs der Knoten, deren Beschriftung Platz hat. Die Knoten stehen je Seite in Datenreihenfolge
+ * übereinander (`layoutIterations: 0`), ihre Höhe folgt dem Betrag; wie ECharts wird mit dem
+ * kleinsten Maßstab aller Spalten skaliert. Beschriftungen werden je Seite nach Betrag vergeben;
+ * eine, die eine schon vergebene überdecken würde, entfällt (die Mitte hat nur einen Knoten). Name und Betrag stehen dann
+ * weiter im Tooltip und in den Tabellen unter dem Diagramm.
+ */
+export function beschriftbareKnoten(geldfluss: Geldfluss, hoehe: number): Set<string> {
+  const nutzbar = hoehe - SANKEY_OBEN - SANKEY_UNTEN
+  const seiten: KnotenSeite[] = ['links', 'mitte', 'rechts']
+  const spalten = seiten.map((seite) => geldfluss.knoten.filter((k) => k.seite === seite))
+  const massstab = Math.min(
+    ...spalten
+      .filter((spalte) => spalte.length > 0)
+      .map((spalte) => {
+        const summe = spalte.reduce((s, k) => s + k.wert, 0)
+        return summe <= 0
+          ? Infinity
+          : (nutzbar - (spalte.length - 1) * SANKEY_KNOTENABSTAND) / summe
+      }),
+  )
+  const sichtbar = new Set<string>()
+  for (const spalte of spalten) {
+    // Lage jeder Beschriftung (zentriert am Knoten), dann Vergabe nach Betrag: große Knoten
+    // zuerst, eine Beschriftung nur, wenn sie keine schon vergebene überdeckt.
+    let oben = SANKEY_OBEN
+    const lagen = spalte.map((knoten) => {
+      const knotenHoehe = knoten.wert * massstab
+      const mitte = oben + knotenHoehe / 2
+      const halbe = beschriftungsHoehe(knoten) / 2
+      oben += knotenHoehe + SANKEY_KNOTENABSTAND
+      return { knoten, von: mitte - halbe, bis: mitte + halbe }
+    })
+    const vergeben: { von: number; bis: number }[] = []
+    for (const lage of [...lagen].sort((a, b) => b.knoten.wert - a.knoten.wert)) {
+      if (vergeben.every((andere) => lage.bis <= andere.von || lage.von >= andere.bis)) {
+        vergeben.push(lage)
+        sichtbar.add(lage.knoten.id)
+      }
+    }
+  }
+  return sichtbar
+}
+
 /**
  * Sankey-Option (UI-SPEC „Sankey“): 640 px Diagramm, Knotenbreite 16, Abstand 8, Fluss in der
  * Farbe der Quelle bei 35 % Deckkraft, Hervorhebung des Pfades samt Nachbarn, Knoten nicht
@@ -498,8 +573,10 @@ function tooltipInhalt(
 export function geldflussOption(
   geldfluss: Geldfluss,
   text: { wertartText: string },
+  hoehe: number = sankeyHoehe(geldfluss),
 ): EChartsOption {
   const nachId = new Map(geldfluss.knoten.map((k) => [k.id, k] as const))
+  const beschriftet = beschriftbareKnoten(geldfluss, hoehe)
 
   return {
     tooltip: {
@@ -515,10 +592,10 @@ export function geldflussOption(
         type: 'sankey',
         left: 176,
         right: 176,
-        top: 44,
-        bottom: 16,
+        top: SANKEY_OBEN,
+        bottom: SANKEY_UNTEN,
         nodeWidth: 16,
-        nodeGap: 8,
+        nodeGap: SANKEY_KNOTENABSTAND,
         draggable: false,
         layoutIterations: 0,
         orient: 'horizontal',
@@ -534,18 +611,19 @@ export function geldflussOption(
           overflow: 'break',
           distance: 6,
           fontSize: 14,
-          lineHeight: 18,
+          lineHeight: BESCHRIFTUNG_ZEILENHOEHE,
           formatter: (params: unknown) => {
             const knoten = istObjekt(params) ? params.name : undefined
             const eintrag = typeof knoten === 'string' ? nachId.get(knoten) : undefined
-            if (eintrag === undefined) {
+            if (eintrag === undefined || !beschriftet.has(eintrag.id)) {
               return ''
             }
             const betrag = euroKurz(eintrag.wert)
             return `${eintrag.name}\n${eintrag.gerundet ? `${RD_PRAEFIX}${betrag}` : betrag}`
           },
         },
-        labelLayout: { hideOverlap: false, moveOverlap: 'shiftY' },
+        // Überlappungen verhindert `beschriftbareKnoten`; ECharts verschiebt nichts mehr.
+        labelLayout: { hideOverlap: false },
         data: geldfluss.knoten.map((k) => ({
           name: k.id,
           depth: TIEFE[k.seite],

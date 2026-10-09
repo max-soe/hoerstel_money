@@ -291,7 +291,10 @@ test.describe('Weitere Auslöser der Seitenleiste', () => {
     await expect(knopf).toBeFocused()
   })
 
-  test('eine Stellenplan-Zeile öffnet eine Querformatseite mit der Markierung im Bild', async ({
+  // Ostbevern druckt den Stellenplan als Textseiten im Querformat mit markierbaren Zeilen; Hörstel
+  // als Bildseiten (hoch und quer) ohne Textebene, deren Werte abgeschrieben sind und keine
+  // Markierung tragen. Seitenformat und Markierung erwartet der Test deshalb aus quellen.json.
+  test('eine Stellenplan-Zeile öffnet ihre Seite im Format der Daten, markiert nur mit Rechteck', async ({
     page,
   }) => {
     await page.goto('/#/stellenplan')
@@ -312,7 +315,14 @@ test.describe('Weitere Auslöser der Seitenleiste', () => {
     const seite = await seiteDesKnopfs(knopf)
     const masse = quellen.seiten[String(seite)]
     expect(masse, `Seite ${String(seite)} fehlt unter seiten in quellen.json`).toBeDefined()
-    expect(masse?.breite ?? 0).toBeGreaterThan(masse?.hoehe ?? Infinity)
+    const seitenverhaeltnis = (masse?.breite ?? 0) / (masse?.hoehe ?? Infinity)
+    const stellenBelege = Object.entries(quellen.belege).filter(
+      ([schluessel, beleg]) => schluessel.startsWith('sp:') && beleg.pdf_seite === seite,
+    )
+    expect(stellenBelege.length).toBeGreaterThan(0)
+    const mitRechteck = stellenBelege.filter(([, beleg]) => beleg.bbox !== null).length
+    // Je Seite einheitlich: alle Stellenbelege mit oder alle ohne Rechteck.
+    expect([0, stellenBelege.length]).toContain(mitRechteck)
 
     await knopf.click()
     await expect(
@@ -328,8 +338,14 @@ test.describe('Weitere Auslöser der Seitenleiste', () => {
             : 0,
         ),
       )
-      .toBeGreaterThan(1)
-    await pruefeMarkierungImBild(page)
+      .toBeCloseTo(seitenverhaeltnis, 1)
+    if (mitRechteck > 0) {
+      await pruefeMarkierungImBild(page)
+    } else {
+      const leiste = page.locator('#om-quelle-drawer')
+      await expect(leiste.getByText('Zeile nicht automatisch markiert')).toBeVisible()
+      await expect(leiste.locator('.om-quelle-seite__markierung')).toHaveCount(0)
+    }
   })
 
   test('ein Beleg nur mit Seite nennt „Zeile nicht automatisch markiert“ und zeichnet keine Markierung', async ({

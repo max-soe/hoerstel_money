@@ -30,7 +30,7 @@ Die Phasen werden ohne GSD-Befehle bearbeitet und hier von Hand nachgeführt.
 - [x] **Phase 9: IKVS-Seiten und Teilpläne** — Seitenklassifikation ohne Kopfzeile, Hierarchie 2/5/7-stellig, Teilergebnis- und Teilfinanzpläne, Regeln 1–3, Sollwerte je PB (HOE-04, HOE-05, HOE-14) (completed 2026-10-08)
 - [x] **Phase 10: IKVS-Details** — Produktinformationen ohne Personennamen, Erläuterungen, Investitionsübersichten mit VE, Haushaltsquerschnitte (HOE-06 bis HOE-09) (completed 2026-10-08)
 - [x] **Phase 11: Manuelle Daten und App-Daten Hörstel** — Bildseiten (Stellenplan, Fraktionen, Eigenkapital) manuell, Vorberichtsdaten, `meta.json`, Texte; `alle.py` und CI auf Hörstel (HOE-10 bis HOE-12) (completed 2026-10-09)
-- [ ] **Phase 12: App auf Hörstel umstellen** — Texte, Namen, Links, Deployment (HOE-13)
+- [x] **Phase 12: App auf Hörstel umstellen** — Texte, Namen, Links, Deployment (HOE-13)
 
 ## Phase Details
 
@@ -74,4 +74,4 @@ Die Phasen werden ohne GSD-Befehle bearbeitet und hier von Hand nachgeführt.
 - [x] 12-01: App lädt die Hörsteler Daten: Typen, optionale Ostbevern-Strukturen (Kita, Einzelzuschüsse, Konzessions-Sparten, HSK-Schwellen, Bindungsgrad, Steuer-Zeitreihen), Eigenkapitalstände zum Jahresende, Maßnahmen ohne Sachkonto
 - [x] 12-02: App-Tests auf die Hörsteler Daten
 - [x] 12-03: Texte, Namen und Links (Stadt Hörstel, PDF, Repository, Impressum), README, Deployment
-- [ ] 12-04: Browser-Tests (Playwright, axe, Kachelbreiten) und Sichtprüfung
+- [x] 12-04: Browser-Tests (Playwright, axe, Kachelbreiten) und Sichtprüfung

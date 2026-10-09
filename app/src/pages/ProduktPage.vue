@@ -88,7 +88,17 @@ const investitionen = computed(() => baueInvestitionenTabelle(baueProduktInvesti
         </ul>
       </section>
 
-      <section class="om-produkt__abschnitt" aria-labelledby="om-produkt-blick">
+      <section
+        v-if="
+          produkt.bindungsgrad ||
+          produkt.gremium ||
+          produkt.fachbereich ||
+          produkt.auftragsgrundlage ||
+          produkt.zielgruppe
+        "
+        class="om-produkt__abschnitt"
+        aria-labelledby="om-produkt-blick"
+      >
         <h2 id="om-produkt-blick">Auf einen Blick</h2>
         <dl class="om-produkt__blick">
           <div v-if="produkt.bindungsgrad">
@@ -107,6 +117,14 @@ const investitionen = computed(() => baueInvestitionenTabelle(baueProduktInvesti
           <div v-if="produkt.fachbereich">
             <dt>Fachbereich</dt>
             <dd>{{ produkt.fachbereich }}</dd>
+          </div>
+          <div v-if="produkt.auftragsgrundlage">
+            <dt>Auftragsgrundlage</dt>
+            <dd>{{ produkt.auftragsgrundlage }}</dd>
+          </div>
+          <div v-if="produkt.zielgruppe">
+            <dt>Zielgruppe</dt>
+            <dd>{{ produkt.zielgruppe }}</dd>
           </div>
         </dl>
       </section>
@@ -203,6 +221,22 @@ const investitionen = computed(() => baueInvestitionenTabelle(baueProduktInvesti
 
 .om-produkt__zurueck {
   margin-bottom: var(--wa-space-m);
+  max-width: 100%;
+}
+
+/* Lange Produktgruppennamen (z. B. „Verwaltungssteuerung und Service“) brechen um, statt die
+   Seite ab 360 px waagerecht scrollen zu lassen (A11Y-03); die Zielfläche bleibt 44 px hoch. */
+.om-produkt__zurueck::part(base) {
+  height: auto;
+  min-height: 44px;
+  white-space: normal;
+  text-align: start;
+}
+
+.om-produkt__zurueck::part(label) {
+  white-space: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .om-produkt__abschnitt h2 {

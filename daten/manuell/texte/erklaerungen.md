@@ -146,7 +146,7 @@ Der Vorbericht verlangt, freiwillige Leistungen auf ihre Notwendigkeit und ihren
 Titel: Produkte, die mehr einbringen, als sie kosten
 Quelle: S. 412, S. 434
 
-Diese Produkte nehmen mehr ein, als sie kosten. Sie brauchen keinen Zuschuss aus Steuern und allgemeinen Zuweisungen und stehen deshalb nicht im Balken.
+Diese Produkte nehmen mehr ein, als sie kosten. Sie brauchen keinen Zuschuss aus Steuern und allgemeinen Zuweisungen und stehen deshalb nicht bei den Produkten mit Zuschussbedarf.
 
 Der Überschuss ist kein Gewinn der Stadt. Er senkt den Betrag, der für die übrigen Aufgaben aufgebracht werden muss.
 
