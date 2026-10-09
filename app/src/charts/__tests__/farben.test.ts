@@ -14,6 +14,7 @@ import {
   farbeFuerPb,
   mitDeckkraft,
 } from '@/charts/echartsTheme'
+import { BINDUNGSGRADE, OHNE_ANGABE } from '@/lib/bindungsgrad'
 
 // WCAG-2.x-Kontrast: relative Luminanz nach sRGB-Linearisierung.
 function luminanz(hex: string): number {
@@ -31,12 +32,22 @@ function kontrast(vordergrund: string, hintergrund: string): number {
 const pbCodes = haushalt.knoten.filter((knoten) => knoten.ebene === 'PB').map((k) => k.code)
 
 describe('PB_FARBEN (D-08)', () => {
-  it('deckt jeden PB-Knoten der Haushaltsdaten ab (15 PB und KL)', () => {
-    expect(pbCodes).toHaveLength(16)
+  it('deckt jeden PB-Knoten der Haushaltsdaten ab (Aufgabenbereiche und KL)', () => {
+    expect(pbCodes.length).toBeGreaterThan(1)
+    expect(pbCodes).toContain('KL')
     for (const code of pbCodes) {
       expect(farbeFuerPb(code), `Farbe fuer ${code}`).toMatch(/^#[0-9a-f]{6}$/i)
     }
   })
+
+  it.runIf(haushalt.haushaltsjahr === 2026)(
+    'Hörstel 2026: 16 Aufgabenbereiche 01–16 und KL, auch 07 Gesundheitsdienste',
+    () => {
+      const bereiche = Array.from({ length: 16 }, (_, n) => String(n + 1).padStart(2, '0'))
+      expect([...pbCodes].sort()).toEqual([...bereiche, 'KL'].sort())
+      expect(farbeFuerPb('07')).toMatch(/^#[0-9a-f]{6}$/i)
+    },
+  )
 
   it('enthaelt keinen Schluessel ausserhalb der PB-Codes', () => {
     expect(Object.keys(PB_FARBEN).sort()).toEqual([...pbCodes].sort())
@@ -73,8 +84,9 @@ describe('abstufung', () => {
     expect(abstufung('rgb(1, 2, 3)', 1)).toBe('rgb(1, 2, 3)')
   })
 
-  it('erreicht fuer alle 16 Farben x 3 Stufen Kontrast >= 4,5:1 gegen Weiss', () => {
-    for (const code of pbCodes) {
+  it('erreicht fuer alle PB-Farben x 3 Stufen Kontrast >= 4,5:1 gegen Weiss', () => {
+    // Alle Schlüssel der Palette, nicht nur die des Jahrgangs: auch 07 (neu für Hörstel).
+    for (const code of Object.keys(PB_FARBEN)) {
       for (const rang of [0, 1, 2]) {
         const farbe = abstufung(farbeFuerPb(code), rang)
         expect(
@@ -114,12 +126,18 @@ describe('mitDeckkraft (WR-03)', () => {
 })
 
 describe('Farben der Phase 6 (UI-SPEC „Farbvergabe je Diagramm“)', () => {
-  it('Bindungsgrad-Segmente erreichen gegen Weiß mindestens 3:1', () => {
+  it('Bindungsgrad-Segmente und „Ohne Angabe“ erreichen gegen Weiß mindestens 3:1', () => {
     for (const [name, farbe] of Object.entries(BINDUNG_FARBEN)) {
       expect(farbe, name).toMatch(/^#[0-9a-f]{6}$/i)
       expect(kontrast(farbe, '#ffffff'), name).toBeGreaterThanOrEqual(3)
     }
-    expect(Object.keys(BINDUNG_FARBEN)).toEqual(['pflichtig', 'teils', 'freiwillig'])
+    expect(Object.keys(BINDUNG_FARBEN)).toEqual([...BINDUNGSGRADE, OHNE_ANGABE])
+  })
+
+  it('„Ohne Angabe“ hat eine eigene Farbe, verschieden von den drei Bindungsgraden', () => {
+    const segmente = BINDUNGSGRADE.map((b) => BINDUNG_FARBEN[b].toLowerCase())
+    expect(new Set(segmente).size).toBe(segmente.length)
+    expect(segmente).not.toContain(BINDUNG_FARBEN[OHNE_ANGABE].toLowerCase())
   })
 
   it('Schuldenfarben erreichen gegen Weiß mindestens 3:1', () => {

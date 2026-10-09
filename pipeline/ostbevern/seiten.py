@@ -15,6 +15,7 @@ from pathlib import Path
 
 import polars as pl
 
+from ostbevern.ikvs_seiten import IkvsSeitenFehler, klassifiziere_dokument_ikvs
 from ostbevern.konfiguration import Jahrgang, Seitenbereich
 from ostbevern.pdf import PdfDokument, Textzeile
 from ostbevern.schema import (
@@ -437,7 +438,14 @@ def klassifiziere_seiten(
     """Klassifiziert alle Seiten, leitet die Hierarchie ab und schreibt
     `daten_wurzel/SEITEN_CSV` sowie `daten_wurzel/HIERARCHIE_CSV` (D-16, D-14)."""
     with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
-        seiten, koepfe = klassifiziere_dokument(dokument, jahrgang)
+        if jahrgang.software == "ikvs":
+            try:
+                seiten, hierarchie_df = klassifiziere_dokument_ikvs(dokument, jahrgang)
+            except IkvsSeitenFehler as fehler:
+                raise SeitenFehler(str(fehler)) from fehler
+        else:
+            seiten, koepfe = klassifiziere_dokument(dokument, jahrgang)
+            hierarchie_df = baue_hierarchie(seiten, koepfe, jahrgang)
 
     seiten_datensaetze = [
         {
@@ -453,7 +461,6 @@ def klassifiziere_seiten(
     seiten_pfad = daten_wurzel / SEITEN_CSV
     schreibe_seiten_csv(seiten_df, seiten_pfad)
 
-    hierarchie_df = baue_hierarchie(seiten, koepfe, jahrgang)
     hierarchie_pfad = daten_wurzel / HIERARCHIE_CSV
     schreibe_hierarchie_csv(hierarchie_df, hierarchie_pfad)
 

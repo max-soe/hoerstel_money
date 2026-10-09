@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { BalkenZeile } from '@/charts/balken'
-import { euro, euroKurz, jahr as formatiereJahr, KEIN_WERT, prozent, zahl } from '@/charts/format'
+import { euroKurz, jahr as formatiereJahr, KEIN_WERT, prozent, zahl } from '@/charts/format'
 import AufwandsartBalken from '@/components/AufwandsartBalken.vue'
 import AufwandTreemap from '@/components/AufwandTreemap.vue'
 import Brotkrumen from '@/components/Brotkrumen.vue'
@@ -12,6 +12,7 @@ import DatenTabelle from '@/components/DatenTabelle.vue'
 import type { DatenSpalte, DatenZeile } from '@/components/datenTabelle'
 import EbenenTabelle from '@/components/EbenenTabelle.vue'
 import ErklaerText from '@/components/ErklaerText.vue'
+import EuroBetrag from '@/components/EuroBetrag.vue'
 import GlossarBegriff from '@/components/GlossarBegriff.vue'
 import HinweisNichtImHaushalt from '@/components/HinweisNichtImHaushalt.vue'
 import JahrUmschalter from '@/components/JahrUmschalter.vue'
@@ -34,9 +35,11 @@ import {
   klickZiel,
   ueberschussTextSchluessel,
 } from '@/lib/drilldown'
+import { seitenText } from '@/lib/hilfsfunktionen'
 import { useJahr, wertartName } from '@/lib/jahr'
 import { findeKlKnoten } from '@/lib/kreisumlage'
 import { rendereAbsatz, textFuerJahr } from '@/lib/texte'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const router = useRouter()
 const { jahr, index, wertart } = useJahr()
@@ -127,7 +130,7 @@ const ueberschussZeilen = computed(() =>
         code: eintrag.code,
         name: eintrag.name,
         text: rendereAbsatz(absatz),
-        seiten: text.quelle_seiten.join(', '),
+        seiten: seitenText(text.quelle_seiten),
       },
     ]
   }),
@@ -222,7 +225,7 @@ const gesamtSeite = computed(() => {
 <template>
   <PageIntro
     titel="Wofür wird das Geld ausgegeben?"
-    beschreibung="Hier siehst du, wohin das Geld der Gemeinde fließt. Klicke auf einen Bereich, um genauer hinzuschauen."
+    :beschreibung="`Hier siehst du, wohin das Geld der ${KOMMUNE_ART} fließt. Klicke auf einen Bereich, um genauer hinzuschauen.`"
   />
   <div class="om-ausgaben-steuerung">
     <JahrUmschalter />
@@ -236,7 +239,7 @@ const gesamtSeite = computed(() => {
     >
       <span slot="hint">
         <GlossarBegriff schluessel="zuschussbedarf">Zuschussbedarf</GlossarBegriff>: Was ein Bereich
-        mehr kostet, als er selbst einnimmt. Das bezahlt die Gemeinde aus Steuern.
+        mehr kostet, als er selbst einnimmt. Das bezahlt die {{ KOMMUNE_ART }} aus Steuern.
       </span>
       <wa-radio appearance="button" value="aufwand">Aufwand</wa-radio>
       <wa-radio appearance="button" value="zuschussbedarf">Zuschussbedarf</wa-radio>
@@ -309,9 +312,7 @@ const gesamtSeite = computed(() => {
     <strong>Warum manche Bereiche im Plus liegen</strong>
     <p v-for="zeile in ueberschussZeilen" :key="zeile.code">
       {{ zeile.name }}: {{ zeile.text }}
-      <span v-if="zeile.seiten !== ''" class="om-ausgaben-quelle"
-        >(PDF-Seite {{ zeile.seiten }})</span
-      >
+      <span v-if="zeile.seiten !== ''" class="om-ausgaben-quelle">({{ zeile.seiten }})</span>
     </p>
   </wa-callout>
   <ChartCard :titel="artenTitel" :pdf="gesamtSeite" class="om-ausgaben-arten">
@@ -344,7 +345,7 @@ const gesamtSeite = computed(() => {
             <span :class="{ 'om-ausgaben-teil': zeile['teil'] === 1 }">{{ wert }}</span>
           </template>
           <template v-else-if="spalte.schluessel === 'wert' && typeof wert === 'number'">
-            <span v-if="zeile['gerundet'] === 1">rd. </span>{{ euro(wert) }}
+            <EuroBetrag :wert="wert" :gerundet="zeile['gerundet'] === 1" />
           </template>
           <template v-else-if="wert === null">
             <span aria-hidden="true">{{ KEIN_WERT }}</span>

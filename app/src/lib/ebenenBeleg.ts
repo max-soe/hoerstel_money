@@ -1,7 +1,10 @@
 // Belegschlüssel der Drilldown-Tabelle auf /ausgaben (Phase 7, D-01, T-07-18). Schlüssel entstehen
 // nur über `belegSchluessel`; ein berechneter Wert nennt seine Herleitung (D-03).
 //
-//   Knoten außerhalb von KL   ep:{code}:ordentliche_aufwendungen (Z. 17 im Teilergebnisplan)
+//   Knoten außerhalb von KL   ep:{code}:ordentliche_aufwendungen (Z. 17 im Teilergebnisplan);
+//                             druckt der Teilplan Z. 17 nicht (IKVS lässt leere Zeilen weg,
+//                             z. B. reine Ertragsprodukte), ep:{code}:ordentliches_ergebnis,
+//                             sonst die Seite des Knotens
 //   KL-Unterposten            vb:transferaufwendungen:{posten} (Vorbericht, T€)
 //   KL selbst                 seite:{pdf_seite des Knotens}; sein Wert steht als Z. 15 im
 //                             Teilergebnisplan des Produkts, dessen Seite der Knoten nennt.
@@ -24,6 +27,7 @@ export interface EbenenBeleg {
 
 const AUFWAND_ZEILE = 'ordentliche_aufwendungen'
 const ZINS_ZEILE = 'zinsaufwendungen'
+const ERGEBNIS_ZEILE = 'ordentliches_ergebnis'
 const TRANSFER_TABELLE = 'transferaufwendungen'
 
 /** Herleitung des Zuschussbedarfs (Spez. 3.6). */
@@ -32,6 +36,16 @@ const HERLEITUNG_ZUSCHUSSBEDARF = 'Aufwendungen minus Erträge'
 function seitenBeleg(code: string): string | null {
   const seite = haushalt.knoten.find((k) => k.code === code)?.pdf_seite
   return seite === null || seite === undefined ? null : belegSchluessel.seite(seite)
+}
+
+function knotenSchluessel(code: string): string | null {
+  for (const zeile of [AUFWAND_ZEILE, ERGEBNIS_ZEILE]) {
+    const schluessel = belegSchluessel.ep(code, zeile)
+    if (findeBeleg(schluessel) !== null) {
+      return schluessel
+    }
+  }
+  return seitenBeleg(code)
 }
 
 function klSchluessel(code: string): string | null {
@@ -54,9 +68,7 @@ export function ebenenBeleg(
   jahrIndex: number,
   modus: Modus,
 ): EbenenBeleg | null {
-  const schluessel = eintrag.istKl
-    ? klSchluessel(eintrag.code)
-    : belegSchluessel.ep(eintrag.code, AUFWAND_ZEILE)
+  const schluessel = eintrag.istKl ? klSchluessel(eintrag.code) : knotenSchluessel(eintrag.code)
   if (schluessel === null) {
     return null
   }

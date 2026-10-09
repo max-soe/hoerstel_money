@@ -95,13 +95,18 @@ const option = computed<EChartsOption>(() => {
       type: 'category',
       data: teile.value.map((teil) => teil.name),
       axisTick: { show: false },
-      axisLabel: { interval: 0, width: schmal ? 90 : 200, overflow: 'break' },
+      axisLabel: { interval: 0, width: schmal ? 90 : 200, overflow: 'break', lineHeight: 16 },
     },
     yAxis: {
       type: 'value',
       min: 0,
       max: hoechster.value * (schmal ? KOPFRAUM_SCHMAL : KOPFRAUM),
-      axisLabel: { formatter: (wert: number) => vzae(alsVzae(wert)), hideOverlap: true },
+      // Das Maximum ist Kopfraum für die Werte über den Säulen, kein runder Achsenwert.
+      axisLabel: {
+        formatter: (wert: number) => vzae(alsVzae(wert)),
+        hideOverlap: true,
+        showMaxLabel: false,
+      },
     },
     tooltip: {
       trigger: 'item',

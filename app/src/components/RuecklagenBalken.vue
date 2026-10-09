@@ -4,20 +4,20 @@ import type { BarSeriesOption, EChartsOption } from 'echarts'
 
 import { KATEGORIE_FARBEN } from '@/charts/echartsTheme'
 import { euro, euroKurz, jahr as formatiereJahr, KEIN_WERT } from '@/charts/format'
+import { zweizeilig } from '@/charts/beschriftung'
 import { tooltipZeilen } from '@/charts/tooltip'
 import { flaechenFarbe, jahresAchse, saeulenStil } from '@/charts/wertartStil'
 import BaseChart from '@/components/BaseChart.vue'
 import { haushalt } from '@/data/daten'
 import { useSchmalerBildschirm } from '@/lib/bildschirm'
 import { wertartName } from '@/lib/jahr'
-import { baueRuecklagen } from '@/lib/ruecklagen'
+import { baueRuecklagen, bestandText } from '@/lib/ruecklagen'
 
 const LEER_TITEL = 'Für diese Auswahl gibt es keine Einzelwerte'
 const LEER_TEXT = 'Der Haushaltsplan nennt für diese Jahre keine Rücklagen. Öffne die Tabelle.'
-const BESCHREIBUNG =
-  'Säulendiagramm: Ausgleichsrücklage und allgemeine Rücklage der Gemeinde als Bestand zu Jahresbeginn je Jahr, mit der Summe über jeder Säule. Die Werte stehen in der Tabelle darunter.'
-/** Die Spaltenüberschrift von S. 311, wörtlich: die Werte sind der Bestand zu Jahresbeginn. */
-const ACHSEN_UNTERSCHRIFT = 'Bestand zu Jahresbeginn'
+const BESCHREIBUNG = `Säulendiagramm: Ausgleichsrücklage und allgemeine Rücklage als ${bestandText()} je Jahr, mit der Summe über jeder Säule. Die Werte stehen in der Tabelle darunter.`
+/** Wie die Spalten der Eigenkapitalübersicht zu lesen sind (`haushalt.eigenkapital_stand`). */
+const ACHSEN_UNTERSCHRIFT = bestandText()
 
 const AUSGLEICH_NAME = 'Ausgleichsrücklage'
 const ALLGEMEINE_NAME = 'Allgemeine Rücklage'
@@ -54,9 +54,12 @@ function segment(wert: number | null, wertart: string, farbe: string, flaeche: s
   }
 }
 
-/** Zweizeilig („38,8“ über „Mio. €“), damit die Summe über eine schmale Säule passt. */
+/**
+ * Zweizeilig („38,8“ über „Mio. €“), damit die Summe über eine schmale Säule passt. Auch Beträge
+ * unter 1 Mio. € („712.600“ über „€“) brechen vor „€“ um.
+ */
 function summenText(wert: number): string {
-  return euroKurz(wert).replace(' ', '\n')
+  return zweizeilig(euroKurz(wert))
 }
 
 function betragText(wert: number | null): string {

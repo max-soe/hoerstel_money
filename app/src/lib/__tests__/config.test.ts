@@ -7,6 +7,8 @@ import {
   IMPRESSUM_NAME,
   KONTAKT_EMAIL,
   ORIGINAL_PDF_URL,
+  URSPRUNGSPROJEKT_NAME,
+  URSPRUNGSPROJEKT_URL,
   istAnschriftPlatzhalter,
   istImpressumPlatzhalter,
   istPlatzhalter,
@@ -40,13 +42,18 @@ describe('istPlatzhalter (UI-03, D-17)', () => {
 
 describe('Konfiguration (D-06, D-07)', () => {
   it('setzt die Kontaktadresse aus D-07', () => {
-    expect(KONTAKT_EMAIL).toBe('mail@thomas-manthey.de')
+    expect(KONTAKT_EMAIL).toBe('max.soest9@gmail.com')
     expect(KONTAKT_EMAIL).toMatch(/^[^@\s]+@[^@\s]+$/)
   })
 
-  it('verweist auf die offizielle PDF-Datei der Gemeinde (D-06)', () => {
-    expect(ORIGINAL_PDF_URL.startsWith('https://www.ostbevern.de/')).toBe(true)
-    expect(ORIGINAL_PDF_URL.endsWith('.pdf')).toBe(true)
+  it('dankt dem Ursprungsprojekt mit einem echten HTTPS-Link', () => {
+    expect(URSPRUNGSPROJEKT_NAME.trim()).not.toBe('')
+    expect(URSPRUNGSPROJEKT_URL.startsWith('https://')).toBe(true)
+    expect(istPlatzhalter(URSPRUNGSPROJEKT_URL)).toBe(false)
+  })
+
+  it('verweist per HTTPS auf die offizielle PDF-Datei der Kommune (D-06)', () => {
+    expect(ORIGINAL_PDF_URL.startsWith('https://')).toBe(true)
   })
 
   it('hält weder die Kontaktadresse noch die PDF-URL für einen Platzhalter', () => {
@@ -116,12 +123,21 @@ describe('App.vue (Fußzeile, D-17, D-18)', () => {
     expect(quelle).not.toContain(ORIGINAL_PDF_URL)
   })
 
+  it('zeigt auf jeder Seite über dem Inhalt den Hinweis „privat, ohne Gewähr“', () => {
+    const vorInhalt = quelle.slice(0, quelle.indexOf('<RouterView />'))
+    expect(vorInhalt).toContain('class="om-hinweis-privat"')
+    expect(vorInhalt).toMatch(/Privates Projekt/)
+    expect(vorInhalt).toMatch(/ohne Gewähr/)
+  })
+
   it('zeigt alle fünf Fußzeilen-Zeilen ohne Build-Datum', () => {
     expect(quelle).toContain('Datenstand: Haushalt')
-    expect(quelle).toContain('Original-Haushaltsplan (PDF) der Gemeinde Ostbevern')
+    // Der Name der Kommune kommt aus den Daten (`lib/kommune.ts`), nie als getippter Ortsname.
+    expect(quelle).toMatch(/Original-Haushaltsplan \(PDF\) der \{\{\s*KOMMUNE_VOLL\s*\}\}/)
     expect(quelle).toContain(
-      'Inoffizielles Projekt, keine Veröffentlichung der Gemeinde Ostbevern.',
+      'Inoffizielles Projekt, keine Veröffentlichung der {{ KOMMUNE_VOLL }}.',
     )
+    expect(quelle).not.toMatch(/Ostbevern|Hörstel/)
     expect(quelle).toContain('Kontakt:')
     expect(quelle).toContain('Über dieses Projekt, Impressum und Datenschutz')
     expect(quelle).toContain('Inspiriert von')

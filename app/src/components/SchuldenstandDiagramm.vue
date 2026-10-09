@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { BERECHNET_DECAL, SCHULDEN_FARBEN } from '@/charts/echartsTheme'
+import { BERECHNET_DECAL, SCHULDEN_FARBEN, flaechenFarbe } from '@/charts/echartsTheme'
 import { jahr as formatiereJahr } from '@/charts/format'
 import BaseChart from '@/components/BaseChart.vue'
 import BerechnetEtikett from '@/components/BerechnetEtikett.vue'
@@ -15,6 +15,7 @@ import {
   schuldenstandOption,
   schuldenTabelle,
 } from '@/lib/schulden'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const LEER_TITEL = 'Keine Schuldenwerte'
 const LEER_TEXT = 'Der Haushaltsplan nennt hier keinen Schuldenstand. Öffne die Tabelle.'
@@ -27,7 +28,8 @@ const tabelle = schuldenTabelle()
 const satz = liquiditaetsSatz()
 const berechnetVorhanden = hatBerechneteJahre()
 // Die Legende zeichnet dieselben Streifen wie das Diagramm (Farbe des BERECHNET_DECAL).
-const streifenFarbe = typeof BERECHNET_DECAL.color === 'string' ? BERECHNET_DECAL.color : 'white'
+const streifenFarbe =
+  typeof BERECHNET_DECAL.color === 'string' ? BERECHNET_DECAL.color : flaechenFarbe()
 
 const option = computed(() => schuldenstandOption(istSchmal.value))
 
@@ -41,7 +43,7 @@ const zeitraum = computed(() => {
 
 const beschreibung = computed(
   () =>
-    `Säulendiagramm: Schuldenstand der Gemeinde ${zeitraum.value}, gestapelt aus Investitionskrediten und NRW.Bank-Mitteln, mit der Summe über jeder Säule. ` +
+    `Säulendiagramm: Schuldenstand der ${KOMMUNE_ART} ${zeitraum.value}, gestapelt aus Investitionskrediten und NRW.Bank-Mitteln, mit der Summe über jeder Säule. ` +
     (berechnetVorhanden
       ? 'Fortgeschriebene Jahre tragen Streifen und die Achsenzeile berechnet. '
       : '') +

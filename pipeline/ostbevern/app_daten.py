@@ -17,14 +17,20 @@ from pathlib import Path
 
 import polars as pl
 
-from ostbevern.konfiguration import PROJEKT_WURZEL, lade_jahrgang, layout_text
+from ostbevern.konfiguration import (
+    APP_WURZEL,
+    Jahrgang,
+    lade_jahrgang,
+    layout_liste,
+    layout_text,
+)
 from ostbevern.manuell import investitionskredite_ende, lies_meta_json, pro_kopf_euro
 from ostbevern.pruefung import (
     REGEL5_GEP_ZEILEN,
     REGEL5_TOLERANZ_GEP_EURO,
-    WEITERGABE_POSTEN,
     Planwerte,
-    zerlege_weitere_vorberichtstabellen,
+    lies_vorberichtstabellen,
+    weitergabe_posten,
 )
 from ostbevern.schema import (
     DATEN_WURZEL,
@@ -36,19 +42,13 @@ from ostbevern.schema import (
     GRUNDZAHLEN_CSV,
     HIERARCHIE_CSV,
     INVESTITIONEN_CSV,
-    INVESTITIONSZUWENDUNGEN_CSV,
-    KITA_ZUSCHUESSE_CSV,
     META_JSON,
     PRODUKT_SCHLUESSEL,
     PRODUKTE_JSON,
     STELLENPLAN_CSV,
-    STEUERARTEN_CSV,
-    TRANSFERAUFWENDUNGEN_CSV,
     VE_FAELLIGKEITEN_CSV,
+    VE_UEBERSICHT_CSV,
     VERBINDLICHKEITEN_CSV,
-    WEITERE_VORBERICHTSTABELLEN_CSV,
-    ZUSCHUESSE_LFD_ZWECKE_CSV,
-    ZUWENDUNGEN_CSV,
     lies_eigenkapital_csv,
     lies_grundzahlen_csv,
     lies_hierarchie_csv,
@@ -57,6 +57,7 @@ from ostbevern.schema import (
     lies_produkte_json,
     lies_stellenplan_csv,
     lies_ve_faelligkeiten_csv,
+    lies_ve_uebersicht_csv,
     lies_vorbericht_csv,
     zerlege_spaltenkopf,
 )
@@ -67,6 +68,7 @@ from ostbevern.texte import (
     loese_auf,
     pruefe_grundzahl_jahre,
     pruefe_text,
+    pruefe_titel,
     textwerte,
 )
 from ostbevern.zeilen import ZEILEN
@@ -76,7 +78,7 @@ class AppDatenFehler(ValueError):
     """Wird ausgelöst, wenn die Eingabedaten für die App-JSON-Erzeugung inkonsistent sind."""
 
 
-APP_DATEN_WURZEL = PROJEKT_WURZEL / "app" / "src" / "data"
+APP_DATEN_WURZEL = APP_WURZEL / "src" / "data"
 HAUSHALT_JSON = Path("haushalt.json")
 STELLENPLAN_JSON = Path("stellenplan.json")
 TEXTE_JSON = Path("texte.json")
@@ -88,13 +90,15 @@ GESAMT_CODE = "GESAMT"
 GESAMT_NAME = "Gesamthaushalt"
 KL_CODE = "KL"
 KL_NAME = "Weitergabe an Kreis und Land"
-# Schlüssel müssen exakt pruefung.WEITERGABE_POSTEN entsprechen (Reihenfolge = App-
-# Kinderreihenfolge); geprüft zur Laufzeit in baue_knoten (AppDatenFehler sonst).
-KL_POSTEN_NAMEN: dict[str, str] = {
-    "kreisumlage": "Kreisumlage",
-    "gewerbesteuerumlage": "Gewerbesteuerumlage",
-    "krankenhausinvestitionsumlage": "Krankenhausinvestitionsumlage",
-}
+# Die KL-Kinder (Posten und Anzeigenamen, Reihenfolge = App-Kinderreihenfolge) kommen aus
+# [layout.weitergabe_kreis_land] posten/namen, siehe weitergabe_posten_namen().
+
+# Stand der Spalten der Eigenkapitalübersicht: Bestand zu Jahresbeginn (Ostbevern S. 311) oder
+# zum 31.12. vor Ergebnisverrechnung (Hörstel S. 588, Fußnote 1).
+EIGENKAPITAL_STAENDE: tuple[str, ...] = ("jahresbeginn", "jahresende_vor_verrechnung")
+
+# Anmerkung, mit der eine manuelle Abschrift einen hergeleiteten Rest kennzeichnet.
+BERECHNET_PRAEFIX = "berechnet"
 
 # Vorbericht-Tabellen mit einem berechneten Posten "Sonstige" (Spez. 3.8): dort, wo die
 # gedruckte Gesamtzeile um mehr als REGEL5_TOLERANZ_GEP_EURO von der GEP-Zeile abweicht,
@@ -123,12 +127,17 @@ _KL_ERGEBNIS_ZEILEN: tuple[str, ...] = (
 )
 
 
-def _pruefe_kl_posten_namen() -> None:
-    if tuple(KL_POSTEN_NAMEN) != WEITERGABE_POSTEN:
+def weitergabe_posten_namen(jahrgang: Jahrgang) -> dict[str, str]:
+    """Weitergabe-Posten (pruefung.weitergabe_posten) mit ihren Anzeigenamen aus
+    [layout.weitergabe_kreis_land].namen, gleiche Reihenfolge und Länge."""
+    posten = weitergabe_posten(jahrgang)
+    namen = layout_liste(jahrgang, "weitergabe_kreis_land", "namen")
+    if len(namen) != len(posten):
         raise AppDatenFehler(
-            "KL_POSTEN_NAMEN-Schlüssel weichen von pruefung.WEITERGABE_POSTEN ab: "
-            f"{tuple(KL_POSTEN_NAMEN)!r} != {WEITERGABE_POSTEN!r}"
+            "[layout.weitergabe_kreis_land]: namen und posten haben unterschiedliche Länge "
+            f"({len(namen)} != {len(posten)})"
         )
+    return dict(zip(posten, namen, strict=True))
 
 
 def _pruefe_ergebnisplan_app_zeilen() -> None:
@@ -156,14 +165,14 @@ def baue_knoten(
     ergebnisplan: pl.DataFrame,
     transfer_df: pl.DataFrame,
     produkt: str,
+    posten_namen: Mapping[str, str],
     gep_pdf_seite: int,
 ) -> list[dict[str, object]]:
     """Baut die Knotenliste von `haushalt.json` (D-03, D-21): GESAMT, dann jede
     hierarchie.csv-Zeile in Dateireihenfolge, dann der synthetische KL-Knoten und seine
     drei Unterposten-Kinder (D-02). Mutiert `hierarchie` nie; die Herauslösung lebt
     ausschließlich in dieser Funktion und in `baue_ergebnisplan` (nie in
-    `daten/aufbereitet/hierarchie.csv`)."""
-    _pruefe_kl_posten_namen()
+    `daten/aufbereitet/hierarchie.csv`). `posten_namen`: weitergabe_posten_namen()."""
 
     tp_zeile = ergebnisplan.filter(
         (pl.col("ebene") == "P") & (pl.col("code") == produkt) & (pl.col("zeile") == "15")
@@ -210,7 +219,7 @@ def baue_knoten(
             "pdf_seite": kl_pdf_seite,
         }
     )
-    for posten in WEITERGABE_POSTEN:
+    for posten, name in posten_namen.items():
         posten_df = transfer_df.filter(pl.col("posten") == posten)
         if posten_df.height == 0:
             raise AppDatenFehler(f"Weitergabe-Posten {posten!r} fehlt in transferaufwendungen.csv")
@@ -218,7 +227,7 @@ def baue_knoten(
             {
                 "code": f"{KL_CODE}.{posten}",
                 "ebene": "PG",
-                "name": KL_POSTEN_NAMEN[posten],
+                "name": name,
                 "eltern": KL_CODE,
                 "synthetisch": True,
                 "gerundet": True,
@@ -235,6 +244,7 @@ def baue_ergebnisplan(
     transfer_df: pl.DataFrame,
     hierarchie: pl.DataFrame,
     produkt: str,
+    posten: Sequence[str],
     jahre: list[int],
     wertarten: list[str],
 ) -> dict[str, dict[str, object]]:
@@ -269,12 +279,18 @@ def baue_ergebnisplan(
     ]
 
     posten_delta: dict[str, list[int]] = {}
-    for posten in WEITERGABE_POSTEN:
-        posten_df = transfer_df.filter(pl.col("posten") == posten)
+    for einzelposten in posten:
+        posten_df = transfer_df.filter(pl.col("posten") == einzelposten)
         nach_jahr = {
             zeile["jahr"]: zeile["betrag_teur"] for zeile in posten_df.iter_rows(named=True)
         }
-        posten_delta[posten] = [nach_jahr[jahr] * 1000 for jahr in jahre]
+        fehlende_jahre = [jahr for jahr in jahre if jahr not in nach_jahr]
+        if fehlende_jahre:
+            raise AppDatenFehler(
+                f"Weitergabe-Posten {einzelposten!r} fehlt in transferaufwendungen.csv für "
+                f"die Jahre {fehlende_jahre}"
+            )
+        posten_delta[einzelposten] = [nach_jahr[jahr] * 1000 for jahr in jahre]
 
     reverse_gesamt = _zeile_fuer_kanonisch("gesamtergebnisplan")
     reverse_teil = _zeile_fuer_kanonisch("teilergebnisplan")
@@ -307,8 +323,7 @@ def baue_ergebnisplan(
                 for zeile_kanonisch in _KL_ERGEBNIS_ZEILEN:
                     zeilen_werte[zeile_kanonisch][index] -= delta[index]
         elif code_wert.startswith(f"{KL_CODE}."):
-            posten = code_wert.removeprefix(f"{KL_CODE}.")
-            werte_posten = posten_delta[posten]
+            werte_posten = posten_delta[code_wert.removeprefix(f"{KL_CODE}.")]
             for index in range(len(jahre)):
                 for zeile_kanonisch in _KL_AUFWAND_ZEILEN:
                     zeilen_werte[zeile_kanonisch][index] += werte_posten[index]
@@ -504,18 +519,24 @@ def _baue_massnahmen(
     pb_je_produkt: dict[str, str] = {}
 
     gruppen = sorted(
-        investitionen.select("produkt", "massnahme_id", "konto").unique().iter_rows(named=True),
-        key=lambda z: (z["produkt"], z["massnahme_id"], z["konto"]),
+        investitionen.select("produkt", "massnahme_id", "konto", "richtung")
+        .unique()
+        .iter_rows(named=True),
+        key=lambda z: (z["produkt"], z["massnahme_id"], z["konto"] or "", z["richtung"]),
     )
     massnahmen: list[dict[str, object]] = []
     for schluessel in gruppen:
         produkt = schluessel["produkt"]
         massnahme_id = schluessel["massnahme_id"]
         konto = schluessel["konto"]
+        richtung = schluessel["richtung"]
         teil = investitionen.filter(
             (pl.col("produkt") == produkt)
             & (pl.col("massnahme_id") == massnahme_id)
-            & (pl.col("konto") == konto)
+            # IKVS (Hörstel) druckt kein Sachkonto je Maßnahme: konto ist dort leer, und nur
+            # die Richtung trennt Ein- und Auszahlungen derselben Maßnahme.
+            & pl.col("konto").eq_missing(konto)
+            & (pl.col("richtung") == richtung)
         )
         erste = teil.row(0, named=True)
         if produkt not in pb_je_produkt:
@@ -525,6 +546,10 @@ def _baue_massnahmen(
         werte_nach_jahr = {
             zeile["jahr"]: zeile["betrag"] for zeile in werte_df.iter_rows(named=True)
         }
+        if len(werte_nach_jahr) != werte_df.height:
+            raise AppDatenFehler(
+                f"Maßnahme {produkt}/{massnahme_id} ({richtung}): mehrere Werte für dasselbe Jahr"
+            )
         werte = [werte_nach_jahr.get(jahr) for jahr in jahre]
 
         ve_zeile = teil.filter(pl.col("wertart") == "ve")
@@ -538,7 +563,7 @@ def _baue_massnahmen(
                 "massnahme_name": erste["massnahme_name"],
                 "konto": konto,
                 "konto_name": erste["konto_name"],
-                "richtung": erste["richtung"],
+                "richtung": richtung,
                 "art": erste["art"],
                 "werte": werte,
                 "ve": ve_betrag,
@@ -603,17 +628,46 @@ def baue_investitionen_json(
     haushaltsjahr: int,
     jahre: list[int],
     wertarten: list[str],
+    schulden_posten: Sequence[str],
+    ve_uebersicht: pl.DataFrame | None = None,
 ) -> dict[str, object]:
     """Baut `investitionen.json` der App (D-13, D-14, D-21): Maßnahmen (gruppiert nach
     Produkt/Maßnahme/Konto), VE-Fälligkeiten, Finanzierung (GFP), Schuldenstand
-    (fortgeschrieben ab dem letzten gedruckten Stand, D-14) und Bürgschaften."""
+    (fortgeschrieben ab dem letzten gedruckten Stand, D-14) und Bürgschaften.
+
+    `schulden_posten` ([layout.schulden].posten) beginnt mit den Investitionskrediten; die
+    übrigen Posten bilden die Reihe `nrw_bank` (Ostbevern: NRW.Bank-Mittel unter den
+    Transferverbindlichkeiten). Ohne weitere Posten (Hörstel) ist die Reihe 0."""
     massnahmen = _baue_massnahmen(investitionen, hierarchie=hierarchie, jahre=jahre)
+
+    def _ve_name(zeile: Mapping[str, object]) -> str | None:
+        """Name einer VE ohne Maßnahme (IKVS: nur in der VE-Übersicht, z. B. Hörstel S. 586);
+        VE mit Maßnahme heißen wie ihre Maßnahme (`null`)."""
+        if zeile["massnahme_id"] is not None:
+            return None
+        if ve_uebersicht is None:
+            raise AppDatenFehler(
+                f"VE ohne Maßnahme in Produkt {zeile['produkt']}: keine VE-Übersicht"
+            )
+        treffer = ve_uebersicht.filter(
+            ~pl.col("ist_gesamt")
+            & (pl.col("produkt") == zeile["produkt"])
+            & (pl.col("faellig_jahr") == zeile["jahr"])
+            & (pl.col("betrag_teur") * 1000 == zeile["betrag"])
+        )["massnahme"].unique()
+        if treffer.len() != 1:
+            raise AppDatenFehler(
+                f"VE ohne Maßnahme in Produkt {zeile['produkt']} ({zeile['jahr']}, "
+                f"{zeile['betrag']} €): {treffer.len()} Zeilen der VE-Übersicht passen"
+            )
+        return str(treffer[0])
 
     ve_faelligkeiten_liste = [
         {
             "produkt": zeile["produkt"],
             "massnahme_id": zeile["massnahme_id"],
             "konto": zeile["konto"],
+            "name": _ve_name(zeile),
             "jahr": zeile["jahr"],
             "betrag": zeile["betrag"],
             "pdf_seite": zeile["pdf_seite"],
@@ -650,8 +704,11 @@ def baue_investitionen_json(
         teil = verbindlichkeiten_df.filter(pl.col("posten") == posten)
         return {zeile["jahr"]: zeile["betrag_teur"] * 1000 for zeile in teil.iter_rows(named=True)}
 
-    investitionskredite_gedruckt = _posten_nach_jahr("kredite_investitionen")
-    nrw_bank_gedruckt = _posten_nach_jahr("transferleistungen")
+    investitionskredite_gedruckt = _posten_nach_jahr(schulden_posten[0])
+    nrw_bank_gedruckt = {jahr: 0 for jahr in investitionskredite_gedruckt}
+    for weiterer_posten in schulden_posten[1:]:
+        for jahr, betrag in _posten_nach_jahr(weiterer_posten).items():
+            nrw_bank_gedruckt[jahr] = nrw_bank_gedruckt.get(jahr, 0) + betrag
     liquiditaetskredite_gedruckt = _posten_nach_jahr("liquiditaetskredite")
 
     investitionskredite, nrw_bank, berechnet = schreibe_schuldenstand_fort(
@@ -721,6 +778,46 @@ def schreibe_app_json(daten: Mapping[str, object], pfad: Path, *, praefix: str) 
         temp_pfad.unlink(missing_ok=True)
 
 
+# Arten der Kommune; beide Wörter sind feminin, die App sagt „der Stadt“/„der Gemeinde“.
+KOMMUNE_ARTEN = ("Stadt", "Gemeinde")
+
+
+def baue_kommune(jahrgang: Jahrgang) -> dict[str, str]:
+    """Name und Art der Kommune aus `[layout.kommune]` (Phase 12): Seitentitel, Kopfzeile und
+    Texte der App nennen sie, ohne dass ein Ortsname im App-Code steht."""
+    art = layout_text(jahrgang, "kommune", "art")
+    if art not in KOMMUNE_ARTEN:
+        raise AppDatenFehler(
+            f"layout.kommune.art muss einer von {KOMMUNE_ARTEN} sein, nicht {art!r}"
+        )
+    return {"name": layout_text(jahrgang, "kommune", "name"), "art": art}
+
+
+def baue_bezugsgroessen(jahrgang: Jahrgang, *, produkt_codes: set[str]) -> list[dict[str, object]]:
+    """Die Produkte mit „Zuschussbedarf je Einheit“ aus `[layout.bezugsgroessen]` (Freigabe
+    05-03): je Produktcode eine Liste aus Einheit im Zeilennamen und den gedruckten
+    Grundzahl-Bezeichnungen, deren Summe den Nenner bildet. Eine leere Tabelle heißt: kein
+    Produkt (Hörstel druckt „Produktergebnis je …“ selbst als Grundzahl). Unbekannte Produkte
+    und Einträge ohne Bezeichnung brechen ab."""
+    bereich = jahrgang.layout.get("bezugsgroessen")
+    if bereich is None:
+        raise AppDatenFehler(
+            f"Jahrgangsdatei {jahrgang.haushaltsjahr}: [layout.bezugsgroessen] fehlt"
+        )
+    ergebnis: list[dict[str, object]] = []
+    for produkt, eintrag in bereich.items():
+        if produkt not in produkt_codes:
+            raise AppDatenFehler(f"layout.bezugsgroessen: unbekanntes Produkt {produkt!r}")
+        if not isinstance(eintrag, tuple) or len(eintrag) < 2:
+            raise AppDatenFehler(
+                f"layout.bezugsgroessen.{produkt}: erwartet [Einheit, Bezeichnung, ...]"
+            )
+        ergebnis.append(
+            {"produkt": produkt, "einheit_text": eintrag[0], "bezeichnungen": list(eintrag[1:])}
+        )
+    return ergebnis
+
+
 def baue_vorbericht_tabelle(
     df: pl.DataFrame,
     *,
@@ -728,8 +825,13 @@ def baue_vorbericht_tabelle(
     planwerte: Planwerte,
     gep_zeile: str | None,
     sonstige: bool = False,
+    haushaltsjahr: int | None = None,
 ) -> dict[str, object]:
     """Baut die App-JSON-Struktur einer manuellen Vorberichtstabelle (D-02, D-21).
+
+    `quelle` und `anmerkung` eines Postens (und die Quelle der Gesamtzeile) stammen aus der
+    Zeile des Haushaltsjahrs, wenn es sie gibt, sonst aus dem letzten Jahr mit Wert: Hörstel
+    druckt dieselben Posten für einzelne Jahre auf verschiedenen Seiten (S. 34 und S. 35).
 
     `gesamt_plan` ist die eurogenaue GEP-Zeile (D-01), `gesamt_vorbericht` die gedruckte,
     nur in T€ geführte Gesamtzeile × 1000 (als `gerundet` gekennzeichnet). Jeder Posten
@@ -762,6 +864,8 @@ def baue_vorbericht_tabelle(
             continue
         gesamt_werte.append(zeile["betrag_teur"] * 1000)
         gesamt_quelle = zeile["quelle"]
+    if haushaltsjahr in gesamt_nach_jahr:
+        gesamt_quelle = gesamt_nach_jahr[haushaltsjahr]["quelle"]
 
     if gep_zeile is not None:
         planzeile = ZEILEN["gesamtergebnisplan"][gep_zeile].kanonisch
@@ -799,6 +903,15 @@ def baue_vorbericht_tabelle(
             werte.append(zeile["betrag_teur"] * 1000)
             quelle = zeile["quelle"]
             anmerkung = zeile["anmerkung"]
+        if haushaltsjahr in zeilen_nach_jahr:
+            quelle = zeilen_nach_jahr[haushaltsjahr]["quelle"]
+            anmerkung = zeilen_nach_jahr[haushaltsjahr]["anmerkung"]
+        # Ein abgeschriebener Rest („berechnet: …“, daten/manuell/README.md) ist in mindestens
+        # einem Jahr nicht gedruckt; die App zeigt ihn dann nie als gedruckten Wert.
+        berechnet = any(
+            (zeile["anmerkung"] or "").startswith(BERECHNET_PRAEFIX)
+            for zeile in zeilen_nach_jahr.values()
+        )
 
         posten_liste.append(
             {
@@ -806,7 +919,7 @@ def baue_vorbericht_tabelle(
                 "name": name,
                 "werte": werte,
                 "gerundet": True,
-                "berechnet": False,
+                "berechnet": berechnet,
                 "quelle": quelle,
                 "anmerkung": anmerkung,
             }
@@ -1001,26 +1114,15 @@ def erzeuge_app_daten(
     weitergabe_produkt = layout_text(jahrgang, "weitergabe_kreis_land", "produkt")
     gep_pdf_seite = ergebnisplan.filter(pl.col("ebene") == "GESAMT")["pdf_seite"][0]
 
-    # Reihenfolge ist Teil des App-JSON-Vertrags (D-21): steuerarten, zuwendungen,
-    # transferaufwendungen, kita_zuschuesse, zuschuesse_lfd_zwecke (Phase 6 D-03, RAT-03, ohne
-    # GEP-Zeile wie Kita), investitionszuwendungen (Phase 5 D-03, ohne
-    # GEP-Zeile: die App liest GFP Z. 18 aus `finanzplan`), dann die sechs weiteren Tabellen
-    # (leistungsentgelte, kostenerstattungen, personal, sachaufwand, sonstige_aufwendungen,
-    # zuletzt sonstige_ertraege, Phase 5 D-04) — dict-
+    # Reihenfolge ist Teil des App-JSON-Vertrags (D-21): die Einzeltabellen, dann die weiteren
+    # Tabellen, je in der Reihenfolge von [layout.vorbericht] (Ostbevern: steuerarten,
+    # zuwendungen, transferaufwendungen, kita_zuschuesse, zuschuesse_lfd_zwecke,
+    # investitionszuwendungen, dann leistungsentgelte bis sonstige_ertraege) — dict-
     # Einfügereihenfolge bleibt beim Schreiben erhalten (schreibe_app_json/json.dumps,
-    # keine sort_keys).
-    transferaufwendungen_df = lies_vorbericht_csv(daten_wurzel / TRANSFERAUFWENDUNGEN_CSV)
-    vorbericht_quellen = {
-        "steuerarten": lies_vorbericht_csv(daten_wurzel / STEUERARTEN_CSV),
-        "zuwendungen": lies_vorbericht_csv(daten_wurzel / ZUWENDUNGEN_CSV),
-        "transferaufwendungen": transferaufwendungen_df,
-        "kita_zuschuesse": lies_vorbericht_csv(daten_wurzel / KITA_ZUSCHUESSE_CSV),
-        "zuschuesse_lfd_zwecke": lies_vorbericht_csv(daten_wurzel / ZUSCHUESSE_LFD_ZWECKE_CSV),
-        "investitionszuwendungen": lies_vorbericht_csv(daten_wurzel / INVESTITIONSZUWENDUNGEN_CSV),
-        **zerlege_weitere_vorberichtstabellen(
-            lies_vorbericht_csv(daten_wurzel / WEITERE_VORBERICHTSTABELLEN_CSV)
-        ),
-    }
+    # keine sort_keys). investitionszuwendungen hat keine GEP-Zeile: die App liest GFP Z. 18
+    # aus `finanzplan`.
+    vorbericht_quellen = lies_vorberichtstabellen(daten_wurzel, jahrgang)
+    transferaufwendungen_df = vorbericht_quellen["transferaufwendungen"]
     vorbericht = {
         tabelle: baue_vorbericht_tabelle(
             df,
@@ -1028,6 +1130,7 @@ def erzeuge_app_daten(
             planwerte=planwerte,
             gep_zeile=REGEL5_GEP_ZEILEN.get(tabelle),
             sonstige=(tabelle in TABELLEN_MIT_SONSTIGE),
+            haushaltsjahr=jahrgang.haushaltsjahr,
         )
         for tabelle, df in vorbericht_quellen.items()
     }
@@ -1041,6 +1144,7 @@ def erzeuge_app_daten(
         ergebnisplan=ergebnisplan,
         transfer_df=transferaufwendungen_df,
         produkt=weitergabe_produkt,
+        posten_namen=weitergabe_posten_namen(jahrgang),
         gep_pdf_seite=gep_pdf_seite,
     )
     ergebnisplan_app = baue_ergebnisplan(
@@ -1049,6 +1153,7 @@ def erzeuge_app_daten(
         transfer_df=transferaufwendungen_df,
         hierarchie=hierarchie,
         produkt=weitergabe_produkt,
+        posten=weitergabe_posten(jahrgang),
         jahre=jahre,
         wertarten=wertarten,
     )
@@ -1070,7 +1175,21 @@ def erzeuge_app_daten(
         "vorbericht": vorbericht,
         "eigenkapital": eigenkapital,
         "zeilen_namen": baue_zeilen_namen(list(finanzplan_app["GESAMT"]["zeilen"])),
+        # Phase 12: Stand der Eigenkapitalspalten ([layout.eigenkapital].stand) und das
+        # Produkt mit Steuern, Schlüsselzuweisung und den Umlagen ([layout.weitergabe_kreis_land]),
+        # damit die App keine Jahrgangswerte im Code braucht. Neue Felder hängen hinten an.
+        "eigenkapital_stand": layout_text(jahrgang, "eigenkapital", "stand"),
+        "finanzierungsprodukt": weitergabe_produkt,
+        "bezugsgroessen": baue_bezugsgroessen(
+            jahrgang, produkt_codes=set(hierarchie["code"].to_list())
+        ),
+        "kommune": baue_kommune(jahrgang),
     }
+    if daten["eigenkapital_stand"] not in EIGENKAPITAL_STAENDE:
+        raise AppDatenFehler(
+            f"[layout.eigenkapital].stand muss einer von {EIGENKAPITAL_STAENDE} sein, "
+            f"nicht {daten['eigenkapital_stand']!r}"
+        )
 
     pfad = app_daten_wurzel / HAUSHALT_JSON
     schreibe_app_json(daten, pfad, praefix="haushalt")
@@ -1099,6 +1218,8 @@ def erzeuge_app_daten(
         haushaltsjahr=jahrgang.haushaltsjahr,
         jahre=jahre,
         wertarten=wertarten,
+        schulden_posten=layout_liste(jahrgang, "schulden", "posten"),
+        ve_uebersicht=lies_ve_uebersicht_csv(daten_wurzel / VE_UEBERSICHT_CSV),
     )
     investitionen_pfad = app_daten_wurzel / INVESTITIONEN_JSON
     schreibe_app_json(investitionen_daten, investitionen_pfad, praefix="investitionen")
@@ -1112,8 +1233,9 @@ def erzeuge_app_daten(
     # Glossar (Plan 05-03, D-14, GLOS-01): gleicher Textvertrag, gemeinsame Auflösung.
     glossar = lies_glossar(daten_wurzel / GLOSSAR_MD)
     for abschnitt in (*erklaerungen, *glossar):
+        pruefe_titel(abschnitt.titel, abschnitt.schluessel)
         for absatz in abschnitt.absaetze:
-            pruefe_text(absatz)
+            pruefe_text(absatz, abschnitt=abschnitt.schluessel)
     alle_werte = textwerte(
         daten, investitionen_daten, produkte_daten, texte=[*erklaerungen, *glossar]
     )

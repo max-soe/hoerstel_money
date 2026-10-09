@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +34,9 @@ _META_TOP_SCHLUESSEL: tuple[str, ...] = (
     "satzung",
     "vorbericht_werte",
 )
+# Der Kreisumlage-Block (Netto/Brutto, Hebesätze) ist optional (Phase 11): Hörstel druckt
+# die Umlagen nur als Beträge (Transferaufwendungen), keine Hebesätze.
+_META_TOP_OPTIONAL: tuple[str, ...] = ("kreisumlage",)
 _META_HEBESAETZE_SCHLUESSEL: tuple[str, ...] = ("grundsteuer_a", "grundsteuer_b", "gewerbesteuer")
 _META_KREISUMLAGE_SCHLUESSEL: tuple[str, ...] = (
     "netto",
@@ -43,10 +47,12 @@ _META_KREISUMLAGE_SCHLUESSEL: tuple[str, ...] = (
 )
 _META_SATZUNG_SCHLUESSEL: tuple[str, ...] = ("beschluss", "ausfertigung")
 
-# Schulden-Definition des Vorberichts (D-14): Investitionskredite plus die haushalts-
-# rechtlich als Transferverbindlichkeit gebuchten NRW.Bank-Mittel für Flüchtlings-
-# unterkünfte. Schritt 07 (04-04) nutzt dieselbe Definition wie Regel 5/9.
-SCHULDEN_POSTEN: tuple[str, ...] = ("kredite_investitionen", "transferleistungen")
+# Schulden-Definition des Vorberichts (D-14): Investitionskredite plus ggf. weitere Posten
+# der Tabelle verbindlichkeiten, je Jahrgang in [layout.schulden].posten (Ostbevern: dazu
+# die haushaltsrechtlich als Transferverbindlichkeit gebuchten NRW.Bank-Mittel für
+# Flüchtlingsunterkünfte; Hörstel: nur Investitionskredite). Schritt 07 (04-04) nutzt
+# dieselbe Definition wie Regel 5/9. Der erste Posten ist immer die Investitionskredite.
+SCHULDEN_GRUNDPOSTEN = "kredite_investitionen"
 
 
 class ManuellFehler(ValueError):
@@ -126,7 +132,7 @@ def lies_meta_json(pfad: Path) -> dict[str, Any]:
 
     vorhandene = set(daten)
     erwartet = set(_META_TOP_SCHLUESSEL)
-    fehlend = erwartet - vorhandene
+    fehlend = erwartet - vorhandene - set(_META_TOP_OPTIONAL)
     if fehlend:
         raise ManuellFehler(f"meta.json: fehlende Schlüssel: {sorted(fehlend)}")
     unerwartet = vorhandene - erwartet
@@ -136,7 +142,8 @@ def lies_meta_json(pfad: Path) -> dict[str, Any]:
     _pruefe_meta_leaf(daten["einwohner"], "einwohner")
     _pruefe_meta_leaf(daten["flaeche"], "flaeche")
     _pruefe_meta_container(daten["hebesaetze"], "hebesaetze", _META_HEBESAETZE_SCHLUESSEL)
-    _pruefe_meta_container(daten["kreisumlage"], "kreisumlage", _META_KREISUMLAGE_SCHLUESSEL)
+    if "kreisumlage" in daten:
+        _pruefe_meta_container(daten["kreisumlage"], "kreisumlage", _META_KREISUMLAGE_SCHLUESSEL)
     _pruefe_meta_container(daten["satzung"], "satzung", _META_SATZUNG_SCHLUESSEL)
 
     vorbericht_werte = daten["vorbericht_werte"]
@@ -152,18 +159,24 @@ def lies_meta_json(pfad: Path) -> dict[str, Any]:
     return daten
 
 
-def schuldenstand_euro(verbindlichkeiten: pl.DataFrame, jahr: int) -> int:
-    """Schuldenstand nach Vorbericht-Definition (D-14): Σ `SCHULDEN_POSTEN` der Tabelle
-    `verbindlichkeiten` zum Stand Ende `jahr`, in Euro (Quelle ist T€, daher × 1000)."""
+def schuldenstand_euro(verbindlichkeiten: pl.DataFrame, jahr: int, posten: Sequence[str]) -> int:
+    """Schuldenstand nach Vorbericht-Definition (D-14): Σ `posten` ([layout.schulden].posten)
+    der Tabelle `verbindlichkeiten` zum Stand Ende `jahr`, in Euro (Quelle ist T€, daher
+    × 1000). Jeder Posten muss für `jahr` genau einmal vorkommen."""
+    if not posten or posten[0] != SCHULDEN_GRUNDPOSTEN:
+        raise ManuellFehler(
+            f"schuldenstand_euro: Schuldenposten müssen mit {SCHULDEN_GRUNDPOSTEN!r} beginnen, "
+            f"erhalten {tuple(posten)!r}"
+        )
     zeilen = verbindlichkeiten.filter(
         (pl.col("tabelle") == "verbindlichkeiten")
-        & pl.col("posten").is_in(SCHULDEN_POSTEN)
+        & pl.col("posten").is_in(list(posten))
         & (pl.col("jahr") == jahr)
     )
-    if zeilen.height != len(SCHULDEN_POSTEN):
+    if zeilen.height != len(posten):
         raise ManuellFehler(
             f"schuldenstand_euro: verbindlichkeiten.csv hat {zeilen.height} Zeilen für "
-            f"Jahr {jahr}, erwartet {len(SCHULDEN_POSTEN)}"
+            f"Jahr {jahr}, erwartet {len(posten)}"
         )
     return int(zeilen["betrag_teur"].sum()) * 1000
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { euro, euroKurz, prozent } from '@/charts/format'
 import { haushalt } from '@/data/daten'
@@ -115,26 +115,87 @@ describe('baueErgebnisReihen (ENTW-01, D-11)', () => {
   })
 
   describe.runIf(haushalt.haushaltsjahr === 2026)('Sollwerte Haushalt 2026', () => {
-    it('Ergebnis nach Minderaufwand: erstes Jahr +191.990 €, letztes Jahr −3.557.700 €', () => {
-      expect(reihen.ergebnisNach[0]?.wert).toBe(191990)
-      expect(reihen.ergebnisNach[reihen.ergebnisNach.length - 1]?.wert).toBe(-3557700)
+    it('Ergebnis nach Minderaufwand: erstes Jahr +409.507 €, letztes Jahr −5.014.196 € (GEP Z. 28)', () => {
+      expect(reihen.ergebnisNach[0]?.wert).toBe(409507)
+      expect(reihen.ergebnisNach[reihen.ergebnisNach.length - 1]?.wert).toBe(-5014196)
     })
 
-    it('Erträge im Haushaltsjahr: 27.502.063 €', () => {
+    it('Hörstel plant keinen globalen Minderaufwand: Ergebnis vor = Ergebnis nach', () => {
+      expect(werte(reihen.minderaufwand).every((wert) => wert === 0)).toBe(true)
+      expect(werte(reihen.ergebnisNach)).toEqual(werte(reihen.ergebnisVor))
+    })
+
+    it('Erträge im Haushaltsjahr: 59.298.436 € (ordentliche Erträge + Finanzerträge)', () => {
       const index = haushalt.jahre.indexOf(haushalt.haushaltsjahr)
-      expect(reihen.ertraege[index]?.wert).toBe(27502063)
+      expect(reihen.ertraege[index]?.wert).toBe(59298436)
+    })
+  })
+})
+
+describe('baueErgebnisReihen mit globalem Minderaufwand (Ostbevern-Muster)', () => {
+  afterEach(() => {
+    vi.doUnmock('@/data/daten')
+    vi.resetModules()
+  })
+
+  it('führt die negative GEP-Kürzung als positiven Minderaufwand, das Ergebnis nach liegt darüber', async () => {
+    // Ostbevern 2026: Jahresergebnis −2.953.506 €, globaler Minderaufwand −600.000 €,
+    // Ergebnis nach Minderaufwand −2.353.506 €; Hörstel plant keinen Minderaufwand.
+    vi.resetModules()
+    vi.doMock('@/data/daten', async (importOriginal) => {
+      const original = await importOriginal<typeof import('@/data/daten')>()
+      const gesamt = original.haushalt.ergebnisplan['GESAMT']
+      if (gesamt === undefined) {
+        throw new Error('GESAMT fehlt in den Testdaten')
+      }
+      const anzahl = original.haushalt.jahre.length
+      const jahresergebnis = Array.from({ length: anzahl }, (_x, k) =>
+        k === 0 ? 191990 : -2953506,
+      )
+      const minder = Array.from({ length: anzahl }, (_x, k) => (k === 0 ? 0 : -600000))
+      const nach = jahresergebnis.map((wert, k) => wert - (minder[k] ?? 0))
+      return {
+        ...original,
+        haushalt: {
+          ...original.haushalt,
+          ergebnisplan: {
+            ...original.haushalt.ergebnisplan,
+            GESAMT: {
+              ...gesamt,
+              zeilen: {
+                ...gesamt.zeilen,
+                jahresergebnis,
+                globaler_minderaufwand: minder,
+                ergebnis_nach_minderaufwand: nach,
+              },
+            },
+          },
+        },
+      }
+    })
+    const modul = await import('@/lib/entwicklung')
+    const reihen = modul.baueErgebnisReihen()
+    expect(werte(reihen.minderaufwand)[0]).toBe(0)
+    expect(Object.is(werte(reihen.minderaufwand)[0], 0)).toBe(true)
+    expect(werte(reihen.minderaufwand)[1]).toBe(600000)
+    expect(werte(reihen.ergebnisNach)[1]).toBe(-2353506)
+    reihen.ergebnisNach.forEach((eintrag, index) => {
+      const summe =
+        (reihen.ergebnisVor[index]?.wert ?? Number.NaN) +
+        (reihen.minderaufwand[index]?.wert ?? Number.NaN)
+      expect(summe).toBe(eintrag.wert)
     })
   })
 })
 
 describe('ergebnisBeschriftung (ENTW-01, Säulenbeschriftung)', () => {
   it('nennt ein negatives Ergebnis ein Defizit mit dem Betrag ohne Vorzeichen', () => {
-    expect(ergebnisBeschriftung(-3557700)).toBe(`Defizit ${euroKurz(3557700)}`)
-    expect(ergebnisBeschriftung(-3557700)).toBe('Defizit 3,56 Mio. €')
+    expect(ergebnisBeschriftung(-5014196)).toBe(`Defizit ${euroKurz(5014196)}`)
+    expect(ergebnisBeschriftung(-5014196)).toBe('Defizit 5,01 Mio. €')
   })
 
   it('nennt ein positives Ergebnis einen Überschuss', () => {
-    expect(ergebnisBeschriftung(191990)).toBe(`Überschuss ${euroKurz(191990)}`)
+    expect(ergebnisBeschriftung(409507)).toBe(`Überschuss ${euroKurz(409507)}`)
   })
 
   it('zeigt „–“ ohne Wert, nie „Defizit 0“', () => {
@@ -146,8 +207,8 @@ describe('ergebnisBeschriftung (ENTW-01, Säulenbeschriftung)', () => {
   })
 
   it('nennt mit genau=true den Betrag auf den Euro genau (Tooltip)', () => {
-    expect(ergebnisBeschriftung(-3557700, true)).toBe(`Defizit ${euro(3557700)}`)
-    expect(ergebnisBeschriftung(191990, true)).toBe(`Überschuss ${euro(191990)}`)
+    expect(ergebnisBeschriftung(-5014196, true)).toBe(`Defizit ${euro(5014196)}`)
+    expect(ergebnisBeschriftung(409507, true)).toBe(`Überschuss ${euro(409507)}`)
   })
 })
 
@@ -270,8 +331,8 @@ describe('bauePostenReihe (ENTW-02, D-12, D-13)', () => {
   })
 
   describe.runIf(haushalt.haushaltsjahr === 2026)('Sollwerte Haushalt 2026', () => {
-    it('Kreisumlage steigt vom ersten zum letzten Planjahr um rund 14,2 %', () => {
-      expect(veraenderung(bauePostenReihe('kreisumlage'))).toBeCloseTo(0.142, 3)
+    it('Kreisumlage steigt vom ersten zum letzten Planjahr um rund 28,4 % (10.257 → 13.171 T€, S. 35)', () => {
+      expect(veraenderung(bauePostenReihe('kreisumlage'))).toBeCloseTo(0.284, 3)
     })
   })
 })
@@ -347,6 +408,9 @@ describe('postenFussnote (ENTW-02, Quelle je Karte)', () => {
 })
 
 describe('Quelltext von lib/entwicklung.ts', () => {
+  // Warum Quelltext: Gesichert wird die Konvention „keine Jahrgangswerte im Code“. Eine fest
+  // getippte Jahreszahl liefert für den heutigen Jahrgang dieselbe Ausgabe wie die berechnete und
+  // fällt in keinem Verhaltenstest auf; sie zeigt sich nur im Quelltext (D-14).
   const quelltexte = import.meta.glob<string>('/src/lib/entwicklung.ts', {
     query: '?raw',
     import: 'default',

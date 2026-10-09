@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import re
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -21,6 +21,7 @@ from ostbevern.konfiguration import (
     Jahrgang,
     lade_jahrgang,
     lade_sollwerte,
+    layout_liste,
     layout_text,
 )
 from ostbevern.manuell import (
@@ -36,6 +37,7 @@ from ostbevern.schema import (
     EIGENKAPITAL_CSV,
     ERGEBNISPLAN_CSV,
     FINANZPLAN_CSV,
+    FRAKTIONSZUWENDUNGEN_CSV,
     HIERARCHIE_CSV,
     INVESTITIONEN_CSV,
     INVESTITIONEN_PB_CSV,
@@ -163,6 +165,17 @@ REGEL7_KENNZAHLEN: dict[str, tuple[str, str, tuple[tuple[int, str], ...]]] = {
     "auszahlungen_finanzierung": ("finanzplan", "ansatz", ((1, "35"),)),
     "saldo_finanzierung": ("finanzplan", "ansatz", ((1, "34"),)),
     "verpflichtungsermaechtigungen": ("finanzplan", "ve", ((1, "30"),)),
+}
+
+
+# Regel 7 für den Querschnitt "Gesamthaushalt" (IKVS, Hörstel S. 110): eine GESAMTSUMME-Zeile
+# ohne PB wird gegen die Gesamtpläne geprüft. Der Gesamtfinanzplan nummeriert die
+# Finanzierungstätigkeit anders als der Teilfinanzplan (Z. 33-37 statt Z. 33-35).
+REGEL7_KENNZAHLEN_GESAMT: dict[str, tuple[str, str, tuple[tuple[int, str], ...]]] = {
+    **REGEL7_KENNZAHLEN,
+    "einzahlungen_finanzierung": ("finanzplan", "ansatz", ((1, "33"), (1, "34"))),
+    "auszahlungen_finanzierung": ("finanzplan", "ansatz", ((1, "35"), (1, "36"))),
+    "saldo_finanzierung": ("finanzplan", "ansatz", ((1, "37"),)),
 }
 
 
@@ -306,6 +319,10 @@ class Planwerte:
 
     def wert(self, ebene: str, code: str, zeile: str, jahr: int, wertart: str) -> int:
         return self._wert((ebene, code, zeile, jahr, wertart), unterwegs=frozenset())
+
+    def ist_gedruckt(self, ebene: str, code: str, zeile: str, jahr: int, wertart: str) -> bool:
+        """True, wenn die Plan-CSV genau diesen Wert enthält (nicht über FORMELN hergeleitet)."""
+        return (ebene, code, zeile, jahr, wertart) in self._werte
 
     def _wert(self, schluessel: _PlanwerteSchluessel, *, unterwegs: frozenset) -> int:
         if schluessel in self._cache:
@@ -499,17 +516,38 @@ def _wende_befunde_an(
     return aktualisiert, abgleich.veraltet
 
 
-def _pruefe_regel1(*, ergebnisplan: pl.DataFrame, finanzplan: pl.DataFrame) -> Regelergebnis:
+def _pruefe_regel1(
+    *,
+    ergebnisplan: pl.DataFrame,
+    finanzplan: pl.DataFrame,
+    nur_mit_gedruckten_komponenten: bool = False,
+) -> Regelergebnis:
+    """Regel 1 – jede gedruckte Formelzeile gleich der Summe ihrer Komponenten.
+
+    `nur_mit_gedruckten_komponenten` (IKVS-Layout): Eine Formel wird nur geprüft, wenn der
+    Plan mindestens eine ihrer Komponenten druckt. Hörsteler Teilfinanzpläne drucken z. B.
+    Z. 17 (Saldo laufende Verwaltung), aber nie Z. 09/16; diese Zeilen sichern Regel 2/3 und
+    die Haushaltsquerschnitte ab. Im ProFIS+-Layout bleibt jede Formelzeile geprüft.
+    """
     geprueft = 0
     abweichungen: list[Pruefpunkt] = []
     for datei, df in (("ergebnisplan", ergebnisplan), ("finanzplan", finanzplan)):
         planwerte = Planwerte(df, datei=datei)
+        gedruckt = {
+            (z["ebene"], z["code"] or "", z["zeile"], z["jahr"], z["wertart"])
+            for z in df.iter_rows(named=True)
+        }
         for zeile in df.iter_rows(named=True):
             plantyp = plantyp_fuer(datei, zeile["ebene"])
             formel = FORMELN.get(plantyp, {}).get(zeile["zeile"])
             if formel is None:
                 continue
             code = zeile["code"] or ""
+            if nur_mit_gedruckten_komponenten and not any(
+                (zeile["ebene"], code, komponente, zeile["jahr"], zeile["wertart"]) in gedruckt
+                for _, komponente in formel
+            ):
+                continue
             soll = zeile["betrag"]
             ist = sum(
                 vorzeichen
@@ -762,7 +800,11 @@ def _pruefe_regel4_satzung(
     planwerte_finanzplan: Planwerte,
     sollwerte: dict,
     haushaltsjahr: int,
+    ve_ohne_gesamtfinanzplan: int | None = None,
 ) -> tuple[int, list[Pruefpunkt]]:
+    """Satzung § 1-3 gegen die Gesamtpläne. Druckt der Gesamtfinanzplan keine VE-Spalte
+    (IKVS, Hörstel), ist `ve_ohne_gesamtfinanzplan` der Ist-Wert der VE (Gesamtbetrag der
+    VE-Übersicht, Euro)."""
     satzung = sollwerte["satzung"]
     pdf_seite = satzung.get("pdf_seite")
     quellen = {"ergebnisplan": planwerte_ergebnisplan, "finanzplan": planwerte_finanzplan}
@@ -777,10 +819,13 @@ def _pruefe_regel4_satzung(
             raise PruefungsFehler(f"Regel 4: keine Satzungsformel für Schlüssel {schluessel!r}")
         datei, wertart, komponenten = formel
         planwerte = quellen[datei]
-        ist = sum(
-            vorzeichen * planwerte.wert("GESAMT", "", zeile, haushaltsjahr, wertart)
-            for vorzeichen, zeile in komponenten
-        )
+        if schluessel == "verpflichtungsermaechtigungen" and ve_ohne_gesamtfinanzplan is not None:
+            ist = ve_ohne_gesamtfinanzplan
+        else:
+            ist = sum(
+                vorzeichen * planwerte.wert("GESAMT", "", zeile, haushaltsjahr, wertart)
+                for vorzeichen, zeile in komponenten
+            )
         geprueft += 1
         punkt = Pruefpunkt(
             regel=4,
@@ -976,6 +1021,7 @@ def _pruefe_regel4(
     spalten: tuple[str, ...],
     steuerarten: pl.DataFrame,
     transferaufwendungen: pl.DataFrame,
+    ve_ohne_gesamtfinanzplan: int | None = None,
 ) -> Regelergebnis:
     haushaltsjahr = sollwerte["haushaltsjahr"]
 
@@ -990,6 +1036,7 @@ def _pruefe_regel4(
         planwerte_finanzplan=planwerte_finanzplan,
         sollwerte=sollwerte,
         haushaltsjahr=haushaltsjahr,
+        ve_ohne_gesamtfinanzplan=ve_ohne_gesamtfinanzplan,
     )
     geprueft_b3, abweichungen_b3 = _pruefe_regel4_b3(
         planwerte=planwerte_ergebnisplan,
@@ -1035,6 +1082,7 @@ REGEL5_GEP_ZEILEN: dict[str, str] = {
     "sachaufwand": "13",
     "sonstige_aufwendungen": "16",
     "sonstige_ertraege": "07",
+    "privatrechtliche_leistungsentgelte": "05",
 }
 # Regel 5, Finanzplan-Zweig (Phase 5 D-03, EINN-06): manuelle Vorberichtstabelle -> Gesamt-
 # finanzplan-Zeile, gegen die die gedruckte Gesamtzeile in Stufe (b) geprüft wird. Eine
@@ -1044,31 +1092,40 @@ REGEL5_GEP_ZEILEN: dict[str, str] = {
 REGEL5_GFP_ZEILEN: dict[str, str] = {
     "investitionszuwendungen": "18",
 }
-# weitere_vorberichtstabellen.csv (D-08, MANU-05): die Tabellenmenge dieser Datei muss
-# exakt dieser Menge entsprechen; eine fehlende oder zusätzliche Tabelle bricht mit
-# PruefungsFehler ab. D-08 (Phase 4) war eine abgeschlossene Liste von fünf Tabellen;
-# Phase 5 D-04 ergänzt bewusst die sechste, 2.1.7 Sonstige ordentliche Erträge (EINN-04).
-# Jede weitere Tabelle braucht wieder einen eigenen Review-Beschluss.
+# weitere_vorberichtstabellen.csv (D-08, MANU-05): die erlaubten Tabellen dieser Datei.
+# Welche davon ein Jahrgang druckt, steht in [layout.vorbericht].weitere_tabellen; die
+# Tabellenmenge der Datei muss exakt dieser Liste entsprechen. D-08 (Phase 4) war eine
+# abgeschlossene Liste von fünf Tabellen; Phase 5 D-04 ergänzt die sechste, 2.1.7 Sonstige
+# ordentliche Erträge (EINN-04), Phase 11 die privatrechtlichen Leistungsentgelte (Hörstel
+# S. 24). Jede weitere Tabelle braucht wieder einen eigenen Review-Beschluss.
 WEITERE_VORBERICHTSTABELLEN: tuple[str, ...] = (
     "leistungsentgelte",
+    "privatrechtliche_leistungsentgelte",
     "kostenerstattungen",
     "personal",
     "sachaufwand",
     "sonstige_aufwendungen",
     "sonstige_ertraege",
 )
+# Einzeldateien der manuellen Vorberichtstabellen (Tabellenname = Dateiname). Welche davon
+# ein Jahrgang druckt, steht in [layout.vorbericht].einzeltabellen (Phase 11: Hörstel hat
+# z. B. keine Kita-Tabelle); die Reihenfolge dort ist die Reihenfolge der App-Daten.
+VORBERICHT_EINZELTABELLEN_CSV: dict[str, Path] = {
+    "steuerarten": STEUERARTEN_CSV,
+    "zuwendungen": ZUWENDUNGEN_CSV,
+    "transferaufwendungen": TRANSFERAUFWENDUNGEN_CSV,
+    "kita_zuschuesse": KITA_ZUSCHUESSE_CSV,
+    "zuschuesse_lfd_zwecke": ZUSCHUESSE_LFD_ZWECKE_CSV,
+    "investitionszuwendungen": INVESTITIONSZUWENDUNGEN_CSV,
+}
 # Stufe (b) vergleicht die gedruckte, nur in T€ geführte Gesamtzeile (×1000) gegen die
 # eurogenaue GEP-Zeile; eine eigene, gröbere Toleranz als TOLERANZ_EURO (Stufe a bleibt
 # bei der strengen 1-€-Toleranz, da dort beide Seiten aus derselben Tabelle stammen).
 REGEL5_TOLERANZ_GEP_EURO = 1000
 # Weitergabe an Kreis und Land (D-01, Spez. 3.4): TP <produkt> Z. 15 besteht ausschließlich
-# aus diesen drei Transferaufwendungen-Posten (Posten-Schlüssel unserer eigenen CSV, keine
-# GEP-/TP-Zeile — fachliche Regel, Produktcode kommt aus [layout.weitergabe_kreis_land]).
-WEITERGABE_POSTEN: tuple[str, ...] = (
-    "kreisumlage",
-    "gewerbesteuerumlage",
-    "krankenhausinvestitionsumlage",
-)
+# aus den Transferaufwendungen-Posten in [layout.weitergabe_kreis_land].posten (Ostbevern:
+# Kreis-, Gewerbesteuer- und Krankenhausinvestitionsumlage; Hörstel: Kreis-, Jugendamts- und
+# Gewerbesteuerumlage), siehe weitergabe_posten().
 # kita_zuschuesse (D-07): Posten in transferaufwendungen.csv, gegen den die Kita-Gesamtzeile
 # desselben Jahres geprüft wird.
 REGEL5_KITA_POSTEN = "zuschuesse_kindertageseinrichtungen"
@@ -1162,27 +1219,24 @@ def _pruefe_regel5_weitergabe(
     planwerte_ergebnisplan: Planwerte,
     ergebnisplan: pl.DataFrame,
     produkt: str,
+    posten: Sequence[str],
 ) -> tuple[int, list[Pruefpunkt]]:
-    """Weitergabe an Kreis und Land (D-01): Σ WEITERGABE_POSTEN × 1000 == TP <produkt> Z. 15
+    """Weitergabe an Kreis und Land (D-01): Σ `posten` × 1000 == TP <produkt> Z. 15
     je Jahr, Toleranz ±(Anzahl Posten × REGEL5_TOLERANZ_GEP_EURO). Ein fehlender Posten
     bricht mit PruefungsFehler ab (D-01 ist eine vollständige Identität, kein Teilabgleich)."""
-    fehlend = [
-        posten
-        for posten in WEITERGABE_POSTEN
-        if transfer_df.filter(pl.col("posten") == posten).height == 0
-    ]
+    fehlend = [p for p in posten if transfer_df.filter(pl.col("posten") == p).height == 0]
     if fehlend:
         raise PruefungsFehler(
             f"Regel 5: Weitergabe-Posten {fehlend} fehlen in transferaufwendungen.csv"
         )
 
-    weitergabe_df = transfer_df.filter(pl.col("posten").is_in(WEITERGABE_POSTEN))
+    weitergabe_df = transfer_df.filter(pl.col("posten").is_in(list(posten)))
     geprueft = 0
     abweichungen: list[Pruefpunkt] = []
-    toleranz = len(WEITERGABE_POSTEN) * REGEL5_TOLERANZ_GEP_EURO
+    toleranz = len(posten) * REGEL5_TOLERANZ_GEP_EURO
     for jahr in sorted(weitergabe_df["jahr"].unique().to_list()):
         jahr_df = weitergabe_df.filter(pl.col("jahr") == jahr)
-        if jahr_df.height != len(WEITERGABE_POSTEN):
+        if jahr_df.height != len(posten):
             raise PruefungsFehler(f"Regel 5: Weitergabe-Posten unvollständig für Jahr {jahr}")
         wertart = jahr_df["wertart"][0]
         summe = jahr_df["betrag_teur"].sum()
@@ -1266,21 +1320,63 @@ def _pruefe_regel5_konzessionsabgaben(
     return 1, ([punkt] if abs(punkt.abweichung) > TOLERANZ_EURO else [])
 
 
-def zerlege_weitere_vorberichtstabellen(df: pl.DataFrame) -> dict[str, pl.DataFrame]:
+def weitergabe_posten(jahrgang: Jahrgang) -> tuple[str, ...]:
+    """Transferaufwendungen-Posten der Weitergabe an Kreis und Land (D-01, Phase 11)."""
+    return layout_liste(jahrgang, "weitergabe_kreis_land", "posten")
+
+
+def vorbericht_tabellen(jahrgang: Jahrgang) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Die vom Jahrgang gedruckten Einzel- und weiteren Vorberichtstabellen (Phase 11,
+    [layout.vorbericht]); jeder Name muss in VORBERICHT_EINZELTABELLEN_CSV bzw.
+    WEITERE_VORBERICHTSTABELLEN stehen."""
+    einzeln = layout_liste(jahrgang, "vorbericht", "einzeltabellen")
+    weitere = layout_liste(jahrgang, "vorbericht", "weitere_tabellen")
+    unbekannt = (set(einzeln) - set(VORBERICHT_EINZELTABELLEN_CSV)) | (
+        set(weitere) - set(WEITERE_VORBERICHTSTABELLEN)
+    )
+    if unbekannt:
+        raise PruefungsFehler(f"[layout.vorbericht]: unbekannte Tabellen {sorted(unbekannt)}")
+    return einzeln, weitere
+
+
+def _hat_konzessions_split(meta: Mapping | None) -> bool:
+    """True, wenn meta.json die Spartenaufteilung der Konzessionsabgaben nennt (oder fehlt,
+    dann meldet die Prüfung selbst den Fehler)."""
+    if meta is None:
+        return True
+    werte = meta.get("vorbericht_werte", {})
+    return any(schluessel in werte for schluessel in REGEL5_KONZESSION_SPLIT)
+
+
+def zerlege_weitere_vorberichtstabellen(
+    df: pl.DataFrame, erwartet: Sequence[str]
+) -> dict[str, pl.DataFrame]:
     """Zerlegt `weitere_vorberichtstabellen.csv` nach Spalte `tabelle` (D-08, MANU-05).
 
-    Die Tabellenmenge der Datei muss exakt `WEITERE_VORBERICHTSTABELLEN` entsprechen;
-    eine abweichende Menge (fehlend oder zusätzlich) bricht mit `PruefungsFehler` ab —
-    D-08 ist eine abgeschlossene Liste, keine Erweiterung ohne Review."""
+    Die Tabellenmenge der Datei muss exakt `erwartet` ([layout.vorbericht].weitere_tabellen)
+    entsprechen; eine abweichende Menge (fehlend oder zusätzlich) bricht mit
+    `PruefungsFehler` ab — D-08 ist eine abgeschlossene Liste, keine Erweiterung ohne Review."""
     tatsaechlich = set(df["tabelle"].unique().to_list())
-    erwartet = set(WEITERE_VORBERICHTSTABELLEN)
-    if tatsaechlich != erwartet:
+    if tatsaechlich != set(erwartet):
         raise PruefungsFehler(
             "Regel 5: weitere_vorberichtstabellen.csv hat eine abweichende Tabellenmenge "
             f"(gefunden: {sorted(tatsaechlich)}, erwartet: {sorted(erwartet)})"
         )
+    return {tabelle: df.filter(pl.col("tabelle") == tabelle) for tabelle in erwartet}
+
+
+def lies_vorberichtstabellen(daten_wurzel: Path, jahrgang: Jahrgang) -> dict[str, pl.DataFrame]:
+    """Liest die manuellen Vorberichtstabellen, die der Jahrgang druckt: zuerst die Einzel-
+    dateien, dann die weiteren Tabellen, jeweils in der Reihenfolge von [layout.vorbericht]."""
+    einzeln, weitere = vorbericht_tabellen(jahrgang)
     return {
-        tabelle: df.filter(pl.col("tabelle") == tabelle) for tabelle in WEITERE_VORBERICHTSTABELLEN
+        **{
+            tabelle: lies_vorbericht_csv(daten_wurzel / VORBERICHT_EINZELTABELLEN_CSV[tabelle])
+            for tabelle in einzeln
+        },
+        **zerlege_weitere_vorberichtstabellen(
+            lies_vorbericht_csv(daten_wurzel / WEITERE_VORBERICHTSTABELLEN_CSV), weitere
+        ),
     }
 
 
@@ -1309,6 +1405,7 @@ REGEL9_ECKWERTE: tuple[str, ...] = (
     "schluesselzuweisung_vorjahr_teur",
     "pro_kopf_verschuldung_vorjahr",
     "stellen_beamte",
+    "stellen_beamte_hundertstel",
 )
 # weitere_vorberichtstabellen-artige Tabellen ohne gedruckte Gesamtzeile (D-11): die
 # generische Stufe (a)/(b)-Prüfung in _pruefe_regel5 wird für sie übersprungen.
@@ -1517,7 +1614,9 @@ def _pruefe_regel5(
                 if abs(punkt_gfp.abweichung) > REGEL5_TOLERANZ_GEP_EURO:
                     abweichungen.append(punkt_gfp)
 
-    if "sonstige_ertraege" in vorbericht:
+    # Konzessionsabgaben nach Sparten und die Kreisumlage-Fußnote prüfen nur Jahrgänge, deren
+    # Vorbericht diese Werte druckt (Ostbevern); Hörstel hat sie nicht in meta.json.
+    if "sonstige_ertraege" in vorbericht and _hat_konzessions_split(meta):
         if meta is None:
             raise PruefungsFehler(
                 "Regel 5: sonstige_ertraege braucht meta.json für die Konzessionsabgaben-Aufteilung"
@@ -1553,11 +1652,12 @@ def _pruefe_regel5(
             planwerte_ergebnisplan=planwerte_ergebnisplan,
             ergebnisplan=ergebnisplan,
             produkt=produkt,
+            posten=weitergabe_posten(jahrgang),
         )
         geprueft += geprueft_weitergabe
         abweichungen += abweichungen_weitergabe
 
-    if "transferaufwendungen" in vorbericht:
+    if "transferaufwendungen" in vorbericht and (meta is None or "kreisumlage" in meta):
         if meta is None or eckwerte is None:
             raise PruefungsFehler(
                 "Regel 5: transferaufwendungen braucht meta.json und die [eckwerte]-Sollwerte "
@@ -1772,8 +1872,11 @@ def _pruefe_regel5_ve_uebersicht(
     ve_faelligkeiten: pl.DataFrame,
     planwerte_finanzplan: Planwerte,
     haushaltsjahr: int,
+    ve_investitionsuebersichten: int | None = None,
 ) -> tuple[int, list[Pruefpunkt], list[Luecke]]:
-    """D-11: VE-Gesamtbetrag == GFP-VE Z. 30 (`zeile` `summe_gfp_ve`) und je (Produkt,
+    """D-11: VE-Gesamtbetrag == GFP-VE Z. 30 (`zeile` `summe_gfp_ve`; ohne VE-Spalte im
+    Gesamtfinanzplan, IKVS: == Σ VE der Investitionsübersichten, `zeile`
+    `summe_investitionen_ve`) und je (Produkt,
     Fälligkeitsjahr) die VE-Übersicht gegen `ve_faelligkeiten.csv` (`zeile`
     `faellig_{produkt}`); ein Paar nur in einer Quelle ist eine `Luecke` (structural,
     keine Betragsabweichung, 03-03-Mechanismus)."""
@@ -1790,14 +1893,19 @@ def _pruefe_regel5_ve_uebersicht(
     abweichungen: list[Pruefpunkt] = []
     luecken: list[Luecke] = []
 
-    soll_gfp_ve = planwerte_finanzplan.wert("GESAMT", "", "30", haushaltsjahr, "ve")
+    if ve_investitionsuebersichten is None:
+        soll_gfp_ve = planwerte_finanzplan.wert("GESAMT", "", "30", haushaltsjahr, "ve")
+        zeile_summe = "summe_gfp_ve"
+    else:
+        soll_gfp_ve = ve_investitionsuebersichten
+        zeile_summe = "summe_investitionen_ve"
     geprueft += 1
     punkt_summe = Pruefpunkt(
         regel=5,
         plan="ve_uebersicht",
         ebene="GESAMT",
         code="",
-        zeile="summe_gfp_ve",
+        zeile=zeile_summe,
         jahr=haushaltsjahr,
         wertart="ve",
         soll=soll_gfp_ve,
@@ -1870,6 +1978,45 @@ def _pruefe_regel5_ve_uebersicht(
     return geprueft, abweichungen, luecken
 
 
+def _pruefe_regel5_fraktionszuwendungen(
+    *, fraktionszuwendungen: pl.DataFrame
+) -> tuple[int, list[Pruefpunkt]]:
+    """Phase 11 (Hörstel S. 576): je Tabelle mit Gesamtzeile und Jahr Σ Posten == gedruckte
+    Gesamtzeile (int-Euro, Toleranz TOLERANZ_EURO). Tabellen ohne Gesamtzeile (Teil B,
+    geldwerte Leistungen) werden übersprungen; mehr als eine Gesamtzeile bricht ab."""
+    geprueft = 0
+    abweichungen: list[Pruefpunkt] = []
+    for tabelle in sorted(fraktionszuwendungen["tabelle"].unique().to_list()):
+        teil = fraktionszuwendungen.filter(pl.col("tabelle") == tabelle)
+        if teil.filter(pl.col("ist_gesamt")).height == 0:
+            continue
+        for jahr in sorted(teil["jahr"].unique().to_list()):
+            jahr_df = teil.filter(pl.col("jahr") == jahr)
+            gesamt_zeilen = jahr_df.filter(pl.col("ist_gesamt"))
+            if gesamt_zeilen.height != 1:
+                raise PruefungsFehler(
+                    f"Regel 5: {tabelle} Jahr {jahr} hat {gesamt_zeilen.height} "
+                    "ist_gesamt-Zeilen, erwartet genau 1"
+                )
+            gesamt = gesamt_zeilen.row(0, named=True)
+            geprueft += 1
+            punkt = Pruefpunkt(
+                regel=5,
+                plan=tabelle,
+                ebene="GESAMT",
+                code="",
+                zeile="summe_posten",
+                jahr=jahr,
+                wertart=gesamt["wertart"],
+                soll=gesamt["betrag"],
+                ist=jahr_df.filter(~pl.col("ist_gesamt"))["betrag"].sum() or 0,
+                pdf_seite=gesamt["quelle"],
+            )
+            if abs(punkt.abweichung) > TOLERANZ_EURO:
+                abweichungen.append(punkt)
+    return geprueft, abweichungen
+
+
 def pruefe_regel5_schulden_ruecklagen_ve(
     *,
     verbindlichkeiten: pl.DataFrame,
@@ -1880,6 +2027,7 @@ def pruefe_regel5_schulden_ruecklagen_ve(
     planwerte_finanzplan: Planwerte,
     eckwerte: Mapping[str, Mapping[str, int]],
     haushaltsjahr: int,
+    ve_investitionsuebersichten: int | None = None,
 ) -> tuple[int, list[Pruefpunkt], list[Luecke]]:
     """Orchestriert die D-11 bis D-14-Erweiterungen von Regel 5 (Schulden, Rücklagen,
     VE): Eigenkapital-Summe, Kredit-Fortschreibung, Jahresergebnis vs. GEP Z. 28,
@@ -1923,6 +2071,7 @@ def pruefe_regel5_schulden_ruecklagen_ve(
         ve_faelligkeiten=ve_faelligkeiten,
         planwerte_finanzplan=planwerte_finanzplan,
         haushaltsjahr=haushaltsjahr,
+        ve_investitionsuebersichten=ve_investitionsuebersichten,
     )
     geprueft += geprueft_ve
     abweichungen += abweichungen_ve
@@ -1945,13 +2094,16 @@ def _regel9_ist_werte(
     verbindlichkeiten: pl.DataFrame | None,
     stellenplan: pl.DataFrame | None,
     haushaltsjahr: int,
-) -> dict[str, int]:
-    """Ist-Werte der Regel-9-Eckwerte (D-10, D-14, D-20): `meta.json`-Pfade,
-    `zuwendungen.csv`-Posten `schluesselzuweisung` des Haushaltsjahrs und Vorjahrs,
-    (wenn `verbindlichkeiten` übergeben ist, 04-02 Task 3) die Pro-Kopf-Verschuldung
-    des Vorjahrs nach der Vorbericht-Definition (D-14, `manuell.schuldenstand_euro`/
-    `pro_kopf_euro`), und (wenn `stellenplan` übergeben ist, Plan 04-03) Σ Teil A
-    (Beamte) Stellen des Haushaltsjahrs ohne Produktbereich."""
+    schulden_posten: Sequence[str] = (),
+) -> dict[str, Callable[[], int]]:
+    """Ist-Werte der Regel-9-Eckwerte (D-10, D-14, D-20), je Name als Funktion, damit nur
+    die Eckwerte ausgewertet werden, die die Sollwertdatei nennt (Phase 11: Hörstel druckt
+    z. B. keine Kreisumlage-Hebesätze): `meta.json`-Pfade, `zuwendungen.csv`-Posten
+    `schluesselzuweisung` des Haushaltsjahrs und Vorjahrs, (wenn `verbindlichkeiten`
+    übergeben ist, 04-02 Task 3) die Pro-Kopf-Verschuldung des Vorjahrs nach der
+    Vorbericht-Definition (D-14, `manuell.schuldenstand_euro`/`pro_kopf_euro`), und (wenn
+    `stellenplan` übergeben ist, Plan 04-03) Σ Teil A (Beamte) Stellen des Haushaltsjahrs
+    ohne Produktbereich."""
 
     def _zuwendung(posten: str, jahr: int) -> int:
         zeile = zuwendungen.filter((pl.col("posten") == posten) & (pl.col("jahr") == jahr))
@@ -1962,35 +2114,54 @@ def _regel9_ist_werte(
             )
         return zeile["betrag_teur"][0]
 
-    hebesaetze = meta["hebesaetze"]
-    kreisumlage = meta["kreisumlage"]
-    werte = {
-        "einwohner": meta["einwohner"]["wert"],
-        "hebesatz_grundsteuer_a": hebesaetze["grundsteuer_a"]["wert"],
-        "hebesatz_grundsteuer_b": hebesaetze["grundsteuer_b"]["wert"],
-        "hebesatz_gewerbesteuer": hebesaetze["gewerbesteuer"]["wert"],
-        "hebesatz_kreisumlage_promille": kreisumlage["hebesatz_kreisumlage"]["wert"],
-        "hebesatz_kreisumlage_vorjahr_promille": kreisumlage["hebesatz_kreisumlage"]["vorjahr"],
-        "hebesatz_jugendamtsumlage_promille": kreisumlage["hebesatz_jugendamtsumlage"]["wert"],
-        "hebesatz_jugendamtsumlage_vorjahr_promille": kreisumlage["hebesatz_jugendamtsumlage"][
-            "vorjahr"
-        ],
-        "schluesselzuweisung_teur": _zuwendung("schluesselzuweisung", haushaltsjahr),
-        "schluesselzuweisung_vorjahr_teur": _zuwendung("schluesselzuweisung", haushaltsjahr - 1),
+    def _meta(*pfad: str) -> int:
+        wert: object = meta
+        for schluessel in pfad:
+            if not isinstance(wert, Mapping) or schluessel not in wert:
+                raise PruefungsFehler(f"Regel 9: meta.json hat keinen Wert {'.'.join(pfad)}")
+            wert = wert[schluessel]
+        return wert  # type: ignore[return-value]
+
+    werte: dict[str, Callable[[], int]] = {
+        "einwohner": lambda: _meta("einwohner", "wert"),
+        "hebesatz_grundsteuer_a": lambda: _meta("hebesaetze", "grundsteuer_a", "wert"),
+        "hebesatz_grundsteuer_b": lambda: _meta("hebesaetze", "grundsteuer_b", "wert"),
+        "hebesatz_gewerbesteuer": lambda: _meta("hebesaetze", "gewerbesteuer", "wert"),
+        "hebesatz_kreisumlage_promille": lambda: _meta(
+            "kreisumlage", "hebesatz_kreisumlage", "wert"
+        ),
+        "hebesatz_kreisumlage_vorjahr_promille": lambda: _meta(
+            "kreisumlage", "hebesatz_kreisumlage", "vorjahr"
+        ),
+        "hebesatz_jugendamtsumlage_promille": lambda: _meta(
+            "kreisumlage", "hebesatz_jugendamtsumlage", "wert"
+        ),
+        "hebesatz_jugendamtsumlage_vorjahr_promille": lambda: _meta(
+            "kreisumlage", "hebesatz_jugendamtsumlage", "vorjahr"
+        ),
+        "schluesselzuweisung_teur": lambda: _zuwendung("schluesselzuweisung", haushaltsjahr),
+        "schluesselzuweisung_vorjahr_teur": lambda: _zuwendung(
+            "schluesselzuweisung", haushaltsjahr - 1
+        ),
     }
     if verbindlichkeiten is not None:
-        schuldenstand_vorjahr = schuldenstand_euro(verbindlichkeiten, haushaltsjahr - 1)
-        werte["pro_kopf_verschuldung_vorjahr"] = pro_kopf_euro(
-            schuldenstand_vorjahr, meta["einwohner"]["wert"]
+        werte["pro_kopf_verschuldung_vorjahr"] = lambda: pro_kopf_euro(
+            schuldenstand_euro(verbindlichkeiten, haushaltsjahr - 1, schulden_posten),
+            meta["einwohner"]["wert"],
         )
     if stellenplan is not None:
-        beamte_stellen = stellenplan.filter(
-            (pl.col("teil") == "beamte")
-            & (pl.col("merkmal") == "stellen")
-            & (pl.col("jahr") == haushaltsjahr)
-            & pl.col("produktbereich").is_null()
-        )
-        werte["stellen_beamte"] = beamte_stellen["stellen_hundertstel"].sum() or 0
+
+        def _stellen_beamte() -> int:
+            beamte_stellen = stellenplan.filter(
+                (pl.col("teil") == "beamte")
+                & (pl.col("merkmal") == "stellen")
+                & (pl.col("jahr") == haushaltsjahr)
+                & pl.col("produktbereich").is_null()
+            )
+            return beamte_stellen["stellen_hundertstel"].sum() or 0
+
+        werte["stellen_beamte"] = _stellen_beamte
+        werte["stellen_beamte_hundertstel"] = _stellen_beamte
     return werte
 
 
@@ -2002,22 +2173,30 @@ def _pruefe_regel9(
     haushaltsjahr: int,
     verbindlichkeiten: pl.DataFrame | None = None,
     stellenplan: pl.DataFrame | None = None,
+    schulden_posten: Sequence[str] = (),
 ) -> Regelergebnis:
     """Regel 9 – Eckwerte (Anhang B.6, D-10, D-14, D-20): exakter Soll/Ist-Vergleich
     (Toleranz 0, `toleranz_fuer(9)`) für jeden Namen in `REGEL9_ECKWERTE`. Ein Soll-Faktor
     (`_REGEL9_SOLL_FAKTOR`) skaliert den gedruckten Sollwert auf die Ist-Einheit, wo diese
-    feiner ist (D-20: `stellen_beamte` vergleicht Stellen gegen Hundertstel)."""
+    feiner ist (D-20: `stellen_beamte` vergleicht Stellen gegen Hundertstel). Geprüft werden
+    die Namen, die die Sollwertdatei nennt (Phase 11: nicht jeder Vorbericht druckt jeden
+    Eckwert); `pruefe_eckwerte_konsumiert` verhindert unbekannte Namen."""
     ist_werte = _regel9_ist_werte(
         meta=meta,
         zuwendungen=zuwendungen,
         verbindlichkeiten=verbindlichkeiten,
         stellenplan=stellenplan,
         haushaltsjahr=haushaltsjahr,
+        schulden_posten=schulden_posten,
     )
 
     geprueft = 0
     abweichungen: list[Pruefpunkt] = []
     for name in REGEL9_ECKWERTE:
+        if name not in eckwerte:
+            continue
+        if name not in ist_werte:
+            raise PruefungsFehler(f"Regel 9: Eckwert {name!r} hat keine Ist-Quelle")
         eckwert = eckwerte[name]
         geprueft += 1
         soll = eckwert["wert"] * _REGEL9_SOLL_FAKTOR.get(name, 1)
@@ -2030,7 +2209,7 @@ def _pruefe_regel9(
             jahr=haushaltsjahr,
             wertart="ansatz",
             soll=soll,
-            ist=ist_werte[name],
+            ist=ist_werte[name](),
             pdf_seite=eckwert["pdf_seite"],
         )
         if punkt.abweichung != 0:
@@ -2282,6 +2461,19 @@ def _pruefe_regel6(
     geprueft = 0
     abweichungen: list[Pruefpunkt] = []
 
+    # IKVS (Hörstel): Teil- und Gesamtfinanzpläne drucken keine VE-Spalte, PB-
+    # Investitionslisten und VE-Fälligkeiten je Maßnahme gibt es nicht. Die VE-Werte der
+    # Maßnahmen prüft dann nur die Satzung (§ 3).
+    ikvs = jahrgang.software == "ikvs"
+    finanzplan_wertarten = {
+        wertart for wertart, _ in _spalten_zu_wertart(jahrgang.spalten["finanzplan"])
+    }
+    spalten_zu_wertart = (
+        [(wertart, jahr) for wertart, jahr in spalten_zu_wertart if wertart in finanzplan_wertarten]
+        if ikvs
+        else spalten_zu_wertart
+    )
+
     # (a) je Produkt
     for produkt in produkt_codes:
         investitionen_produkt = investitionen.filter(pl.col("produkt") == produkt)
@@ -2341,14 +2533,22 @@ def _pruefe_regel6(
                 abweichungen.append(punkt)
 
     # (c) PB-Gegenprobe (03-03, D-06)
-    geprueft_pb, abweichungen_pb, luecken = _pruefe_regel6_pb_gegenprobe(
-        investitionen=investitionen, investitionen_pb=investitionen_pb, hierarchie=hierarchie
-    )
-    geprueft += geprueft_pb
-    abweichungen += abweichungen_pb
+    luecken: list[Luecke] = []
+    if not ikvs:
+        geprueft_pb, abweichungen_pb, luecken = _pruefe_regel6_pb_gegenprobe(
+            investitionen=investitionen, investitionen_pb=investitionen_pb, hierarchie=hierarchie
+        )
+        geprueft += geprueft_pb
+        abweichungen += abweichungen_pb
 
     # (d) VE-Fälligkeiten
     ve_investitionen = investitionen.filter(pl.col("wertart") == "ve")
+    if ikvs:
+        # IKVS: Die Fälligkeiten stammen aus der VE-Übersicht und sind den Maßnahmen über
+        # ihre VE zugeordnet (ikvs_investitionen.ve_faelligkeiten_aus_uebersicht); ein
+        # Vergleich je Maßnahme wäre zirkulär. Den VE-Gesamtbetrag prüft Regel 4 (§ 3).
+        ve_investitionen = ve_investitionen.clear()
+        ve_faelligkeiten = ve_faelligkeiten.clear()
     ve_schluessel = set(
         ve_investitionen.select(["produkt", "massnahme_id", "konto"]).unique().iter_rows()
     ) | set(ve_faelligkeiten.select(["produkt", "massnahme_id", "konto"]).unique().iter_rows())
@@ -2404,12 +2604,18 @@ def _pruefe_regel7(
     planwerte_ergebnisplan: Planwerte,
     planwerte_finanzplan: Planwerte,
     haushaltsjahr: int,
+    nur_mit_gedruckten_komponenten: bool = False,
 ) -> Regelergebnis:
     """Regel 7 – Haushaltsquerschnitte → PG-/PB-Teilpläne (PRUEF-07, D-15).
 
     Vergleicht jeden gedruckten Querschnittswert (CSV-only, `querschnitte.py` liest das
     PDF, dieses Modul nie) mit der über `REGEL7_KENNZAHLEN` hergeleiteten Formelkette aus
-    den eigenen PG-Teilplänen (GESAMTSUMME-Zeilen gegen den PB-Teilplan).
+    den eigenen PG-Teilplänen (GESAMTSUMME-Zeilen gegen den PB-Teilplan, eine
+    GESAMTSUMME-Zeile ohne PB gegen die Gesamtpläne).
+
+    `nur_mit_gedruckten_komponenten` (IKVS-Layout): Eine Kennzahl wird nur geprüft, wenn
+    der Plan mindestens eine ihrer Komponenten druckt. Hörsteler Teilfinanzpläne drucken
+    z. B. keine Ein- und Auszahlungen aus laufender Verwaltungstätigkeit (Z. 09/16).
     """
     planwerte_je_datei = {
         "ergebnisplan": planwerte_ergebnisplan,
@@ -2423,12 +2629,20 @@ def _pruefe_regel7(
         formel = REGEL7_KENNZAHLEN.get(zeile["kennzahl"])
         if formel is None:
             raise PruefungsFehler(f"Regel 7: keine Zuordnung für Kennzahl {zeile['kennzahl']!r}")
-        datei, wertart, komponenten = formel
-        planwerte = planwerte_je_datei[datei]
-        if zeile["gesamtsumme"]:
+        if zeile["gesamtsumme"] and zeile["pb"] is None:
+            ebene, code = "GESAMT", ""
+            formel = REGEL7_KENNZAHLEN_GESAMT[zeile["kennzahl"]]
+        elif zeile["gesamtsumme"]:
             ebene, code = "PB", zeile["pb"]
         else:
             ebene, code = "PG", zeile["pg"]
+        datei, wertart, komponenten = formel
+        planwerte = planwerte_je_datei[datei]
+        if nur_mit_gedruckten_komponenten and not any(
+            planwerte.ist_gedruckt(ebene, code, komponente, haushaltsjahr, wertart)
+            for _, komponente in komponenten
+        ):
+            continue
         ist = sum(
             vorzeichen * planwerte.wert(ebene, code, komponente, haushaltsjahr, wertart)
             for vorzeichen, komponente in komponenten
@@ -2473,6 +2687,10 @@ REGEL8_PFLICHTFELDER: tuple[str, ...] = (
     "ziele",
     "bindungsgrad_original",
 )
+# Pflichtfelder im IKVS-Layout (Hörstel): Es druckt weder Fachbereich, Gremium,
+# Klassifizierung, Ziele noch Bindungsgrad; die Zielgruppe fehlt bei einem Produkt
+# (0111106, S. 144). Beschreibung oder Leistungsliste prüft Regel 8 als "leistungen".
+REGEL8_PFLICHTFELDER_IKVS: tuple[str, ...] = ("auftragsgrundlage",)
 # Normalisiertes Bindungsgrad-Vokabular: dieselben drei Werte wie
 # produkte.BINDUNGSGRADE.values() (fachliche Regel hier eigenständig wiederholt, damit
 # pruefung.py unabhängig von produkte.py bleibt, D-06-Architekturprinzip).
@@ -2547,12 +2765,14 @@ def _pruefe_regel8(
             Luecke(regel=8, ebene="GESAMT", code="", merkmal="anzahl_produkte", pdf_seite=None)
         )
 
+    ikvs = jahrgang.software == "ikvs"
+    pflichtfelder = REGEL8_PFLICHTFELDER_IKVS if ikvs else REGEL8_PFLICHTFELDER
     for code in sorted(hierarchie_codes & produkte_codes):
         produkt = produkt_je_code[code]
         pdf_seiten = produkt.get("pdf_seiten") or []
         erste_seite = min(pdf_seiten) if pdf_seiten else None
 
-        for feld in REGEL8_PFLICHTFELDER:
+        for feld in pflichtfelder:
             geprueft += 1
             wert = produkt.get(feld)
             if not isinstance(wert, str) or not wert:
@@ -2562,16 +2782,23 @@ def _pruefe_regel8(
 
         geprueft += 1
         leistungen = produkt.get("leistungen")
-        if not isinstance(leistungen, list) or not leistungen:
+        hat_leistungen = isinstance(leistungen, list) and bool(leistungen)
+        if ikvs:
+            # IKVS: die Beschreibung ist entweder Fließtext oder eine Leistungsliste.
+            hat_leistungen = hat_leistungen or bool(produkt.get("beschreibung"))
+        if not hat_leistungen:
             luecken.append(
                 Luecke(regel=8, ebene="P", code=code, merkmal="leistungen", pdf_seite=erste_seite)
             )
 
-        geprueft += 1
-        if produkt.get("bindungsgrad") not in _REGEL8_BINDUNGSGRAD_VOKABULAR:
-            luecken.append(
-                Luecke(regel=8, ebene="P", code=code, merkmal="bindungsgrad", pdf_seite=erste_seite)
-            )
+        if not ikvs:
+            geprueft += 1
+            if produkt.get("bindungsgrad") not in _REGEL8_BINDUNGSGRAD_VOKABULAR:
+                luecken.append(
+                    Luecke(
+                        regel=8, ebene="P", code=code, merkmal="bindungsgrad", pdf_seite=erste_seite
+                    )
+                )
 
         geprueft += 1
         if not pdf_seiten:
@@ -2645,17 +2872,20 @@ def pruefe_alles(
     eigenkapital = lies_eigenkapital_csv(daten_wurzel / EIGENKAPITAL_CSV)
     ve_uebersicht = lies_ve_uebersicht_csv(daten_wurzel / VE_UEBERSICHT_CSV)
     validiere_ve_uebersicht(ve_uebersicht)
+    # IKVS (Hörstel): der Gesamtfinanzplan druckt keine VE-Spalte; Satzung § 3 wird gegen den
+    # Gesamtbetrag der VE-Übersicht geprüft, diese gegen die Investitionsübersichten (Phase 11).
+    ikvs = jahrgang.software == "ikvs"
+    ve_gesamt_uebersicht = (
+        int(
+            ve_uebersicht.filter(pl.col("ist_gesamt") & pl.col("faellig_jahr").is_null())[
+                "betrag_teur"
+            ].sum()
+        )
+        * 1000
+    )
     stellenplan = lies_stellenplan_csv(daten_wurzel / STELLENPLAN_CSV)
     vorbericht = {
-        "steuerarten": lies_vorbericht_csv(daten_wurzel / STEUERARTEN_CSV),
-        "zuwendungen": lies_vorbericht_csv(daten_wurzel / ZUWENDUNGEN_CSV),
-        "transferaufwendungen": lies_vorbericht_csv(daten_wurzel / TRANSFERAUFWENDUNGEN_CSV),
-        "kita_zuschuesse": lies_vorbericht_csv(daten_wurzel / KITA_ZUSCHUESSE_CSV),
-        "zuschuesse_lfd_zwecke": lies_vorbericht_csv(daten_wurzel / ZUSCHUESSE_LFD_ZWECKE_CSV),
-        "investitionszuwendungen": lies_vorbericht_csv(daten_wurzel / INVESTITIONSZUWENDUNGEN_CSV),
-        **zerlege_weitere_vorberichtstabellen(
-            lies_vorbericht_csv(daten_wurzel / WEITERE_VORBERICHTSTABELLEN_CSV)
-        ),
+        **lies_vorberichtstabellen(daten_wurzel, jahrgang),
         "verbindlichkeiten": verbindlichkeiten_roh.filter(pl.col("tabelle") == "verbindlichkeiten"),
         "buergschaften": verbindlichkeiten_roh.filter(pl.col("tabelle") == "buergschaften"),
     }
@@ -2665,7 +2895,11 @@ def pruefe_alles(
     pfad_befunde = befunde_pfad if befunde_pfad is not None else daten_wurzel / BEFUNDE_MD
     befunde = lies_befunde(pfad_befunde)
 
-    regel1 = _pruefe_regel1(ergebnisplan=ergebnisplan, finanzplan=finanzplan)
+    regel1 = _pruefe_regel1(
+        ergebnisplan=ergebnisplan,
+        finanzplan=finanzplan,
+        nur_mit_gedruckten_komponenten=jahrgang.software == "ikvs",
+    )
     regel2 = _pruefe_regel2(
         ergebnisplan=ergebnisplan,
         finanzplan=finanzplan,
@@ -2686,6 +2920,7 @@ def pruefe_alles(
         spalten=jahrgang.spalten["ergebnisplan"],
         steuerarten=vorbericht["steuerarten"],
         transferaufwendungen=vorbericht["transferaufwendungen"],
+        ve_ohne_gesamtfinanzplan=ve_gesamt_uebersicht if ikvs else None,
     )
     regel5 = _pruefe_regel5(
         vorbericht=vorbericht,
@@ -2705,7 +2940,16 @@ def pruefe_alles(
         planwerte_finanzplan=Planwerte(finanzplan, datei="finanzplan"),
         eckwerte=eckwerte,
         haushaltsjahr=jahrgang.haushaltsjahr,
+        ve_investitionsuebersichten=(
+            int(investitionen.filter(pl.col("wertart") == "ve")["betrag"].sum()) if ikvs else None
+        ),
     )
+    if (daten_wurzel / FRAKTIONSZUWENDUNGEN_CSV).is_file():
+        geprueft_fraktion, abweichungen_fraktion = _pruefe_regel5_fraktionszuwendungen(
+            fraktionszuwendungen=lies_eigenkapital_csv(daten_wurzel / FRAKTIONSZUWENDUNGEN_CSV)
+        )
+        geprueft_d11 += geprueft_fraktion
+        abweichungen_d11 = [*abweichungen_d11, *abweichungen_fraktion]
     regel5 = replace(
         regel5,
         geprueft=regel5.geprueft + geprueft_d11,
@@ -2725,6 +2969,7 @@ def pruefe_alles(
         planwerte_ergebnisplan=Planwerte(ergebnisplan, datei="ergebnisplan"),
         planwerte_finanzplan=Planwerte(finanzplan, datei="finanzplan"),
         haushaltsjahr=jahrgang.haushaltsjahr,
+        nur_mit_gedruckten_komponenten=jahrgang.software == "ikvs",
     )
     regel8 = _pruefe_regel8(
         produkte=produkte,
@@ -2740,6 +2985,7 @@ def pruefe_alles(
         verbindlichkeiten=vorbericht["verbindlichkeiten"],
         stellenplan=stellenplan,
         haushaltsjahr=jahrgang.haushaltsjahr,
+        schulden_posten=layout_liste(jahrgang, "schulden", "posten"),
     )
     regel10 = _pruefe_regel10(stellenplan=stellenplan, haushaltsjahr=jahrgang.haushaltsjahr)
 

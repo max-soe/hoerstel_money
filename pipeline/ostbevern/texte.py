@@ -39,11 +39,16 @@ PLATZHALTER_MUSTER = re.compile(r"\{\{([a-z0-9_.]+)\|([a-z]+)\}\}")
 # es ein ungültiger Platzhalter, kein unbekanntes Formatkürzel).
 _PLATZHALTER_SPAN_MUSTER = re.compile(r"\{\{[^{}]*\}\}")
 
-# Ausnahmen der Ziffernregel (D-15): Jahreszahlen, Paragraphen, Seitenverweise
-# (inkl. Spannen wie "S. 24/25" oder "S. 309-311").
-_JAHR_MUSTER = re.compile(r"\b(?:19|20)\d{2}\b")
+# Ausnahmen der Ziffernregel (D-15): Paragraphen und Seitenverweise (inkl. Spannen wie
+# "S. 24/25" oder "S. 309-311"). Jahreszahlen sind keine Ausnahme mehr (D-01): sie stehen
+# nur als Platzhalter `{{jahr.…|jahr}}`; das Muster dient als Detektor für die Fehlermeldung.
+_JAHRESZAHL_MUSTER = re.compile(r"\b(?:19|20)\d{2}\b")
 _PARAGRAF_MUSTER = re.compile(r"§\s*\d+")
 _SEITE_MUSTER = re.compile(r"S\.\s*\d+(?:[-/]\d+)*")
+
+# Feste Ereignisjahre (D-02): `jahr.fest_JJJJ` steht für genau dieses Jahr (z. B. ein
+# historisches Ergebnisjahr) und wird aus dem Schlüsselnamen aufgelöst, nicht aus `werte`.
+_FESTES_JAHR_MUSTER = re.compile(r"^jahr\.fest_((?:19|20)\d{2})$")
 
 # Format von erklaerungen.md: "## schluessel"-Abschnitte, je mit einer Titel- und einer
 # Quelle-Zeile direkt danach (kein Leerzeilenabstand), dann eine Leerzeile, dann
@@ -173,9 +178,17 @@ def lies_glossar(pfad: Path) -> list[Erklaertext]:
     Gleiche Regeln wie `lies_erklaerungen`, aber die Quelle ist nur Pflicht, sobald ein
     Absatz des Abschnitts einen Platzhalter (also eine Zahl) enthält — sonst bricht der
     Parser mit `TexteFehler` ab (Seitenverweis bei Zahlen, D-14).
+
+    Der erste Absatz eines Begriffs steht allein (sein erster Satz ist der Tooltip-Text) und
+    darf nie einen Platzhalter enthalten (Invariante aus `typen.ts`); sonst `TexteFehler`.
     """
     texte = _lies_abschnitte(pfad, kopfzeile=_KOPFZEILE_GLOSSAR, quelle_pflicht=False)
     for text in texte:
+        if PLATZHALTER_MUSTER.search(text.absaetze[0]) or "{{" in text.absaetze[0]:
+            raise TexteFehler(
+                f"{pfad}: Glossarbegriff {text.schluessel!r}: der erste Absatz steht allein "
+                "und darf keinen Platzhalter enthalten"
+            )
         if not text.quelle_seiten and any(
             PLATZHALTER_MUSTER.search(absatz) or "{{" in absatz for absatz in text.absaetze
         ):
@@ -186,15 +199,23 @@ def lies_glossar(pfad: Path) -> list[Erklaertext]:
     return texte
 
 
-def pruefe_text(text: str) -> None:
+def festes_jahr(schluessel: str) -> int | None:
+    """Das Jahr eines Schlüssels `jahr.fest_JJJJ` (nur 19xx/20xx) oder `None` (D-02)."""
+    treffer = _FESTES_JAHR_MUSTER.fullmatch(schluessel)
+    return int(treffer.group(1)) if treffer is not None else None
+
+
+def pruefe_text(text: str, *, abschnitt: str | None = None) -> None:
     """Prüft einen Absatz gegen die Ziffernregel und das HTML-Verbot (D-15).
 
     Bricht mit `TexteFehler` ab bei: einem unbekannten Formatkürzel in einem sonst
     wohlgeformten Platzhalter, einem unvollständigen/unverschachtelten Platzhalter
-    (z. B. fehlende schließende Klammer), einem HTML-Zeichen ("<"/">") oder einer
-    Ziffer außerhalb eines gültigen Platzhalters, einer Jahreszahl (19xx/20xx), eines
-    Paragraphen ("§ n") oder eines Seitenverweises ("S. n", auch als Spanne). Ein
-    Platzhalter im Namensraum "jahr." muss das Formatkürzel "jahr" tragen.
+    (z. B. fehlende schließende Klammer), einem HTML-Zeichen ("<"/">"), einer getippten
+    Jahreszahl (19xx/20xx, D-01; Ausweg: `{{jahr.haushaltsjahr|jahr}}` bzw.
+    `{{jahr.fest_JJJJ|jahr}}`) oder einer Ziffer außerhalb eines gültigen Platzhalters.
+    Ausgenommen bleiben Paragraphen ("§ n") und Seitenverweise ("S. n", auch als Spanne).
+    Ein Platzhalter im Namensraum "jahr." muss das Formatkürzel "jahr" tragen. `abschnitt`
+    benennt den Abschnitt in der Jahres-Meldung.
     """
     if "<" in text or ">" in text:
         raise TexteFehler(f"Text enthält ein HTML-Zeichen: {text!r}")
@@ -218,18 +239,41 @@ def pruefe_text(text: str) -> None:
     if "{{" in rest or "}}" in rest:
         raise TexteFehler(f"Unvollständiger Platzhalter in Text: {text!r}")
 
-    rest = _JAHR_MUSTER.sub("", rest)
     rest = _PARAGRAF_MUSTER.sub("", rest)
     rest = _SEITE_MUSTER.sub("", rest)
+
+    jahr_treffer = _JAHRESZAHL_MUSTER.search(rest)
+    if jahr_treffer is not None:
+        ort = f" in Abschnitt „{abschnitt}“" if abschnitt is not None else ""
+        raise TexteFehler(
+            f"Handgetippte Jahreszahl „{jahr_treffer.group(0)}“{ort}. Jahreszahlen stehen "
+            "nur als Platzhalter, zum Beispiel {{jahr.haushaltsjahr|jahr}}. "
+            f"(voller Text: {text!r})"
+        )
 
     ziffer_treffer = re.search(r"\d", rest)
     if ziffer_treffer is not None:
         start = max(0, ziffer_treffer.start() - 15)
         ende = min(len(rest), ziffer_treffer.start() + 15)
         raise TexteFehler(
-            "Nackte Ziffer außerhalb Platzhalter/Jahreszahl/§/S.: "
+            "Nackte Ziffer außerhalb Platzhalter/§/S.: "
             f"{rest[start:ende]!r} (voller Text: {text!r})"
         )
+
+
+def pruefe_titel(titel: str, abschnitt: str) -> None:
+    """Prüft den Titel eines Abschnitts (D-05).
+
+    Titel werden von der App roh ausgegeben und nicht aufgelöst; ein Platzhalter im Titel
+    wäre dort sichtbarer Rohtext und wird abgelehnt. Sonst gelten dieselben Regeln wie
+    für Absätze (`pruefe_text`, auch die Jahresregel).
+    """
+    if "{{" in titel or "}}" in titel:
+        raise TexteFehler(
+            f"Titel von Abschnitt „{abschnitt}“ enthält einen Platzhalter; "
+            f"Titel werden nicht aufgelöst: {titel!r}"
+        )
+    pruefe_text(titel, abschnitt=abschnitt)
 
 
 def _ist_zahl(wert: object) -> bool:
@@ -326,8 +370,54 @@ def _allgemeine_ruecklage_rueckgang_bis_letztes_jahr(w: dict[str, int | float]) 
     # Prozentpunkte (Formatkürzel "prozent"), bezogen auf den Stand der allgemeinen Rücklage
     # zu Beginn des Haushaltsjahrs (Bezugsgröße der Schwellen aus § 76 GO NRW, S. 23).
     anfang = w[f"eigenkapital.allgemeine_ruecklage.{int(w['jahr.haushaltsjahr'])}"]
+    if anfang == 0:
+        raise TexteFehler(
+            "Formel 'allgemeine_ruecklage_rueckgang_bis_letztes_jahr': allgemeine Rücklage "
+            "zu Beginn des Haushaltsjahrs ist 0, ein Rückgang in Prozent ist nicht definiert"
+        )
     ende = _allgemeine_ruecklage_ende_letztes_jahr(w)
     return (anfang - ende) / anfang * 100
+
+
+def _ausgleichsruecklage_aufgebraucht_jahr_vor_verrechnung(
+    w: dict[str, int | float],
+) -> int | float:
+    # Eigenkapitalübersichten mit Ständen zum 31.12. vor Ergebnisverrechnung (Hörstel S. 588,
+    # Fußnote 1): die Rücklage des Jahres plus das (negative) Jahresergebnis desselben Jahres
+    # ist der Stand nach Verrechnung. Aufgebraucht ist sie im ersten Planjahr, in dem dieser
+    # Stand nicht mehr positiv ist (Vorbericht S. 72: „in 2029 aufgebraucht“).
+    for jahr in _planjahre(w):
+        nach_verrechnung = (
+            w[f"eigenkapital.ausgleichsruecklage.{jahr}"] + w[f"eigenkapital.jahresergebnis.{jahr}"]
+        )
+        if nach_verrechnung <= 0:
+            return jahr
+    raise TexteFehler(
+        "Formel 'ausgleichsruecklage_aufgebraucht_jahr_vor_verrechnung': die Ausgleichs-"
+        "rücklage reicht bis zum letzten Planjahr – der Polster-Text muss überarbeitet werden"
+    )
+
+
+def _allgemeine_ruecklage_ende_letztes_jahr_vor_verrechnung(
+    w: dict[str, int | float],
+) -> int | float:
+    # Stände zum 31.12. vor Ergebnisverrechnung: den Fehlbetrag des letzten Planjahrs, den
+    # die Ausgleichsrücklage nicht mehr deckt, trägt die allgemeine Rücklage (Hörstel S. 588,
+    # nachrichtlich „Veränderung der Allgemeinen Rücklage … bei sofortiger Verrechnung“).
+    letztes = int(w["jahr.letztes_jahr"])
+    rest = (
+        w[f"eigenkapital.ausgleichsruecklage.{letztes}"]
+        + w[f"eigenkapital.jahresergebnis.{letztes}"]
+    )
+    return w[f"eigenkapital.allgemeine_ruecklage.{letztes}"] + min(0, rest)
+
+
+def _schluesselzuweisung_anstieg_haushaltsjahr(w: dict[str, int | float]) -> int | float:
+    hh = int(w["jahr.haushaltsjahr"])
+    return (
+        w[f"vorbericht.zuwendungen.schluesselzuweisung.{hh}"]
+        - w[f"vorbericht.zuwendungen.schluesselzuweisung.{hh - 1}"]
+    )
 
 
 def _schulden_gesamt_vorjahr(w: dict[str, int | float]) -> int | float:
@@ -369,6 +459,16 @@ _ABGELEITET_ROH: dict[str, Callable[[dict[str, int | float]], int | float]] = {
     "allgemeine_ruecklage_rueckgang_bis_letztes_jahr": (
         _allgemeine_ruecklage_rueckgang_bis_letztes_jahr
     ),
+    # Phase 11 (Hörstel): Eigenkapitalübersicht mit Ständen zum 31.12. vor
+    # Ergebnisverrechnung statt Ständen zu Beginn des Jahres.
+    "ausgleichsruecklage_aufgebraucht_jahr_vor_verrechnung": (
+        _ausgleichsruecklage_aufgebraucht_jahr_vor_verrechnung
+    ),
+    "allgemeine_ruecklage_ende_letztes_jahr_vor_verrechnung": (
+        _allgemeine_ruecklage_ende_letztes_jahr_vor_verrechnung
+    ),
+    # Phase 11: Anstieg der Schlüsselzuweisung Vorjahr -> Haushaltsjahr (Hörstel S. 22).
+    "schluesselzuweisung_anstieg_haushaltsjahr": _schluesselzuweisung_anstieg_haushaltsjahr,
     # Phase 6 (Plan 06-04, D-09): Schuldenanstieg von Ende Vorjahr bis Ende letztes Planjahr.
     "schulden_gesamt_vorjahr": _schulden_gesamt_vorjahr,
     "schulden_gesamt_letztes_jahr": _schulden_gesamt_letztes_jahr,
@@ -421,6 +521,10 @@ def textwerte(
     vorjahr = haushaltsjahr - 1
     werte["jahr.haushaltsjahr"] = haushaltsjahr
     werte["jahr.vorjahr"] = vorjahr
+    # Relative Jahre (D-02): wandern mit dem Jahrgang, nie als Jahreszahl getippt.
+    werte["jahr.vorvorjahr"] = haushaltsjahr - 2
+    werte["jahr.haushaltsjahr_plus_1"] = haushaltsjahr + 1
+    werte["jahr.haushaltsjahr_plus_2"] = haushaltsjahr + 2
     # Letztes Planjahr des Jahrgangs (D-14): Grenze für Polster- und Schuldenformeln.
     werte["jahr.letztes_jahr"] = int(jahre[-1])
 
@@ -468,7 +572,8 @@ def textwerte(
     _meta_eintragen(werte, "meta.flaeche", meta["flaeche"])
     for schluessel, blatt in meta["hebesaetze"].items():
         _meta_eintragen(werte, f"meta.hebesaetze.{schluessel}", blatt)
-    for schluessel, blatt in meta["kreisumlage"].items():
+    # Der Kreisumlage-Block ist optional (Phase 11: Hörstel druckt keine Hebesätze).
+    for schluessel, blatt in meta.get("kreisumlage", {}).items():
         _meta_eintragen(werte, f"meta.kreisumlage.{schluessel}", blatt)
     for schluessel, blatt in meta["vorbericht_werte"].items():
         _meta_eintragen(werte, f"meta.vorbericht_werte.{schluessel}", blatt)
@@ -525,6 +630,44 @@ def textwerte(
     return werte
 
 
+# Jahressuffix eines Wertschlüssels, z. B. `schulden.gesamt.2025` (nicht `jahr.*`-Schlüssel).
+_WERT_JAHRESSUFFIX_MUSTER = re.compile(r"\.((?:19|20)\d{2})$")
+
+
+def _pruefe_jahrbezug(text_schluessel: str, absatz: str, werte: Mapping[str, int | float]) -> None:
+    """Jahresbeschriftung und Wertschlüssel eines Absatzes dürfen nicht auseinanderlaufen.
+
+    Jahre stehen im Text als relative Platzhalter (`jahr.vorjahr`, D-02), die mit dem
+    Jahrgang wandern; Wertschlüssel tragen dagegen ein festes Jahressuffix
+    (`schulden.gesamt.2025`). Ohne Prüfung bliebe der Betrag beim nächsten Jahrgang auf
+    2025 stehen, während die Beschriftung auf 2026 wandert -- eine falsche Zahl-Jahr-
+    Aussage, die jede andere Prüfung passiert. Bricht mit `TexteFehler` ab, wenn ein Absatz
+    einen Wertschlüssel mit Jahressuffix J verwendet, aber keinen `jahr.*`-Platzhalter, der
+    im aktuellen Jahrgang zu J aufgelöst wird.
+    """
+    schluessel_im_absatz = [treffer.group(1) for treffer in PLATZHALTER_MUSTER.finditer(absatz)]
+    beschriftete_jahre: set[int] = set()
+    for schluessel in schluessel_im_absatz:
+        if not schluessel.startswith("jahr."):
+            continue
+        fest = festes_jahr(schluessel)
+        if fest is not None:
+            beschriftete_jahre.add(fest)
+        elif schluessel in werte:
+            beschriftete_jahre.add(int(werte[schluessel]))
+    for schluessel in schluessel_im_absatz:
+        if schluessel.startswith("jahr."):
+            continue
+        suffix = _WERT_JAHRESSUFFIX_MUSTER.search(schluessel)
+        if suffix is not None and int(suffix.group(1)) not in beschriftete_jahre:
+            raise TexteFehler(
+                f"Text {text_schluessel!r}: Platzhalter {schluessel!r} meint "
+                f"{suffix.group(1)}, aber der Absatz beschriftet dieses Jahr nicht mit "
+                "einem passenden jahr.*-Platzhalter (relative Jahre wandern mit dem "
+                f"Jahrgang, Betrag nicht): {absatz!r}"
+            )
+
+
 def loese_auf(
     texte: Sequence[Erklaertext], werte: Mapping[str, int | float]
 ) -> dict[str, tuple[int | float, str]]:
@@ -537,15 +680,21 @@ def loese_auf(
     verwendet: dict[str, tuple[int | float, str]] = {}
     for text in texte:
         for absatz in text.absaetze:
+            _pruefe_jahrbezug(text.schluessel, absatz, werte)
             for treffer in PLATZHALTER_MUSTER.finditer(absatz):
                 schluessel, format_kuerzel = treffer.groups()
-                if schluessel not in werte:
+                if schluessel in verwendet:
+                    continue
+                if schluessel in werte:
+                    verwendet[schluessel] = (werte[schluessel], format_kuerzel)
+                    continue
+                fest = festes_jahr(schluessel)
+                if fest is None:
                     raise TexteFehler(
                         f"Unbekannter Datenschlüssel {schluessel!r} in Text "
                         f"{text.schluessel!r}: {absatz!r}"
                     )
-                if schluessel not in verwendet:
-                    verwendet[schluessel] = (werte[schluessel], format_kuerzel)
+                verwendet[schluessel] = (fest, format_kuerzel)
     return verwendet
 
 
@@ -594,7 +743,7 @@ def vorschau(texte: Sequence[Erklaertext], werte: Mapping[str, int | float]) -> 
 
     def _annotiere(treffer: re.Match[str]) -> str:
         schluessel, _format_kuerzel = treffer.groups()
-        wert = werte.get(schluessel, "???")
+        wert = werte.get(schluessel, festes_jahr(schluessel) or "???")
         return f"{treffer.group(0)}[{wert}]"
 
     zeilen: list[str] = []

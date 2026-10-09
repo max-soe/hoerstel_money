@@ -4,9 +4,12 @@ import { RouterLink } from 'vue-router'
 
 import { euroKurz, jahr as formatJahr } from '@/charts/format'
 import ErklaerText from '@/components/ErklaerText.vue'
+import EuroBetrag from '@/components/EuroBetrag.vue'
 import { haushalt } from '@/data/daten'
-import { baueKreisumlage } from '@/lib/kreisumlage'
+import { seitenText } from '@/lib/hilfsfunktionen'
+import { baueKreisumlage, istGroessterEinzelposten } from '@/lib/kreisumlage'
 import { textFuerJahr } from '@/lib/texte'
+import { KOMMUNE_ART, KOMMUNE_NAME } from '@/lib/kommune'
 
 const props = withDefaults(
   defineProps<{
@@ -19,6 +22,12 @@ const props = withDefaults(
 )
 
 const kreisumlage = computed(() => baueKreisumlage(props.jahrIndex))
+// Der Superlativ steht nur da, wo die Daten des Jahres ihn tragen (G-09-01).
+const einleitung = computed(() =>
+  istGroessterEinzelposten(props.jahrIndex)
+    ? 'Der größte Einzelposten ist die Weitergabe an Kreis und Land:'
+    : 'Weitergabe an Kreis und Land:',
+)
 const jahrZahl = computed(() => {
   const jahr = haushalt.jahre[props.jahrIndex]
   if (jahr === undefined) {
@@ -36,7 +45,7 @@ const aufteilungSeiten = computed(() => {
       seiten.add(u.pdfSeite)
     }
   }
-  return [...seiten].join(', ')
+  return seitenText([...seiten])
 })
 </script>
 
@@ -46,9 +55,10 @@ const aufteilungSeiten = computed(() => {
 
     <template v-if="kurz">
       <p>
-        Der größte Einzelposten ist die Weitergabe an Kreis und Land:
+        {{ einleitung }}
         <span class="om-zahl">{{ euroKurz(kreisumlage.gesamt) }}</span
-        >. Diesen Betrag reicht Ostbevern weiter, die Gemeinde kann ihn nicht selbst steuern.
+        >. Diesen Betrag reicht {{ KOMMUNE_NAME }} weiter, die {{ KOMMUNE_ART }} kann ihn nicht
+        selbst steuern.
       </p>
       <p v-if="kreisumlage.pdfSeite !== null" class="om-kreisumlage__quelle">
         Quelle: PDF-Seite {{ kreisumlage.pdfSeite }}
@@ -62,12 +72,13 @@ const aufteilungSeiten = computed(() => {
       <p>
         Weitergabe an Kreis und Land:
         <span class="om-zahl">{{ euroKurz(kreisumlage.gesamt) }}</span> ({{ wertart }}
-        {{ jahrText }}). Diesen Betrag reicht Ostbevern weiter und kann ihn nicht selbst steuern.
+        {{ jahrText }}). Diesen Betrag reicht {{ KOMMUNE_NAME }} weiter und kann ihn nicht selbst
+        steuern.
       </p>
       <ul class="om-kreisumlage__liste">
         <li v-for="u in kreisumlage.unterposten" :key="u.code">
           {{ u.name }}:
-          <span class="om-zahl">rd. {{ euroKurz(u.wert) }}</span>
+          <span class="om-zahl"><EuroBetrag :wert="u.wert" gerundet kurz /></span>
         </li>
       </ul>
       <p class="om-kreisumlage__quelle">
@@ -77,7 +88,7 @@ const aufteilungSeiten = computed(() => {
             >,
           </template>
         </template>
-        <template v-if="aufteilungSeiten">PDF-Seite {{ aufteilungSeiten }} (Aufteilung)</template>
+        <template v-if="aufteilungSeiten">{{ aufteilungSeiten }} (Aufteilung)</template>
       </p>
       <wa-details v-if="hatErklaerung" summary="So funktioniert die Kreisumlage">
         <ErklaerText schluessel="kreisumlage" :jahr="jahrZahl" :ueberschrift="false" />

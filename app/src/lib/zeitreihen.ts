@@ -1,9 +1,11 @@
 // Zeitreihe je Steuerart (EINN-05, D-01). Jahre vor dem ersten Planjahr stammen als Ist aus den
-// Grundzahlen des Produkts 160101, alle Planjahre aus dem Vorbericht. Die Grundzahlen für 2024 und
-// 2025 weichen vom Vorbericht ab (Gewerbesteuer 2024: 8.418.043 € gegen 9.511.000 €) und werden
-// deshalb für Steuerreihen nie verwendet. Die Wertart je Planjahr kommt aus `haushalt.wertarten`.
+// Grundzahlen des Finanzierungsprodukts (Ostbevern 160101), alle Planjahre aus dem Vorbericht. Die
+// Grundzahlen für die Planjahre weichen teils vom Vorbericht ab (Ostbevern Gewerbesteuer 2024:
+// 8.418.043 € gegen 9.511.000 €) und werden deshalb für Steuerreihen nie verwendet. Führt das
+// Produkt keine passende Grundzahl (Hörstel), zeigt die Reihe nur die Vorberichtsjahre. Die Wertart
+// je Planjahr kommt aus `haushalt.wertarten`.
 
-import { formatiere, jahr as formatiereJahr } from '@/charts/format'
+import { betragMitHinweis, jahr as formatiereJahr, KEIN_WERT } from '@/charts/format'
 import { haushalt, produkte } from '@/data/daten'
 import type { Grundzahl, Produkt } from '@/data/typen'
 import { WERTART_NAMEN } from '@/lib/jahr'
@@ -47,8 +49,8 @@ export interface Zeitreihe {
   serien: ZeitreihenSerie[]
 }
 
-/** Das Produkt, dessen Grundzahlen die Steuerarten und die Schlüsselzuweisung führen (Teilplan 16 01 01). */
-export const ZEITREIHEN_PRODUKT = '160101'
+/** Das Produkt, dessen Grundzahlen die Steuerarten und die Schlüsselzuweisung führen (aus den Daten). */
+export const ZEITREIHEN_PRODUKT = haushalt.finanzierungsprodukt
 
 /** Vorauswahl der Zeitreihe. */
 export const STANDARD_ZEITREIHE = 'gewerbesteuer'
@@ -106,11 +108,15 @@ function vorberichtPosten(eintrag: ZeitreihenPosten) {
   return posten
 }
 
-/** Die eine Grundzahl in Euro, die zum Posten gehört; sonst Fehler mit Postennamen. */
+/**
+ * Die eine Grundzahl in Euro, die zum Posten gehört; `null`, wenn das Produkt keine solche
+ * Grundzahl führt (dann gibt es keine Ist-Jahre vor dem ersten Planjahr). Mehrere Treffer sind
+ * ein Fehler mit Postennamen.
+ */
 export function findeGrundzahl(
   eintrag: ZeitreihenPosten,
   produktliste: readonly Produkt[] = produkte,
-): Grundzahl {
+): Grundzahl | null {
   const treffer = produktliste
     .filter((produkt) => produkt.code === ZEITREIHEN_PRODUKT)
     .flatMap((produkt) => produkt.grundzahlen)
@@ -119,6 +125,9 @@ export function findeGrundzahl(
         grundzahl.einheit === 'EUR' && grundzahl.bezeichnung.startsWith(eintrag.grundzahlPraefix),
     )
   const [erster] = treffer
+  if (treffer.length === 0) {
+    return null
+  }
   if (treffer.length !== 1 || erster === undefined) {
     throw new Error(
       `Zeitreihen-Posten ${eintrag.posten}: ${String(treffer.length)} Grundzahlen im Produkt ${ZEITREIHEN_PRODUKT} beginnen mit „${eintrag.grundzahlPraefix}“ (erwartet: genau eine)`,
@@ -142,8 +151,10 @@ export function baueZeitreihe(posten: string): Zeitpunkt[] {
   }
 
   const punkte: Zeitpunkt[] = []
-  const grundzahlJahre = grundzahl.werte.map((w) => w.jahr).filter((j) => j < ersteresPlanjahr)
-  if (grundzahlJahre.length > 0) {
+  const grundzahlJahre = (grundzahl?.werte ?? [])
+    .map((w) => w.jahr)
+    .filter((j) => j < ersteresPlanjahr)
+  if (grundzahl !== null && grundzahlJahre.length > 0) {
     for (let jahr = Math.min(...grundzahlJahre); jahr < ersteresPlanjahr; jahr++) {
       punkte.push({
         jahr,
@@ -240,8 +251,7 @@ export function quellenFussnote(punkte: readonly Zeitpunkt[]): string {
   return `Quelle: ${teile.join(', ')}`
 }
 
-/** Betrag einer Reihe für Tooltip und Tabelle: „rd. “ vor einem in T€ gerundeten Wert, „–“ ohne Wert. */
+/** Betrag einer Reihe für Tooltip und Tabelle: „rd.“ vor einem in T€ gerundeten Wert, „–“ ohne Wert. */
 export function betragText(punkt: Pick<Zeitpunkt, 'wert' | 'gerundet'>): string {
-  const text = formatiere(punkt.wert, 'euro')
-  return punkt.wert !== null && punkt.gerundet ? `rd. ${text}` : text
+  return punkt.wert === null ? KEIN_WERT : betragMitHinweis(punkt.wert, punkt.gerundet)
 }

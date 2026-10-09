@@ -2275,7 +2275,8 @@ def test_regel5_sonstige_ertraege_ohne_meta_bricht_ab(monkeypatch: pytest.Monkey
 def test_regel5_transferaufwendungen_ohne_meta_oder_eckwerte_bricht_ab(
     monkeypatch: pytest.MonkeyPatch, fehlt: str
 ) -> None:
-    """IN-03: auch die Kreisumlage-Prüfung darf ohne meta/eckwerte nicht still entfallen."""
+    """IN-03: auch die Kreisumlage-Prüfung darf ohne meta/eckwerte nicht still entfallen.
+    Sie läuft, sobald meta.json einen Kreisumlage-Block hat (Phase 11: Hörstel hat keinen)."""
     monkeypatch.setattr(pruefung, "REGEL5_TABELLEN_OHNE_GESAMT", ("transferaufwendungen",))
     monkeypatch.setattr(pruefung, "_pruefe_regel5_weitergabe", lambda **_: (0, []))
     leer = pl.DataFrame()
@@ -2285,7 +2286,7 @@ def test_regel5_transferaufwendungen_ohne_meta_oder_eckwerte_bricht_ab(
             planwerte_ergebnisplan=Planwerte(leer, datei="ergebnisplan"),
             ergebnisplan=leer,
             jahrgang=lade_jahrgang(STANDARD_JAHR),
-            meta=None if fehlt == "meta" else {},
+            meta=None if fehlt == "meta" else {"kreisumlage": {}},
             eckwerte=None if fehlt == "eckwerte" else {},
         )
 

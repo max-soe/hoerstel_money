@@ -1,11 +1,16 @@
 import { createSSRApp, type Component } from 'vue'
 import { renderToString } from 'vue/server-renderer'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import BaseChart, { datenpunkte } from '@/components/BaseChart.vue'
 import DatenTabelle from '@/components/DatenTabelle.vue'
 import { KEIN_WERT } from '@/charts/format'
-import type { DatenSpalte, DatenZeile } from '@/components/datenTabelle'
+import {
+  rahmenAttribute,
+  tabellenRahmen,
+  type DatenSpalte,
+  type DatenZeile,
+} from '@/components/datenTabelle'
 
 // Zustände von BaseChart und DatenTabelle (E6, QUAL-02): laden, Fehler, leer, teilweise leer.
 // Gerendert wird serverseitig mit `vue/server-renderer` (Teil des vue-Pakets, kein neues
@@ -89,17 +94,27 @@ const SPALTEN: readonly DatenSpalte[] = [
   { schluessel: 'name', titel: 'Name', art: 'text' },
   { schluessel: 'betrag', titel: 'Betrag', art: 'euro' },
 ]
+const BESCHRIFTUNG = 'Beispieltabelle der Posten'
 
 describe('DatenTabelle Zustände', () => {
   it('laedt: zeigt wa-skeleton, keine Tabelle', async () => {
-    const html = await rendere(DatenTabelle, { spalten: SPALTEN, zeilen: [], laedt: true })
+    const html = await rendere(DatenTabelle, {
+      beschriftung: BESCHRIFTUNG,
+      spalten: SPALTEN,
+      zeilen: [],
+      laedt: true,
+    })
     expect(html).toContain('<wa-skeleton')
     expect(html).not.toContain('<table')
     expect(html).not.toContain('Keine Einzelwerte')
   })
 
   it('leer: zeilen [] zeigt Titel und Text des Leerzustands, keine Tabelle', async () => {
-    const html = await rendere(DatenTabelle, { spalten: SPALTEN, zeilen: [] })
+    const html = await rendere(DatenTabelle, {
+      beschriftung: BESCHRIFTUNG,
+      spalten: SPALTEN,
+      zeilen: [],
+    })
     expect(html).toContain('Keine Einzelwerte')
     expect(html).toContain('Der Haushaltsplan nennt hier keine Aufschlüsselung.')
     expect(html).not.toContain('<table')
@@ -110,7 +125,11 @@ describe('DatenTabelle Zustände', () => {
       { name: 'Posten A', betrag: null },
       { name: 'Posten B', betrag: 5 },
     ]
-    const html = await rendere(DatenTabelle, { spalten: SPALTEN, zeilen })
+    const html = await rendere(DatenTabelle, {
+      beschriftung: BESCHRIFTUNG,
+      spalten: SPALTEN,
+      zeilen,
+    })
     expect(html).toContain('<table')
     // Scoped-CSS-Attribute (data-v-…) stehen im Tag; geprüft wird Tag, Rolle und Inhalt.
     expect(html).toMatch(new RegExp(`<span aria-hidden="true"[^>]*>${KEIN_WERT}</span>`))
@@ -119,5 +138,110 @@ describe('DatenTabelle Zustände', () => {
     expect(html.split('kein Wert').length - 1).toBe(1)
     expect(html).toContain('value="5"')
     expect(html).not.toContain('value="0"')
+  })
+})
+
+describe('DatenTabelle Name und Rahmen (A11Y-01, A11Y-03, D-20)', () => {
+  const zeilen: DatenZeile[] = [{ name: 'Posten A', betrag: 5 }]
+
+  it('die Caption ist immer vorhanden, trägt eine id und den Beschriftungstext', async () => {
+    const html = await rendere(DatenTabelle, {
+      beschriftung: BESCHRIFTUNG,
+      spalten: SPALTEN,
+      zeilen,
+    })
+    expect(html).toMatch(/<caption[^>]* id="[^"]+"/)
+    expect(html).toContain('om-visually-hidden')
+    expect(html).toContain(BESCHRIFTUNG)
+  })
+
+  it('genau ein Namensweg: kein aria-label, ohne Überlauf weder role region noch tabindex', async () => {
+    const html = await rendere(DatenTabelle, {
+      beschriftung: BESCHRIFTUNG,
+      spalten: SPALTEN,
+      zeilen,
+    })
+    expect(html).not.toContain('aria-label')
+    expect(html).not.toContain('role="region"')
+    expect(html).not.toContain('tabindex')
+    expect(html).not.toContain('aria-labelledby')
+  })
+
+  it.each([
+    ['leere', ''],
+    ['aus Leerzeichen bestehende', '   '],
+  ])(
+    '%s Beschriftung: die Caption trägt den Ersatznamen „Tabelle“ (08/WR-01, 08/WR-02, A11Y-01)',
+    async (_art, beschriftung) => {
+      const html = await rendere(DatenTabelle, {
+        beschriftung,
+        spalten: SPALTEN,
+        zeilen,
+      })
+      expect(html).toMatch(/<caption[^>]*>\s*Tabelle\s*<\/caption>/)
+    },
+  )
+
+  it('leere Beschriftung warnt in DEV (WR-03, A11Y-01)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await rendere(DatenTabelle, {
+      beschriftung: '',
+      spalten: SPALTEN,
+      zeilen,
+    })
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('DatenTabelle: `beschriftung` ist leer'),
+    )
+    warnSpy.mockRestore()
+  })
+})
+
+describe('rahmenAttribute (A11Y-01, 05/WR-02)', () => {
+  it('liefert ohne Überlauf nichts', () => {
+    expect(rahmenAttribute(false, 'caption-1')).toEqual({})
+  })
+
+  it('liefert bei Überlauf tabindex, Rolle und Namensbezug zusammen', () => {
+    expect(rahmenAttribute(true, 'caption-1')).toEqual({
+      tabindex: 0,
+      role: 'region',
+      'aria-labelledby': 'caption-1',
+    })
+  })
+})
+
+describe('tabellenRahmen (08/WR-01, 08/WR-02, A11Y-01)', () => {
+  const MIT_UEBERLAUF = { ueberlaeuft: true, laedt: false, leer: false }
+  const VOLLER_SATZ = { tabindex: 0, role: 'region', 'aria-labelledby': 'c' }
+
+  it('leere Beschriftung mit Überlauf: Rahmen bleibt erreichbar, Name ist „Tabelle“', () => {
+    expect(tabellenRahmen({ ...MIT_UEBERLAUF, beschriftung: '' }, 'c')).toEqual({
+      name: 'Tabelle',
+      attribute: VOLLER_SATZ,
+    })
+  })
+
+  it('aus Leerzeichen bestehende Beschriftung mit Überlauf: wie die leere', () => {
+    expect(tabellenRahmen({ ...MIT_UEBERLAUF, beschriftung: '   ' }, 'c')).toEqual({
+      name: 'Tabelle',
+      attribute: VOLLER_SATZ,
+    })
+  })
+
+  it('normale Beschriftung mit Überlauf: der Name ist die gekürzte Beschriftung', () => {
+    expect(tabellenRahmen({ ...MIT_UEBERLAUF, beschriftung: ' Einnahmen 2026 ' }, 'c')).toEqual({
+      name: 'Einnahmen 2026',
+      attribute: VOLLER_SATZ,
+    })
+  })
+
+  it.each([
+    ['ohne Überlauf', { ueberlaeuft: false, laedt: false, leer: false }],
+    ['beim Laden', { ueberlaeuft: true, laedt: true, leer: false }],
+    ['im Leerzustand', { ueberlaeuft: true, laedt: false, leer: true }],
+  ])('%s: keine Attribute, für jede Beschriftung', (_fall, lage) => {
+    for (const beschriftung of ['', '   ', 'Einnahmen 2026']) {
+      expect(tabellenRahmen({ ...lage, beschriftung }, 'c').attribute).toEqual({})
+    }
   })
 })

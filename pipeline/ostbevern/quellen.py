@@ -53,7 +53,7 @@ from ostbevern.app_daten import (
 )
 from ostbevern.belegbilder import bild_name, rendere_seiten
 from ostbevern.konfiguration import (
-    PROJEKT_WURZEL,
+    APP_WURZEL,
     Jahrgang,
     lade_jahrgang,
     layout_liste,
@@ -62,23 +62,16 @@ from ostbevern.konfiguration import (
 from ostbevern.pdf import PdfDokument, RahmenZeile, WortRahmen
 from ostbevern.plaene import lies_abschnitte
 from ostbevern.produkte import personenfeld_rechtecke
-from ostbevern.pruefung import zerlege_weitere_vorberichtstabellen
+from ostbevern.pruefung import lies_vorberichtstabellen
 from ostbevern.schema import (
     DATEN_WURZEL,
     EIGENKAPITAL_CSV,
     ERGEBNISPLAN_CSV,
     FINANZPLAN_CSV,
     HIERARCHIE_CSV,
-    INVESTITIONSZUWENDUNGEN_CSV,
-    KITA_ZUSCHUESSE_CSV,
     QUELLENBELEGE_MD,
     SEITEN_CSV,
-    STEUERARTEN_CSV,
-    TRANSFERAUFWENDUNGEN_CSV,
     VERBINDLICHKEITEN_CSV,
-    WEITERE_VORBERICHTSTABELLEN_CSV,
-    ZUSCHUESSE_LFD_ZWECKE_CSV,
-    ZUWENDUNGEN_CSV,
     lies_eigenkapital_csv,
     lies_hierarchie_csv,
     lies_plan_csv,
@@ -89,7 +82,7 @@ from ostbevern.schema import (
 from ostbevern.zahlen import ZahlenFehler, lies_betrag, lies_kennzahl
 from ostbevern.zeilen import normalisiere_bezeichnung
 
-BELEGBILDER_WURZEL = PROJEKT_WURZEL / "app" / "public" / "quellen"
+BELEGBILDER_WURZEL = APP_WURZEL / "public" / "quellen"
 QUELLEN_JSON = Path("quellen.json")
 # Fingerprint der Schwärzungsrechtecke je gerenderter Seite (WR-01): Ändert sich die Schwärzung,
 # wird das vorhandene Bild der Seite neu gerendert.
@@ -201,14 +194,16 @@ def schluessel_pr(produkt: str) -> str:
     return f"pr:{produkt}"
 
 
-def schluessel_inv(produkt: str, massnahme_id: str, konto: str, richtung: str) -> str:
-    """Belegschlüssel einer Maßnahme: `inv:{produkt}:{massnahme_id}:{konto}:{richtung}`."""
-    return f"inv:{produkt}:{massnahme_id}:{konto}:{richtung}"
+def schluessel_inv(produkt: str, massnahme_id: str | None, konto: str | None, richtung: str) -> str:
+    """Belegschlüssel einer Maßnahme: `inv:{produkt}:{massnahme_id}:{konto}:{richtung}`.
+    Ein fehlendes Konto bzw. eine fehlende Maßnahme (IKVS) steht als leere Zeichenkette."""
+    return f"inv:{produkt}:{massnahme_id or ''}:{konto or ''}:{richtung}"
 
 
-def schluessel_ve(produkt: str, massnahme_id: str, konto: str) -> str:
-    """Belegschlüssel einer VE-Kontozeile: `ve:{produkt}:{massnahme_id}:{konto}`."""
-    return f"ve:{produkt}:{massnahme_id}:{konto}"
+def schluessel_ve(produkt: str, massnahme_id: str | None, konto: str | None) -> str:
+    """Belegschlüssel einer VE-Kontozeile: `ve:{produkt}:{massnahme_id}:{konto}` (fehlende
+    Werte wie bei `schluessel_inv` leer)."""
+    return f"ve:{produkt}:{massnahme_id or ''}:{konto or ''}"
 
 
 def schluessel_sd(reihe: str) -> str:
@@ -241,6 +236,51 @@ def bbox_mit_rand(
     x1 = min(breite, max(w.x1 for w in wortliste) + rand)
     bottom = min(hoehe, max(w.bottom for w in wortliste) + rand)
     return [round(x0, 2), round(top, 2), round(x1, 2), round(bottom, 2)]
+
+
+def _ikvs_zeilennummer(zeile: RahmenZeile) -> int | None:
+    """Zeilennummer einer IKVS-Planzeile („7 - Sonstige or-“), sonst None."""
+    woerter = zeile.woerter
+    if len(woerter) >= 2 and woerter[0].text.isdigit() and woerter[1].text == "-":
+        return int(woerter[0].text)
+    return None
+
+
+def finde_ikvs_planzeile(
+    zeilen: Sequence[RahmenZeile],
+    nummer: str,
+    betrag: int,
+    *,
+    breite: float,
+    hoehe: float,
+) -> Suche:
+    """IKVS-Layout (Hörstel): Eine Planzeile beginnt mit „{n} - Bezeichnung“, die Bezeichnung
+    ist umbrochen und die Beträge stehen auf einer der Folgezeilen. Der Block reicht bis zur
+    nächsten nummerierten Zeile; er gilt als gefunden, wenn (bei einem Betrag ungleich null)
+    ein Wort des Blocks `betrag` ist. Genau ein Block ergibt das Rechteck um den ganzen Block.
+    """
+    ziel = int(nummer)
+    bloecke: list[list[RahmenZeile]] = []
+    for zeile in zeilen:
+        nr = _ikvs_zeilennummer(zeile)
+        if nr is not None:
+            bloecke.append([zeile] if nr == ziel else [])
+        elif bloecke and bloecke[-1]:
+            bloecke[-1].append(zeile)
+    kandidaten = [block for block in bloecke if block]
+    if not kandidaten:
+        return None, GRUND_NICHT_GEFUNDEN
+    if betrag != 0:
+        kandidaten = [
+            block
+            for block in kandidaten
+            if any(_parse_betrag(w.text) == betrag for z in block for w in z.woerter)
+        ]
+        if not kandidaten:
+            return None, GRUND_BETRAG_FEHLT
+    if len(kandidaten) > 1:
+        return None, GRUND_MEHRDEUTIG
+    return bbox_mit_rand((w for z in kandidaten[0] for w in z.woerter), breite, hoehe), None
 
 
 def _parse_betrag(text: str) -> int | None:
@@ -733,12 +773,19 @@ _UEBERSCHRIFT_ABSTAND = 6.0
 
 
 def finde_produktzeile(
-    zeilen: Sequence[RahmenZeile], produkt: str, kopf_muster: str, *, breite: float, hoehe: float
+    zeilen: Sequence[RahmenZeile],
+    produkt: str,
+    kopf_muster: str,
+    *,
+    breite: float,
+    hoehe: float,
+    erster_treffer: bool = False,
 ) -> Suche:
     """Sucht die Kopfzeile `Produkt {code} {Name}` (Muster `kopfzeilen.produkt`) der Seite.
 
     Eine eng folgende Umbruchzeile des Namens gehört zum Rechteck. Genau eine Kopfzeile des
-    Produkts auf der Seite ist nötig.
+    Produkts auf der Seite ist nötig; mit `erster_treffer` (IKVS: dieselbe Zeile steht als
+    Seitenkopf und im Kasten der Produktinformationen) gilt die erste.
     """
     muster = re.compile(kopf_muster)
     indizes = []
@@ -748,7 +795,7 @@ def finde_produktzeile(
             indizes.append(index)
     if not indizes:
         return None, GRUND_NICHT_GEFUNDEN
-    if len(indizes) > 1:
+    if len(indizes) > 1 and not erster_treffer:
         return None, GRUND_MEHRDEUTIG
     block = [zeilen[indizes[0]]]
     for folge in zeilen[indizes[0] + 1 :]:
@@ -814,6 +861,8 @@ class _Planzeile:
     zeile_kanonisch: str
     betrag: int
     pdf_seite: int
+    # Nicht gedruckt, aus Kindern berechnet (z. B. IKVS-Produktgruppen, Phase 9).
+    synthetisch: bool = False
 
 
 def _lies_planzeilen(
@@ -845,6 +894,7 @@ def _lies_planzeilen(
             zeile_kanonisch=zeile["zeile_kanonisch"],
             betrag=zeile["betrag"],
             pdf_seite=zeile["pdf_seite"],
+            synthetisch=bool(zeile["synthetisch"]),
         )
         for zeile in haushaltsjahr.iter_rows(named=True)
     ]
@@ -992,6 +1042,20 @@ def _sammle_plaene(
             else:
                 schluessel = schluessel_fp(planzeile.code, planzeile.zeile_kanonisch)
             seite = planzeile.pdf_seite
+            if jahrgang.software == "ikvs":
+                # IKVS: Teilergebnis- und Teilfinanzpläne stehen auf eigenen Seiten; Zeilen der
+                # nicht gedruckten Produktgruppen sind berechnet (Summe der Produkte).
+                if planzeile.synthetisch:
+                    sammler.eintragen(schluessel, seite, None, GRUND_BERECHNET)
+                    continue
+                sammler.suche(
+                    schluessel,
+                    seite,
+                    lambda breite, hoehe, s=seite, p=planzeile: finde_ikvs_planzeile(
+                        sammler.seiten.zeilen(s), p.zeile, p.betrag, breite=breite, hoehe=hoehe
+                    ),
+                )
+                continue
             zeilen = (
                 sammler.seiten.zeilen(seite)
                 if planzeile.ebene == _GESAMT
@@ -1006,18 +1070,10 @@ def _sammle_plaene(
             )
 
 
-def _lies_vorbericht_tabellen(daten_wurzel: Path) -> dict[str, pl.DataFrame]:
+def _lies_vorbericht_tabellen(daten_wurzel: Path, jahrgang: Jahrgang) -> dict[str, pl.DataFrame]:
     """Die manuellen Vorberichtstabellen wie in `app_daten.erzeuge_app_daten` (nur lesend)."""
     return {
-        "steuerarten": lies_vorbericht_csv(daten_wurzel / STEUERARTEN_CSV),
-        "zuwendungen": lies_vorbericht_csv(daten_wurzel / ZUWENDUNGEN_CSV),
-        "transferaufwendungen": lies_vorbericht_csv(daten_wurzel / TRANSFERAUFWENDUNGEN_CSV),
-        "kita_zuschuesse": lies_vorbericht_csv(daten_wurzel / KITA_ZUSCHUESSE_CSV),
-        "zuschuesse_lfd_zwecke": lies_vorbericht_csv(daten_wurzel / ZUSCHUESSE_LFD_ZWECKE_CSV),
-        "investitionszuwendungen": lies_vorbericht_csv(daten_wurzel / INVESTITIONSZUWENDUNGEN_CSV),
-        **zerlege_weitere_vorberichtstabellen(
-            lies_vorbericht_csv(daten_wurzel / WEITERE_VORBERICHTSTABELLEN_CSV)
-        ),
+        **lies_vorberichtstabellen(daten_wurzel, jahrgang),
         "eigenkapital": lies_eigenkapital_csv(daten_wurzel / EIGENKAPITAL_CSV),
     }
 
@@ -1030,11 +1086,20 @@ def _haushaltsjahr_index(jahrgang: Jahrgang, jahre: Sequence[int]) -> int:
     return list(jahre).index(jahrgang.haushaltsjahr)
 
 
+def _abgeschrieben_berechnet(df: pl.DataFrame, posten: str, haushaltsjahr: int) -> bool:
+    """True, wenn die Abschrift den Posten im Haushaltsjahr als berechnet kennzeichnet
+    (`anmerkung` „berechnet: …“, z. B. die Restposten `uebrige_*` in Hörstel, Phase 11)."""
+    if "anmerkung" not in df.columns:
+        return False
+    zeilen = df.filter((pl.col("posten") == posten) & (pl.col("jahr") == haushaltsjahr))
+    return any((anm or "").startswith("berechnet") for anm in zeilen["anmerkung"].to_list())
+
+
 def _sammle_vorbericht(
     sammler: _Sammler, jahrgang: Jahrgang, daten_wurzel: Path, haushalt: Mapping[str, object]
 ) -> None:
     """vb für jeden Posten und jede gedruckte Gesamtzeile mit Quellseite (inkl. Eigenkapital)."""
-    tabellen_df = _lies_vorbericht_tabellen(daten_wurzel)
+    tabellen_df = _lies_vorbericht_tabellen(daten_wurzel, jahrgang)
     index = _haushaltsjahr_index(jahrgang, haushalt["jahre"])
     tabellen = {**haushalt["vorbericht"], "eigenkapital": haushalt["eigenkapital"]}
     for tabelle, daten in tabellen.items():
@@ -1049,7 +1114,9 @@ def _sammle_vorbericht(
             if seite is None:
                 continue
             schluessel = schluessel_vb(tabelle, posten["posten"])
-            if posten["berechnet"]:
+            if posten["berechnet"] or _abgeschrieben_berechnet(
+                df, posten["posten"], jahrgang.haushaltsjahr
+            ):
                 sammler.eintragen(schluessel, seite, None, GRUND_BERECHNET)
                 continue
             sammler.suche(
@@ -1162,6 +1229,9 @@ def _sammle_investitionen(
     investitionen: Mapping[str, object],
 ) -> None:
     index = _haushaltsjahr_index(jahrgang, haushalt["jahre"])
+    if jahrgang.software == "ikvs":
+        _sammle_investitionen_ikvs(sammler, investitionen)
+        return
     texte = _kontozeilen_texte(jahrgang)
     for massnahme in investitionen["massnahmen"]:
         seite = massnahme["pdf_seite"]
@@ -1208,6 +1278,56 @@ def _sammle_investitionen(
                 breite=breite,
                 hoehe=hoehe,
             ),
+        )
+
+
+def _finde_ikvs_massnahme(
+    zeilen: Sequence[RahmenZeile], massnahme_id: str, breite: float, hoehe: float
+) -> Suche:
+    """IKVS-Investitionsübersicht: die Saldozeile einer Maßnahme beginnt mit ihrer Nummer
+    („111.02-004 - Name“); markiert wird diese Zeile."""
+    treffer = [
+        zeile
+        for zeile in zeilen
+        if zeile.woerter and zeile.woerter[0].text in (massnahme_id, f"{massnahme_id}-")
+    ]
+    if len(treffer) > 1:
+        return None, GRUND_MEHRDEUTIG
+    if not treffer:
+        return None, GRUND_NICHT_GEFUNDEN
+    return bbox_mit_rand(treffer[0].woerter, breite, hoehe), None
+
+
+def _sammle_investitionen_ikvs(sammler: _Sammler, investitionen: Mapping[str, object]) -> None:
+    """IKVS (Hörstel, Phase 11): ohne Sachkonten. Je Maßnahme und Richtung die Saldozeile der
+    Maßnahme auf ihrer ersten Seite; VE-Fälligkeiten stehen nur in der VE-Übersicht (Seite
+    ohne Zeilenmarkierung, ihre Zeilen tragen keine Maßnahmennummer)."""
+    for massnahme in investitionen["massnahmen"]:
+        seite = massnahme["pdf_seite"]
+        sammler.suche(
+            schluessel_inv(
+                massnahme["produkt"],
+                massnahme["massnahme_id"],
+                massnahme["konto"],
+                massnahme["richtung"],
+            ),
+            seite,
+            lambda breite, hoehe, m=massnahme["massnahme_id"], s=seite: _finde_ikvs_massnahme(
+                sammler.seiten.zeilen(s), m, breite, hoehe
+            ),
+        )
+    gruppen: dict[tuple[str, str, str], set[int]] = defaultdict(set)
+    for ve in investitionen["ve_faelligkeiten"]:
+        schluessel = (ve["produkt"], ve["massnahme_id"] or "", ve["konto"] or "")
+        gruppen[schluessel].add(int(ve["pdf_seite"]))
+    for (produkt, massnahme_id, konto), seiten in sorted(gruppen.items()):
+        if len(seiten) != 1:
+            raise QuellenFehler(f"VE {produkt}/{massnahme_id}: mehrere PDF-Seiten {seiten}")
+        sammler.eintragen(
+            schluessel_ve(produkt, massnahme_id, konto),
+            next(iter(seiten)),
+            None,
+            GRUND_NICHT_GEFUNDEN,
         )
 
 
@@ -1285,6 +1405,7 @@ def _sammle_produkte(sammler: _Sammler, jahrgang: Jahrgang, produkte: Sequence[d
                 jahrgang.kopfzeilen.produkt,
                 breite=breite,
                 hoehe=hoehe,
+                erster_treffer=jahrgang.software == "ikvs",
             ),
         )
         for grundzahl in produkt["grundzahlen"]:

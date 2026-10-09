@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { BarSeriesOption, EChartsOption } from 'echarts'
 
 import { POL_FARBEN, SCHWELLE_FARBE } from '@/charts/echartsTheme'
+import { zweizeilig } from '@/charts/beschriftung'
 import { euroKurz, jahr as formatiereJahr } from '@/charts/format'
 import { tooltipZeilen } from '@/charts/tooltip'
 import { jahresAchse, saeulenStil } from '@/charts/wertartStil'
@@ -13,11 +14,11 @@ import { haushalt } from '@/data/daten'
 import { useSchmalerBildschirm } from '@/lib/bildschirm'
 import { baueErgebnisReihen, ergebnisBeschriftung, ergebnisTabelle } from '@/lib/entwicklung'
 import { wertartName } from '@/lib/jahr'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const LEER_TITEL = 'Für diese Auswahl gibt es keine Einzelwerte'
 const LEER_TEXT = 'Der Haushaltsplan nennt für diese Jahre keine Werte. Öffne die Tabelle.'
-const BESCHREIBUNG =
-  'Säulendiagramm: Jahresergebnis der Gemeinde nach globalem Minderaufwand je Jahr. Ein Defizit liegt unter der Nulllinie, ein Überschuss darüber. Die Werte stehen in der Tabelle darunter.'
+const BESCHREIBUNG = `Säulendiagramm: Jahresergebnis der ${KOMMUNE_ART} nach globalem Minderaufwand je Jahr. Ein Defizit liegt unter der Nulllinie, ein Überschuss darüber. Die Werte stehen in der Tabelle darunter.`
 
 const istSchmal = useSchmalerBildschirm()
 const reihen = baueErgebnisReihen()
@@ -25,9 +26,12 @@ const achse = jahresAchse(haushalt.jahre, haushalt.wertarten)
 const hatWerte = reihen.ergebnisNach.some((eintrag) => eintrag.wert !== null)
 const letzterIndex = haushalt.jahre.length - 1
 
-/** Zweizeilig („Defizit“ über dem Betrag), damit die Beschriftung unter eine Säule passt. */
+/**
+ * Zweizeilig („Defizit“ über dem Betrag), damit die Beschriftung unter eine Säule passt. Auch Beträge
+ * unter 1 Mio. € brechen vor „€“ um, wie die größeren.
+ */
 function beschriftung(wert: number | null): string {
-  return ergebnisBeschriftung(wert).replace(' ', '\n')
+  return zweizeilig(ergebnisBeschriftung(wert))
 }
 
 const option = computed<EChartsOption>(() => {

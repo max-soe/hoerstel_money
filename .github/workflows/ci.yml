@@ -1,4 +1,4 @@
-# CI-Workflow und Veröffentlichung für Ostbevern Money.
+# CI-Workflow und Veröffentlichung für Hörstel Money.
 #
 # Ablauf: Die Jobs `pipeline` und `app` prüfen jeden Push auf `main` und jeden Pull Request. Der Job
 # `app` baut die Seite, startet den Smoke-Test (Playwright und axe, QUAL-02) gegen den Build
@@ -7,9 +7,8 @@
 # Er braucht beide Jobs, läuft nie für Pull Requests oder andere Branches als `main` und ist der
 # einzige Job mit Schreibrechten für Pages und den OIDC-Token (least privilege).
 #
-# Hinweis (D-10): Es gibt noch kein GitHub-Remote. Der Workflow läuft erst, wenn die Nutzerin
-# bzw. der Nutzer das öffentliche Repository `ostbevern_money` anlegt und `main` pusht; die
-# Schritte stehen im README (Abschnitt „Veröffentlichung auf GitHub Pages“).
+# Hinweis (D-10): Veröffentlicht wird aus dem Repository `hoerstel_money`, sobald der Stand auf
+# `main` liegt; die Schritte stehen im README (Abschnitt „Veröffentlichung auf GitHub Pages“).
 name: CI
 
 on:
@@ -45,6 +44,8 @@ jobs:
         run: uv run pytest
       - name: Pipeline reproduzierbar (D-24)
         working-directory: ${{ github.workspace }}
+        # Der aktive Jahrgang ist Hörstel (IKVS): alle.py muss daten/ und app/src/data exakt
+        # reproduzieren und darf unter app/public/quellen keine Belegseite neu anlegen.
         run: |
           uv run --directory pipeline python alle.py
           git diff --stat --exit-code -- daten app/src/data
@@ -58,6 +59,21 @@ jobs:
           # alle.py unter app/public/quellen keine Datei neu anlegt oder ändert.
           if [ -n "$(git status --porcelain --untracked-files=all -- app/public/quellen)" ]; then
             git status --porcelain --untracked-files=all -- app/public/quellen
+            exit 1
+          fi
+      - name: Ostbevern-Referenz reproduzierbar
+        working-directory: ${{ github.workspace }}
+        # Ostbevern bleibt Regressionsreferenz für das ProFIS+-Layout. PIPELINE_REFERENZ lenkt
+        # Jahrgang, daten/ und App-Ausgaben nach pipeline/referenz/ostbevern/ um; die Tests
+        # setzen dieselbe Umlenkung in tests/conftest.py.
+        env:
+          PIPELINE_REFERENZ: referenz/ostbevern
+        run: |
+          uv run --directory pipeline python alle.py
+          REF=pipeline/referenz/ostbevern
+          git diff --stat --exit-code -- "$REF/daten" "$REF/app/src/data"
+          if [ -n "$(git status --porcelain --untracked-files=all -- "$REF/daten" "$REF/app/src/data" "$REF/app/public/quellen")" ]; then
+            git status --porcelain --untracked-files=all -- "$REF/daten" "$REF/app/src/data" "$REF/app/public/quellen"
             exit 1
           fi
 

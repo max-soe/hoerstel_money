@@ -613,7 +613,7 @@ def test_vorbericht_gesamtzeile_ohne_ist_gesamt_wird_als_quellenfehler_gemeldet(
     monkeypatch.setattr(
         quellen,
         "_lies_vorbericht_tabellen",
-        lambda _wurzel: {"steuerarten": ohne_gesamt, "eigenkapital": ohne_gesamt},
+        lambda _wurzel, _jahrgang: {"steuerarten": ohne_gesamt, "eigenkapital": ohne_gesamt},
     )
     with pytest.raises(QuellenFehler, match="keine ist_gesamt-Zeile"):
         quellen._sammle_vorbericht(None, jahrgang, Path("."), haushalt)  # type: ignore[arg-type]

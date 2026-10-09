@@ -1,6 +1,6 @@
 // Geldfluss-Modell der Seite „Vom Ertrag zur Ausgabe“ (FLUSS-01 bis FLUSS-04, D-11, D-19).
 // Gebaut ausschließlich aus dem Ergebnisplan: links die Ertragsarten, in der Mitte der
-// Gemeindehaushalt, rechts Weitergabe an Kreis und Land, die Aufgabenbereiche und die
+// Haushalt der Kommune, rechts Weitergabe an Kreis und Land, die Aufgabenbereiche und die
 // Zinsen. Der Ausgleich entsteht datengetrieben, ohne Sonderfall je Jahr:
 //   Defizit (Entnahme aus Rücklagen) = −Jahresergebnis nach Minderaufwand, links, wenn negativ
 //   Globaler Minderaufwand           = −Z. 27, links, wenn ≠ 0
@@ -13,6 +13,7 @@ import {
   abstufung,
   ERTRAG_FARBE,
   farbeFuerPb,
+  flaechenFarbe,
   GEMEINDE_FARBE,
   KL_DECAL,
   KL_FARBE,
@@ -23,12 +24,20 @@ import {
   ZINSEN_FARBE,
   type Decal,
 } from '@/charts/echartsTheme'
-import { euro, euroKurz, jahr as formatiereJahr } from '@/charts/format'
+import {
+  betragMitHinweis,
+  euro,
+  jahr as formatiereJahr,
+  kurzMitHinweis,
+  rundKurz,
+  rundMitHinweis,
+} from '@/charts/format'
 import { tooltipZeilen } from '@/charts/tooltip'
 import { haushalt } from '@/data/daten'
-import { anteil } from '@/lib/berechnung'
+import { anteil, minderaufwandBetrag } from '@/lib/berechnung'
 import { findeKlKnoten } from '@/lib/kreisumlage'
 import { textFuerJahr } from '@/lib/texte'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 export type KnotenSeite = 'links' | 'mitte' | 'rechts'
 
@@ -42,6 +51,7 @@ export type KnotenArt =
   | 'pb'
   | 'zinsen'
   | 'ueberschuss'
+  | 'differenz'
 
 export interface GeldflussKnoten {
   /** Eindeutiger Bezeichner (ECharts identifiziert Knoten über ihren Namen). */
@@ -57,7 +67,10 @@ export interface GeldflussKnoten {
   decal?: Decal
   /** `true`, wenn der Betrag nur auf T€ genau ist (Vorbericht-Tabelle × 1000): Anzeige „rd.“. */
   gerundet: boolean
-  /** `true` für einen Rest (Differenz aus genauem und gerundetem Wert): Anzeige „berechnet“. */
+  /**
+   * `true` für einen Rest (Differenz aus genauem und gerundetem Wert) und für eine von der App
+   * gebildete Summe mehrerer gedruckter Posten: Anzeige „berechnet“.
+   */
   berechnet: boolean
 }
 
@@ -77,6 +90,9 @@ export interface Geldfluss {
 }
 
 const GEMEINDE_ID = 'mitte:gemeinde'
+
+/** Rundungsdifferenz in Euro zwischen Gesamtplan und Teilplänen, die keinen Knoten bekommt. */
+const DIFFERENZ_TOLERANZ = 2
 
 /** Gruppen der Steuern (Vorbericht-Posten); der Rest bis zur Plan-Zeile ist „Übrige Steuern“. */
 const STEUER_GRUPPEN: readonly { id: string; name: string; posten: readonly string[] }[] = [
@@ -120,14 +136,6 @@ function postenGerundet(tabelle: string, posten: string): boolean {
   return eintrag.gerundet
 }
 
-/** „rd.“ mit geschütztem Leerzeichen, damit der Zusatz nie allein am Zeilenende steht. */
-export const RD_PRAEFIX = 'rd.\u00a0'
-
-/** Betrag mit „rd.“ davor, wenn er nur auf T€ genau ist; sonst der genaue Euro-Betrag. */
-export function betragMitHinweis(wert: number, gerundet: boolean): string {
-  return gerundet ? `${RD_PRAEFIX}${euro(wert)}` : euro(wert)
-}
-
 /** Z. 17 (ordentliche Aufwendungen) eines Knotens; ohne Eintrag 0. */
 function ordentlicherAufwand(code: string, jahrIndex: number): number {
   return haushalt.ergebnisplan[code]?.zeilen.ordentliche_aufwendungen?.[jahrIndex] ?? 0
@@ -160,7 +168,9 @@ export function baueGeldfluss(jahrIndex: number): Geldfluss {
     name: gruppe.name,
     wert: gruppe.posten.reduce((s, p) => s + postenWert('steuerarten', p, jahrIndex), 0),
     gerundet: gruppe.posten.some((p) => postenGerundet('steuerarten', p)),
-    berechnet: false,
+    // Eine Gruppe aus mehreren gedruckten Posten ist eine von der App gebildete Summe und
+    // trägt das Etikett „berechnet“ (G-09-03); ein einzelner Posten steht so im Vorbericht.
+    berechnet: gruppe.posten.length > 1,
   }))
   const gruppenSumme = steuerKnoten.reduce((s, k) => s + k.wert, 0)
   // Rest aus genauer Plan-Zeile minus gerundeten Gruppen: weder genau noch gedruckt.
@@ -241,7 +251,12 @@ export function baueGeldfluss(jahrIndex: number): Geldfluss {
 
   // ---- links: Ausgleich (Defizit, Minderaufwand) und rechts: Überschuss --------------
   const nachMinderaufwand = planZeile('ergebnis_nach_minderaufwand', jahrIndex)
-  const minderaufwand = -planZeile('globaler_minderaufwand', jahrIndex)
+  const jahrDesIndex = haushalt.jahre[jahrIndex]
+  if (jahrDesIndex === undefined) {
+    throw new Error(`Jahresindex ${String(jahrIndex)} liegt außerhalb der Jahre`)
+  }
+  const minderaufwand =
+    minderaufwandBetrag(planZeile('globaler_minderaufwand', jahrIndex), jahrDesIndex) ?? 0
 
   if (nachMinderaufwand < 0) {
     knoten.push({
@@ -256,10 +271,7 @@ export function baueGeldfluss(jahrIndex: number): Geldfluss {
       berechnet: false,
     })
   }
-  if (minderaufwand !== 0) {
-    if (minderaufwand < 0) {
-      throw new Error('Globaler Minderaufwand ist positiv: Datenfehler')
-    }
+  if (minderaufwand > 0) {
     knoten.push({
       id: 'ausgleich:minderaufwand',
       name: 'Globaler Minderaufwand',
@@ -278,7 +290,7 @@ export function baueGeldfluss(jahrIndex: number): Geldfluss {
   const summeLinks = knoten.reduce((s, k) => s + k.wert, 0)
   knoten.push({
     id: GEMEINDE_ID,
-    name: 'Gemeindehaushalt',
+    name: `Haushalt der ${KOMMUNE_ART}`,
     wert: summeLinks,
     seite: 'mitte',
     art: 'gemeinde',
@@ -350,6 +362,31 @@ export function baueGeldfluss(jahrIndex: number): Geldfluss {
       gerundet: false,
       berechnet: false,
     })
+  }
+
+  // Gesamtplan und Summe der Teilpläne können im PDF auseinanderfallen (Hörstel,
+  // Befund Regel 3 in befunde.md): links zählt der Gesamtplan, rechts die Aufgabenbereiche. Die
+  // Differenz steht als eigener, berechneter Knoten rechts, damit beide Seiten gleich groß sind
+  // und nichts verschwiegen wird. Cent-Rundungen bis 2 € bleiben unberücksichtigt.
+  const rechts = knoten.filter((k) => k.seite === 'rechts').reduce((s, k) => s + k.wert, 0)
+  const differenz = summeLinks - rechts
+  if (differenz > DIFFERENZ_TOLERANZ) {
+    knoten.push({
+      id: 'ziel:differenz',
+      name: 'Nicht in den Teilplänen (Differenz zum Gesamtplan)',
+      wert: differenz,
+      seite: 'rechts',
+      art: 'differenz',
+      code: null,
+      farbe: ZINSEN_FARBE,
+      decal: PUNKT_DECAL,
+      gerundet: false,
+      berechnet: true,
+    })
+  } else if (differenz < -DIFFERENZ_TOLERANZ) {
+    throw new Error(
+      `Geldfluss ${String(haushalt.jahre[jahrIndex])}: die Teilpläne übersteigen den Gesamtplan um ${String(-differenz)} €`,
+    )
   }
 
   // ---- Kanten ----------------------------------------------------------------------------
@@ -458,6 +495,81 @@ function tooltipInhalt(
   return null
 }
 
+/** Mindesthöhe des Sankey in px (UI-SPEC) und Platz je Knoten der volleren Seite. */
+const SANKEY_MINDESTHOEHE = 640
+const SANKEY_PLATZ_JE_KNOTEN = 52
+
+/**
+ * Höhe des Sankey: mindestens 640 px, bei vielen Knoten auf einer Seite (Hörstel: 16
+ * Aufgabenbereiche, Kreis und Land, Zinsen, Differenz) etwa 52 px je Knoten, damit die
+ * zweizeiligen Beschriftungen nicht übereinanderliegen.
+ */
+export function sankeyHoehe(geldfluss: Geldfluss): number {
+  const anzahl = (seite: KnotenSeite) => geldfluss.knoten.filter((k) => k.seite === seite).length
+  return Math.max(
+    SANKEY_MINDESTHOEHE,
+    Math.max(anzahl('links'), anzahl('rechts')) * SANKEY_PLATZ_JE_KNOTEN,
+  )
+}
+
+/** Rand, Knotenabstand und Beschriftung des Sankey (müssen zu `geldflussOption` passen). */
+const SANKEY_OBEN = 44
+const SANKEY_UNTEN = 16
+const SANKEY_KNOTENABSTAND = 8
+const BESCHRIFTUNG_ZEILENHOEHE = 18
+/** Zeichen je Zeile bei 160 px Umbruchbreite und 14 px Schrift (geschätzt, eher knapp). */
+const BESCHRIFTUNG_ZEICHEN_JE_ZEILE = 19
+
+/** Geschätzte Höhe der Beschriftung „{Name}\n{Betrag}“ in px. */
+function beschriftungsHoehe(knoten: GeldflussKnoten): number {
+  const namensZeilen = Math.max(1, Math.ceil(knoten.name.length / BESCHRIFTUNG_ZEICHEN_JE_ZEILE))
+  return (namensZeilen + 1) * BESCHRIFTUNG_ZEILENHOEHE
+}
+
+/**
+ * IDs der Knoten, deren Beschriftung Platz hat. Die Knoten stehen je Seite in Datenreihenfolge
+ * übereinander (`layoutIterations: 0`), ihre Höhe folgt dem Betrag; wie ECharts wird mit dem
+ * kleinsten Maßstab aller Spalten skaliert. Beschriftungen werden je Seite nach Betrag vergeben;
+ * eine, die eine schon vergebene überdecken würde, entfällt (die Mitte hat nur einen Knoten). Name und Betrag stehen dann
+ * weiter im Tooltip und in den Tabellen unter dem Diagramm.
+ */
+export function beschriftbareKnoten(geldfluss: Geldfluss, hoehe: number): Set<string> {
+  const nutzbar = hoehe - SANKEY_OBEN - SANKEY_UNTEN
+  const seiten: KnotenSeite[] = ['links', 'mitte', 'rechts']
+  const spalten = seiten.map((seite) => geldfluss.knoten.filter((k) => k.seite === seite))
+  const massstab = Math.min(
+    ...spalten
+      .filter((spalte) => spalte.length > 0)
+      .map((spalte) => {
+        const summe = spalte.reduce((s, k) => s + k.wert, 0)
+        return summe <= 0
+          ? Infinity
+          : (nutzbar - (spalte.length - 1) * SANKEY_KNOTENABSTAND) / summe
+      }),
+  )
+  const sichtbar = new Set<string>()
+  for (const spalte of spalten) {
+    // Lage jeder Beschriftung (zentriert am Knoten), dann Vergabe nach Betrag: große Knoten
+    // zuerst, eine Beschriftung nur, wenn sie keine schon vergebene überdeckt.
+    let oben = SANKEY_OBEN
+    const lagen = spalte.map((knoten) => {
+      const knotenHoehe = knoten.wert * massstab
+      const mitte = oben + knotenHoehe / 2
+      const halbe = beschriftungsHoehe(knoten) / 2
+      oben += knotenHoehe + SANKEY_KNOTENABSTAND
+      return { knoten, von: mitte - halbe, bis: mitte + halbe }
+    })
+    const vergeben: { von: number; bis: number }[] = []
+    for (const lage of [...lagen].sort((a, b) => b.knoten.wert - a.knoten.wert)) {
+      if (vergeben.every((andere) => lage.bis <= andere.von || lage.von >= andere.bis)) {
+        vergeben.push(lage)
+        sichtbar.add(lage.knoten.id)
+      }
+    }
+  }
+  return sichtbar
+}
+
 /**
  * Sankey-Option (UI-SPEC „Sankey“): 640 px Diagramm, Knotenbreite 16, Abstand 8, Fluss in der
  * Farbe der Quelle bei 35 % Deckkraft, Hervorhebung des Pfades samt Nachbarn, Knoten nicht
@@ -468,8 +580,10 @@ function tooltipInhalt(
 export function geldflussOption(
   geldfluss: Geldfluss,
   text: { wertartText: string },
+  hoehe: number = sankeyHoehe(geldfluss),
 ): EChartsOption {
   const nachId = new Map(geldfluss.knoten.map((k) => [k.id, k] as const))
+  const beschriftet = beschriftbareKnoten(geldfluss, hoehe)
 
   return {
     tooltip: {
@@ -485,10 +599,10 @@ export function geldflussOption(
         type: 'sankey',
         left: 176,
         right: 176,
-        top: 44,
-        bottom: 16,
+        top: SANKEY_OBEN,
+        bottom: SANKEY_UNTEN,
         nodeWidth: 16,
-        nodeGap: 8,
+        nodeGap: SANKEY_KNOTENABSTAND,
         draggable: false,
         layoutIterations: 0,
         orient: 'horizontal',
@@ -504,18 +618,18 @@ export function geldflussOption(
           overflow: 'break',
           distance: 6,
           fontSize: 14,
-          lineHeight: 18,
+          lineHeight: BESCHRIFTUNG_ZEILENHOEHE,
           formatter: (params: unknown) => {
             const knoten = istObjekt(params) ? params.name : undefined
             const eintrag = typeof knoten === 'string' ? nachId.get(knoten) : undefined
-            if (eintrag === undefined) {
+            if (eintrag === undefined || !beschriftet.has(eintrag.id)) {
               return ''
             }
-            const betrag = euroKurz(eintrag.wert)
-            return `${eintrag.name}\n${eintrag.gerundet ? `${RD_PRAEFIX}${betrag}` : betrag}`
+            return `${eintrag.name}\n${kurzMitHinweis(eintrag.wert, eintrag.gerundet)}`
           },
         },
-        labelLayout: { hideOverlap: false, moveOverlap: 'shiftY' },
+        // Überlappungen verhindert `beschriftbareKnoten`; ECharts verschiebt nichts mehr.
+        labelLayout: { hideOverlap: false },
         data: geldfluss.knoten.map((k) => ({
           name: k.id,
           depth: TIEFE[k.seite],
@@ -584,17 +698,6 @@ export function baueGeldflussBalken(geldfluss: Geldfluss): GeldflussBalken {
   }
 }
 
-/** Trennerfarbe der Segmente: die Flächenfarbe aus dem Web-Awesome-Token, Ersatz Weiß (wie `token()` im Theme). */
-function trennerFarbe(): string {
-  if (typeof document === 'undefined') {
-    return '#ffffff'
-  }
-  const wert = getComputedStyle(document.documentElement)
-    .getPropertyValue('--wa-color-surface-default')
-    .trim()
-  return wert === '' ? '#ffffff' : wert
-}
-
 /**
  * Option für einen einzelnen gestapelten Balken (56 px, keine Achsen, keine Beschriftung in
  * den Segmenten, 2 px Trenner). Die Skala reicht von 0 bis zur Summe des Balkens, daher füllt
@@ -606,7 +709,7 @@ export function balkenOption(
   wertartText: string,
 ): EChartsOption {
   const nachId = new Map(segmenteDesBalkens.map((s) => [s.id, s] as const))
-  const trenner = trennerFarbe()
+  const trenner = flaechenFarbe()
 
   return {
     grid: { left: 0, right: 0, top: 0, bottom: 0 },
@@ -651,6 +754,12 @@ export function balkenOption(
  * Satz aus den Daten des gewählten Jahres (D-11, Pitfall 6): nennt Defizit bzw. Überschuss
  * und den Globalen Minderaufwand mit ihren Beträgen und die PDF-Seite. `wertart` ist der
  * Anzeigename der Wertart („Ist“, „Ansatz“, „Planung“). Zahlen kommen nur aus `geldfluss`.
+ *
+ * Nach Satz 1 unterscheidet der Text vier Fälle der Bilanz (D-06, TXT-01):
+ *   A Defizit (links), dazu ggf. der Minderaufwand „ebenfalls links“;
+ *   B Überschuss (rechts), dazu ggf. der Minderaufwand ohne „ebenfalls“, weil kein Defizit davor steht;
+ *   C nur der Minderaufwand: erst er gleicht beide Seiten aus, „rund“ nur bei gerundetem Betrag;
+ *   D nichts davon: nur hier gleichen sich Erträge und Aufwendungen „genau“ aus.
  */
 export function lesehilfeSatz(geldfluss: Geldfluss, jahr: number, wertart: string): string {
   const defizit = geldfluss.knoten.find((k) => k.art === 'defizit')
@@ -658,24 +767,35 @@ export function lesehilfeSatz(geldfluss: Geldfluss, jahr: number, wertart: strin
   const minderaufwand = geldfluss.knoten.find((k) => k.art === 'minderaufwand')
 
   const saetze = [
-    `Für ${formatiereJahr(jahr)} (${wertart}) sind beide Seiten gleich groß: rund ${euroKurz(geldfluss.summeLinks)}.`,
+    `Für ${formatiereJahr(jahr)} (${wertart}) sind beide Seiten gleich groß: ${rundKurz(geldfluss.summeLinks)}.`,
   ]
   if (defizit) {
+    // Fall A
     saetze.push(
-      `Das Defizit von ${euro(defizit.wert)} steht links, weil die Gemeinde diesen Betrag aus ihren Rücklagen deckt.`,
+      `Das Defizit von ${euro(defizit.wert)} steht links, weil die ${KOMMUNE_ART} diesen Betrag aus ihren Rücklagen deckt.`,
     )
-  }
-  if (minderaufwand) {
-    saetze.push(
-      `Der globale Minderaufwand von ${euro(minderaufwand.wert)} steht ebenfalls links: Er senkt die geplanten Aufwendungen rechnerisch, ohne dass dafür ein Ertrag eingeht.`,
-    )
-  }
-  if (ueberschuss) {
+    if (minderaufwand) {
+      saetze.push(
+        `Der globale Minderaufwand von ${euro(minderaufwand.wert)} steht ebenfalls links: Er senkt die geplanten Aufwendungen rechnerisch, ohne dass dafür ein Ertrag eingeht.`,
+      )
+    }
+  } else if (ueberschuss) {
+    // Fall B
+    if (minderaufwand) {
+      saetze.push(
+        `Der globale Minderaufwand von ${euro(minderaufwand.wert)} steht links: Er senkt die geplanten Aufwendungen rechnerisch, ohne dass dafür ein Ertrag eingeht.`,
+      )
+    }
     saetze.push(
       `Der Überschuss von ${euro(ueberschuss.wert)} steht rechts, weil er den Rücklagen zugeführt wird.`,
     )
-  }
-  if (!defizit && !ueberschuss) {
+  } else if (minderaufwand) {
+    // Fall C
+    saetze.push(
+      `Die Aufwendungen sind höher als die Erträge. Erst der globale Minderaufwand von ${rundMitHinweis(minderaufwand.wert, minderaufwand.gerundet)} gleicht beide Seiten aus. Er steht links und senkt die geplanten Aufwendungen rechnerisch, ohne dass dafür ein Ertrag eingeht.`,
+    )
+  } else {
+    // Fall D
     saetze.push('Erträge und Aufwendungen gleichen sich in diesem Jahr genau aus.')
   }
   if (geldfluss.pdfSeite !== null) {

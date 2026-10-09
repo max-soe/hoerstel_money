@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 
-import { euroKurz } from '@/charts/format'
+import { flaechenFarbe } from '@/charts/echartsTheme'
+import { kurzMitHinweis } from '@/charts/format'
 import BaseChart from '@/components/BaseChart.vue'
 import { useSchmalerBildschirm } from '@/lib/bildschirm'
 import {
@@ -32,30 +33,18 @@ const hoehe = computed(() => (istSchmal.value ? 400 : 480))
 // Bezugsbreiten der Flächenheuristik (RESEARCH A3): Inhaltsbreite ab 700 px bzw. bei 360 px.
 const bezugsbreite = computed(() => (istSchmal.value ? 328 : 900))
 
-/**
- * Liest einen Web-Awesome-Token zur Laufzeit (Kachelrand und Beschriftung stehen auf
- * `--wa-color-surface-default`); ohne DOM gilt der Ersatz.
- */
-function token(name: string, ersatz: string): string {
-  if (typeof document === 'undefined') {
-    return ersatz
-  }
-  const wert = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-  return wert === '' ? ersatz : wert
-}
-
 const nachCode = computed(() => new Map(props.eintraege.map((e) => [e.code, e] as const)))
 
 // `{` und `}` leiten in ECharts Rich-Text-Abschnitte ein; Namen aus den Daten enthalten sie
 // nicht, werden aber vorsorglich davon befreit.
 function beschriftung(eintrag: EbenenEintrag): string {
   const name = eintrag.name.replace(/[{}]/g, '')
-  const betrag = eintrag.gerundet ? `rd. ${euroKurz(eintrag.wert)}` : euroKurz(eintrag.wert)
+  const betrag = kurzMitHinweis(eintrag.wert, eintrag.gerundet)
   return `{n|${name}}\n{b|${betrag}}`
 }
 
 const option = computed<EChartsOption>(() => {
-  const flaeche = token('--wa-color-surface-default', '#ffffff')
+  const flaeche = flaechenFarbe()
   const summe = props.eintraege.reduce((s, e) => s + e.wert, 0)
   return {
     tooltip: {

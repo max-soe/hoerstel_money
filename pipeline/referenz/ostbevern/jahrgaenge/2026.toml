@@ -1,0 +1,252 @@
+# Jahrgangsdatei für den Haushalt 2026 der Gemeinde Ostbevern (D-07).
+# Jeder PDF-spezifische Wert steht hier, nie im Python-Code. Die Pipeline liest
+# diese Datei ausschließlich über ostbevern.konfiguration.lade_jahrgang.
+#
+# Referenz für das ProFIS+-Layout: Tests und die CI-Reproduzierbarkeitsprüfung laden
+# diesen Jahrgang samt daten/ und App-Daten über PIPELINE_REFERENZ=referenz/ostbevern.
+# Der aktive Jahrgang 2026 (Hörstel) steht in jahrgaenge/2026.toml.
+
+haushaltsjahr = 2026
+software = "profis"
+pdf_pfad = "raw_data/ostbevern/haushalt-2026.pdf"
+
+[anzahlen]
+pdf_seiten = 400
+produktbereiche = 15
+produkte = 63
+
+# Spaltenköpfe je Plantyp (Spez. 2.2). Die PDF druckt Bezeichnung und Jahr auf
+# zwei Zeilen (S. 62/63); Phase 2 ordnet die Spalten über x-Koordinaten zu.
+[spalten]
+ergebnisplan = ["Ergebnis 2024", "Ansatz 2025", "Ansatz 2026", "Planung 2027", "Planung 2028", "Planung 2029"]
+finanzplan = ["Ergebnis 2024", "Ansatz 2025", "Ansatz 2026", "VE 2026", "Planung 2027", "Planung 2028", "Planung 2029"]
+investitionen = ["Ergebnis 2024", "Ansatz 2025", "Ansatz 2026", "VE 2026", "Planung 2027", "Planung 2028", "Planung 2029"]
+
+# Seitenbereiche der Kapitel (Spez. 2), 1-basierte PDF-Seiten.
+[seitenbereiche]
+inhaltsverzeichnis = { von = 2, bis = 5 }
+leitbild = { von = 6, bis = 6 }
+haushaltssatzung = { von = 7, bis = 9 }
+statistik = { von = 10, bis = 10 }
+vorbericht = { von = 13, bis = 60 }
+gesamtergebnisplan = { von = 62, bis = 62 }
+gesamtfinanzplan = { von = 63, bis = 63 }
+# Seite 65 ist die Teilplan-Trennseite ("Produktbereiche, Produktgruppen und
+# Produkte mit Teilplänen") ohne eigene Kopfzeile und gehört deshalb nicht zum
+# Teilplanbereich; sie fällt auf typ=sonstige (02-02 D-16/D-17, Flagged assumptions).
+teilplaene = { von = 66, bis = 282 }
+stellenplan = { von = 284, bis = 290 }
+querschnitte = { von = 291, bis = 300 }
+jahresabschluss = { von = 301, bis = 306 }
+# Seite 308 ist "Zuwendungen an Fraktionen, Teil B" und gehört zum selben Kapitel
+# wie Seite 307 (02-02 Planungsfakt, verifiziert gegen das PDF).
+zuwendungen_fraktionen = { von = 307, bis = 308 }
+verpflichtungen_schulden = { von = 309, bis = 311 }
+wirtschaftsplaene = { von = 312, bis = 375 }
+kostenstellen_budgets = { von = 376, bis = 400 }
+
+# Kopfzeilen-Muster für die Seitenklassifikation (Spez. 5.3).
+[kopfzeilen]
+produktbereich = '^Produktbereich (\d{2}) (.+)$'
+produktgruppe = '^Produktgruppe (\d{4}) (.+)$'
+produkt = '^Produkt (\d{6}) (.+)$'
+fortsetzung = "Fortsetzung folgt"
+
+# Feines Typ-Vokabular im Teilplanbereich (D-17). Jedes Muster wird gegen die
+# erste Inhaltszeile einer Teilplanseite geprüft (text_ohne_leerzeichen, wie
+# pdfplumber Planzeilen liefert). Die Tabellenreihenfolge bestimmt die
+# Prüfreihenfolge in ostbevern.seiten.klassifiziere_dokument.
+[kopfzeilen.seitentypen]
+produktinformationen = '^Produktinformationen'
+grundzahlen = '^Grundzahlen'
+teilergebnisplan = '^Teilergebnisplan$'
+erlaeuterungen = '^Erläuterung'
+teilfinanzplan = '^(Teilfinanzplan$|Nr\.Ein-undAuszahlungsarten)'
+investitionen = '^(Investitionen$|Investitionsmaßnahmen\(inC\))'
+
+# Synthetische Produktgruppen (D-14): Standard ist Code = die ersten vier Ziffern
+# des Produktcodes, Name = Produktname. Jede synthetische PG hat genau ein Produkt.
+# Diese Tabelle deklariert nur die Zuordnungen und Namen, die vom Standard abweichen.
+# Quelle ist der Haushaltsquerschnitt (Ergebnisplan S. 299, Finanzplan S. 300), der
+# Produkt 150102 als eigene PG 1502 "Tourismus" führt, während der Teilplanbereich
+# (S. 66-282) keine PG-1502-Kopfzeile druckt. pdf_seite ist die Quellseite der
+# Zuordnung und des Namens; in hierarchie.csv behält die PG die Startseite ihres
+# Produkts als pdf_seite_start (D-14).
+[synthetische_produktgruppen."1502"]
+produkt = "150102"
+name = "Tourismus"
+pdf_seite = 299
+
+# [layout.*] (Phase 3): generische Tabellen mit gedruckten Texten und Regex-Mustern der
+# Detailseiten (Produktinformationen, Investitionen, Querschnitte, ...). Jeder Wert wird
+# gegen Textzeile.text geprüft, sofern an der jeweiligen Verwendungsstelle nicht anders
+# dokumentiert. Ein Schlüssel, der auf "_muster" endet, wird beim Laden mit re.compile
+# kompiliert (ostbevern.konfiguration.lade_jahrgang). Ab Phase 4 tragen die Tabellen auch
+# jahrgangsspezifische Codes des gedruckten Haushalts (z. B. Produktcodes), nicht nur
+# Texte und Muster.
+[layout.querschnitte]
+# Erfasst den zweistelligen PB-Code am Zeilenanfang vor einem Nicht-Ziffern-Zeichen;
+# erfasst sowohl "01 Innere Verwaltung - ..." als auch "12 Verkehrsflächen und
+# -anlagen- ..." (kein Leerzeichen vor dem Bindestrich, D-14).
+titel_muster = '^(?P<pb>\d{2}) \D'
+kopf_beginn = "Produktgruppen"
+gesamtsumme = "GESAMTSUMME"
+kennzahlen_ergebnisplan = [
+    "ordentliche_ertraege",
+    "ordentliche_aufwendungen",
+    "ordentliches_ergebnis",
+    "finanzergebnis",
+    "ergebnis_laufende_verwaltung",
+    "ausserordentliches_ergebnis",
+    "ergebnis_teilhaushalt",
+]
+kennzahlen_finanzplan = [
+    "einzahlungen_laufende_verwaltung",
+    "auszahlungen_laufende_verwaltung",
+    "saldo_laufende_verwaltung",
+    "einzahlungen_investitionen",
+    "auszahlungen_investitionen",
+    "saldo_investitionen",
+    "finanzmittelueberschuss",
+    "einzahlungen_finanzierung",
+    "auszahlungen_finanzierung",
+    "saldo_finanzierung",
+    "verpflichtungsermaechtigungen",
+]
+
+# [layout.investitionen] (Phase 3, 03-02): gedruckte Texte der Investitionsmaßnahmen-
+# Tabelle auf Produktseiten (Spez. 3.8, 4.2). Jeder Wert wird gegen die space-freie
+# Konkatenation der Label-Wörter einer Zeile verglichen (ostbevern.investitionen).
+[layout.investitionen]
+tabellenkopf = "Investitionsmaßnahmen(inC)"
+einzahlungen_summe = "EinzahlungenausInvestitionstätigkeit"
+auszahlungen_summe = "AuszahlungenausInvestitionstätigkeit"
+saldo_praefix = "Saldo"
+saldo_gesamt = "SaldoInvestitionstätigkeit"
+kassenwirksamkeit = "(Kassenwirksamkeit)"
+
+# [layout.produktinformationen] (Phase 3, 03-04): gedruckte Feld-Labels der
+# Produktinformationen-Seiten (Spez. 2.1, 4.2). Jedes Label ist das fette erste Wort
+# einer Feldzeile (ostbevern.produkte.zerlege_felder); die beiden Personen-Labels werden
+# nur gebraucht, um diese Felder zu erkennen und sofort zu verwerfen (D-09).
+[layout.produktinformationen]
+fachbereich = "Fachbereich"
+verantwortlich = "Verantwortliche/r"
+sachbearbeiter = "Sachbearbeiter/innen"
+gremium = "Gremium"
+beschreibung = "Produktbeschreibung"
+auftragsgrundlage = "Auftragsgrundlage"
+bindungsgrad = "Bindungsgrad"
+klassifizierung = "Klassifizierung"
+zielgruppe = "Zielgruppe"
+ziele = "Ziele"
+leistungen_muster = '^Leistungen\b'
+aufzaehlungszeichen = "(cid:15)"
+grundzahlen_kopf = "Grundzahlen"
+
+# [layout.erlaeuterungen] (Phase 3, 03-04): Muster der Erläuterungsblöcke auf den
+# Teilergebnisplan-Seiten (Spez. 3.8, 4.2, D-01 bis D-04). Alle drei Muster werden gegen
+# Textzeile.text (mit Leerzeichen verbunden) geprüft.
+[layout.erlaeuterungen]
+kopf_muster = '^Erläuterung\b'
+zu_nr_muster = '^(?:Erläuterung )?(?:[Zz]u )?Nr\. ?(?P<zeilen>\d{1,2}(?:(?: und|,) (?:Nr\. ?)?\d{1,2})*)(?P<rest>.*)$'
+posten_muster = '^(?P<betrag>-?\d{1,3}(?:\.\d{3})*) C (?P<text>.+)$'
+
+# [layout.grundzahlen] (Phase 3, 03-05): gedruckte Texte und Fußnoten-Muster der
+# Grundzahlen-Tabelle auf Produktinformationen- und (bei Fortsetzung) grundzahlen-
+# typisierten Seiten (Spez. 2.1, 3.8, 4.2, D-12, D-13). `fussnote_jahr_muster` erfasst
+# eine überschreibende Jahres-Fußnote wie "Ist-Wert 2025: Stand Ende 2025." (einzelnes
+# oder mehrere Jahre, "Ist-Werte 2024 und 2025: ..."); `fussnote_allgemein_muster`
+# erfasst jede andere Fußnote (endet mit einem Punkt oder beginnt mit "*"); jede andere
+# fette, wertfreie Zeile ist eine Gruppenüberschrift (D-13). `eurozeichen` benennt das
+# Einheiten-Zeichen "C" (Spez. 2.2), das zu "EUR"/"EUR/..." normalisiert wird.
+[layout.grundzahlen]
+kopf = "Grundzahlen"
+einheit = "Einheit"
+fussnote_jahr_muster = '^Ist-Werte? (?P<jahre>\d{4}(?: und \d{4})*):'
+fussnote_allgemein_muster = '(\.$|^\*)'
+eurozeichen = "C"
+
+# [layout.weitergabe_kreis_land] (Phase 4, D-01, PRUEF-05): fachliche Regel, verifiziert
+# gegen S. 281 (Teilergebnisplan Produkt 160101) und S. 46 (Transferaufwendungen) — die
+# Transferaufwendungen (TP Z. 15) dieses Produkts bestehen in jedem Jahr 2024-2029
+# ausschließlich aus Kreisumlage, Gewerbesteuerumlage und Krankenhausinvestitionsumlage
+# (z. B. 2026: 11.001.181 EUR = 10.147 + 654 + 200 T€). `produkt` ist der Produktcode, von
+# dessen Teilergebnisplan-Zeile 15 Regel 5 die Summe der drei Vorbericht-Posten abzieht.
+[layout.weitergabe_kreis_land]
+produkt = "160101"
+# posten: Schlüssel in transferaufwendungen.csv (Reihenfolge = App-Kinder des KL-Knotens),
+# namen: Anzeigenamen der App in derselben Reihenfolge (Phase 11, vorher im Code).
+posten = ["kreisumlage", "gewerbesteuerumlage", "krankenhausinvestitionsumlage"]
+namen = ["Kreisumlage", "Gewerbesteuerumlage", "Krankenhausinvestitionsumlage"]
+
+# [layout.schulden] (Phase 11, D-14): Posten der Tabelle verbindlichkeiten, die der
+# Vorbericht als Schulden zählt (S. 24): Investitionskredite plus die NRW.Bank-Mittel für
+# Flüchtlingsunterkünfte, die haushaltsrechtlich unter den Transferverbindlichkeiten stehen.
+[layout.schulden]
+posten = ["kredite_investitionen", "transferleistungen"]
+
+# [layout.vorbericht] (Phase 11): die manuell abgeschriebenen Vorberichtstabellen dieses
+# Jahrgangs, Einzeldateien und Tabellen in weitere_vorberichtstabellen.csv, jeweils in der
+# Reihenfolge der App-Daten.
+[layout.vorbericht]
+einzeltabellen = ["steuerarten", "zuwendungen", "transferaufwendungen", "kita_zuschuesse", "zuschuesse_lfd_zwecke", "investitionszuwendungen"]
+weitere_tabellen = ["leistungsentgelte", "kostenerstattungen", "personal", "sachaufwand", "sonstige_aufwendungen", "sonstige_ertraege"]
+
+# [layout.stellenplan] (Phase 4, Plan 04-03, D-18 bis D-20): gedruckte Titel und
+# Spaltenlayout von S. 284-290 (EXTR-10). Titel werden exakt gegen Textzeile.text
+# geprüft (kompletter Zeilentext inkl. Leerzeichen zwischen Wörtern). Teil B:
+# Tariflich Beschäftigte (S. 285) und die Sozial-/Erziehungsdienst-Tabelle (S. 286)
+# teilen sich spalten_tarif, da beide dasselbe 5-Spalten-Layout drucken (verifiziert).
+[layout.stellenplan]
+titel_beamte = "Teil A: Beamte"
+titel_tarif = "Teil B: Tariflich Beschäftigte"
+titel_sozial_erziehungsdienst = "Teil B: Tariflich Beschäftigte (Sozial- und Erziehungsdienst)"
+titel_nachwuchs = "Teil B: Dienstkräfte in der Probe- oder Ausbildungszeit"
+titel_uebersicht_beamte = "1. Beamte"
+titel_uebersicht_tarif = "2. Tariflich Beschäftigte"
+# Druckfehler im Original ("Erziehungdienst" statt "Erziehungsdienst", verifiziert
+# S. 289) wird hier wortgetreu übernommen, da der Titel exakt gegen Textzeile.text
+# geprüft wird.
+titel_uebersicht_sozial_erziehungsdienst = "3. Tariflich Beschäftigte im Sozial- und Erziehungdienst"
+insgesamt = "insgesamt"
+summe = "Summe"
+kein_wert = "-"
+uebersicht_kopf_beginn = "Nr."
+datum_muster = '^\d{2}\.\d{2}\.\d{4}$'
+spalten_beamte = ["amtsbezeichnung", "gruppe", "stellen", "davon_ausgesondert", "stellen_vorjahr", "besetzt", "vermerk"]
+spalten_tarif = ["gruppe", "stellen", "stellen_vorjahr", "besetzt", "vermerk"]
+spalten_nachwuchs = ["gruppe", "verguetung", "vorgesehen", "beschaeftigt", "vermerk"]
+sozial_erziehungsdienst_kopf_praefix = "S "
+sozial_erziehungsdienst_pauschal_kopf = "P"
+sozial_erziehungsdienst_pauschal = "pauschal"
+
+# [layout.quellenbelege] (Phase 7, Plan 07-03, DATA-04, T-07-09): Datenschutz der Belegseiten.
+# `pruefwoerter` sind Stichwörter, die auf einer Belegseite auf Namen oder Kontaktdaten
+# hinweisen können; Schritt 08 listet jede Seite mit Treffer (Seite, Stichwort, Zeilenindex,
+# nie den Text) in daten/pruefberichte/quellenbelege.md. `schwaerzen_nach` nennt gedruckte
+# Beschriftungen, deren Folgezeile geschwärzt wird (Zeile direkt nach einer Zeile, deren Text
+# genau dem Etikett entspricht); bewusst leer, wird nur auf Wunsch am Checkpoint 07-10 gefüllt.
+[layout.quellenbelege]
+pruefwoerter = ["Bürgermeister", "Bürgermeisterin", "Kämmerer", "Kämmerin", "gez.", "Telefon", "E-Mail", "Ansprechpartner", "Sachbearbeit", "Verantwortlich"]
+schwaerzen_nach = []
+
+# [layout.eigenkapital] (Phase 12): Die Rücklagenzeilen der Eigenkapitalübersicht (S. 311) sind
+# Bestände zu Jahresbeginn, das Jahresergebnis gehört zum Jahr derselben Spalte.
+[layout.eigenkapital]
+stand = "jahresbeginn"
+
+# [layout.bezugsgroessen] (Phase 12, vorher BEZUGSGROESSEN in app/src/lib/produkt.ts): Produkte
+# mit der berechneten Zeile „Zuschussbedarf je Einheit“ (Freigabe 05-03), je Produktcode
+# [Einheit im Zeilennamen, gedruckte Grundzahl-Bezeichnungen, deren Summe der Nenner ist].
+[layout.bezugsgroessen]
+"030101" = ["Schüler/in", "Schüler/innen"]
+"030102" = ["Schüler/in", "Schüler/innen"]
+"040301" = ["Musikschüler/in", "Musikschüler/innen"]
+"060101" = ["betreutem Kind", "Betreute Kinder unter 3 Jahre", "Betreute Kinder von 3 - 6 Jahre"]
+
+# [layout.kommune] (Phase 12): Name und Art der Kommune für Seitentitel, Kopfzeile und Texte
+# der App („Ostbevern Money“, „der Gemeinde Ostbevern“).
+[layout.kommune]
+name = "Ostbevern"
+art = "Gemeinde"

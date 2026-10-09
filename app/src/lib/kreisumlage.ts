@@ -5,6 +5,7 @@
 
 import { haushalt } from '@/data/daten'
 import type { Knoten } from '@/data/typen'
+import { baueAufwandsarten } from '@/lib/aufwandsarten'
 
 export interface Unterposten {
   code: string
@@ -72,4 +73,51 @@ export function baueKreisumlage(jahrIndex: number): Kreisumlage {
     unterposten,
     pdfSeite: kl.pdf_seite,
   }
+}
+
+/** Schlüssel der Aufwandsart „Transferaufwendungen“, in der die Kreisumlage selbst liegt. */
+const TRANSFER_ART = 'transferaufwendungen'
+
+/** Die Beträge, aus denen sich der Superlativ „größter Einzelposten“ ergibt. */
+export interface EinzelpostenVergleich {
+  /** Aufwand der „Weitergabe an Kreis und Land“. */
+  gesamt: number
+  /** Aufwand aller übrigen Aufgabenbereiche. */
+  bereiche: readonly number[]
+  /** Alle Aufwandsarten außer den Transferaufwendungen. */
+  aufwandsarten: readonly number[]
+}
+
+/**
+ * Reine Prüfung (G-09-01): „Weitergabe an Kreis und Land“ ist nur dann der größte Einzelposten,
+ * wenn sie als Ganzes größer ist als jeder andere Aufgabenbereich und größer als jede Aufwandsart
+ * ohne die Transferaufwendungen (in denen sie selbst liegt). Verglichen wird die Weitergabe
+ * insgesamt, nicht die Kreisumlage allein: In Hörstel besteht sie aus Kreisumlage,
+ * Jugendamtsumlage und Gewerbesteuerumlage, und die Kreisumlage allein liegt in einzelnen Jahren
+ * unter den Sach- und Dienstleistungen, die Weitergabe insgesamt nicht. Gleichstand ist kein
+ * „größter“ Posten.
+ */
+export function pruefeGroessterEinzelposten(vergleich: EinzelpostenVergleich): boolean {
+  return (
+    vergleich.bereiche.every((wert) => vergleich.gesamt > wert) &&
+    vergleich.aufwandsarten.every((wert) => vergleich.gesamt > wert)
+  )
+}
+
+/**
+ * Gilt der Superlativ „größter Einzelposten“ für die Weitergabe an Kreis und Land im Jahr? Die
+ * Startseite nennt ihn nur, wenn die Daten ihn tragen; kippt er mit einem Jahrgang, fällt der
+ * Satz auf die neutrale Fassung zurück (G-09-01).
+ */
+export function istGroessterEinzelposten(jahrIndex: number): boolean {
+  const kl = findeKlKnoten()
+  return pruefeGroessterEinzelposten({
+    gesamt: aufwand(kl.code, jahrIndex),
+    bereiche: haushalt.knoten
+      .filter((k) => k.eltern === 'GESAMT' && k.code !== kl.code)
+      .map((k) => aufwand(k.code, jahrIndex)),
+    aufwandsarten: baueAufwandsarten(jahrIndex)
+      .filter((a) => a.schluessel !== TRANSFER_ART)
+      .map((a) => a.wert),
+  })
 }

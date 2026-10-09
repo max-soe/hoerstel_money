@@ -1,6 +1,29 @@
+import { readFileSync } from 'node:fs'
+
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
+import {
+  pruefeEscape,
+  pruefeLinkDerAktuellenSeite,
+  pruefeLinkEinerAnderenSeite,
+  pruefeLinkMitZusatztaste,
+} from './menueDrawer'
 import { routen } from './routen'
+import { befundeTabellenrahmen, oeffneAlleBereiche } from './tabellenrahmen'
+
+// WCAG-Tags des Smoke-Tests (`smoke.spec.ts`); Best-Practice-Regeln wie `landmark-unique` und
+// `region` gehören nicht dazu (Web Awesomes eigene `wa-details`-Regionen verletzen sie).
+const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+
+// Seitenformate und Rechtecke der Belege, für die Wahl einer Querformatseite (keine Seitenzahl
+// ist getippt).
+const quellen = JSON.parse(
+  readFileSync(new URL('../src/data/quellen.json', import.meta.url), 'utf-8'),
+) as {
+  seiten: Record<string, { breite: number; hoehe: number }>
+  belege: Record<string, { pdf_seite: number; bbox: number[] | null }>
+}
 
 // Nutzbarkeit bei 360 × 640 (A11Y-03, Projekt `mobil`, nicht im CI-Smoke-Pfad, D-12):
 // - kein waagerechtes Scrollen der Seite (`scrollWidth <= innerWidth`),
@@ -160,6 +183,81 @@ test.describe('360 × 640: Überlauf und Zielgröße je Route (A11Y-03)', () => 
   }
 })
 
+test.describe('Tabellenrahmen bei 360 px (A11Y-01, A11Y-03)', () => {
+  test.beforeEach(({ viewport }) => {
+    expect(viewport).toEqual({ width: 360, height: 640 })
+  })
+
+  for (const route of routen()) {
+    test(`Rahmen mit Rolle und genau einem Namen auf ${route.pfad}`, async ({ page }) => {
+      await page.goto(`/#${route.pfad}`)
+      await expect(page.locator('h1')).toBeVisible()
+      await page.waitForLoadState('networkidle')
+      await oeffneAlleBereiche(page)
+
+      // Der ResizeObserver der Tabelle setzt Tabstopp und Rolle nach dem Layout: bis zur Ruhe
+      // wiederholen, der letzte Befund steht in der Meldung.
+      await expect
+        .poll(() => befundeTabellenrahmen(page), { message: `Tabellenrahmen auf ${route.pfad}` })
+        .toEqual([])
+    })
+
+    test(`axe meldet bei geöffneten Bereichen auf ${route.pfad} keinen Verstoß`, async ({
+      page,
+    }) => {
+      // Wie im Smoke-Test: ohne Bewegung blendet Web Awesome nichts ein, sonst sähe axe Text
+      // mitten im Einblenden mit halber Deckkraft und meldete Scheinverstöße beim Kontrast.
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.goto(`/#${route.pfad}`)
+      await expect(page.locator('h1')).toBeVisible()
+      await page.waitForLoadState('networkidle')
+      await oeffneAlleBereiche(page)
+      await warteAufRuhe(page)
+      await expect.poll(() => befundeTabellenrahmen(page)).toEqual([])
+
+      const ergebnis = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()
+      const meldung = ergebnis.violations
+        .map(
+          (verstoss) =>
+            `${verstoss.id} (${verstoss.impact ?? 'ohne Gewicht'}, ${String(verstoss.nodes.length)} Knoten): ${verstoss.nodes
+              .slice(0, 3)
+              .map((knoten) => `${knoten.target.join(' ')} – ${knoten.any[0]?.message ?? ''}`)
+              .join('; ')}`,
+        )
+        .join('\n')
+      expect(meldung, meldung).toBe('')
+    })
+  }
+})
+
+test.describe('Mobiles Menü schließt bei jedem Linkklick (A11Y-02, D-21)', () => {
+  test('Link der aktuellen Seite: Drawer zu, aria-expanded false, Fokus auf der Überschrift', async ({
+    page,
+  }) => {
+    await pruefeLinkDerAktuellenSeite(page)
+  })
+
+  test('Link einer anderen Seite: Route wechselt, Fokus auf der Überschrift', async ({ page }) => {
+    await pruefeLinkEinerAnderenSeite(page)
+  })
+
+  test('Escape schließt den Drawer, der Fokus kehrt zum Menüknopf zurück', async ({ page }) => {
+    await pruefeEscape(page)
+  })
+
+  test('Ctrl-Klick auf einen Link: öffnet neuen Tab, Drawer bleibt offen, Fokus nicht auf h1 (WR-02)', async ({
+    page,
+  }) => {
+    await pruefeLinkMitZusatztaste(page, 'ControlOrMeta')
+  })
+
+  test('Shift-Klick auf einen Link: öffnet neues Fenster, Drawer bleibt offen, Fokus nicht auf h1 (WR-02)', async ({
+    page,
+  }) => {
+    await pruefeLinkMitZusatztaste(page, 'Shift')
+  })
+})
+
 test.describe('360 × 640 mit geöffneter Leiste und geöffnetem Menü (A11Y-03)', () => {
   test('mit geöffneter Quell-Leiste auf /', async ({ page }) => {
     await page.goto('/#/')
@@ -224,18 +322,41 @@ test.describe('360 × 640 mit geöffneter Leiste und geöffnetem Menü (A11Y-03)
   test('eine Querformatseite scrollt nur im eigenen Rahmen, nicht die Seite', async ({ page }) => {
     await page.goto('/#/stellenplan')
     await expect(page.locator('h1')).toBeVisible()
-    const bereich = page
-      .locator('wa-details')
-      .filter({ has: page.locator('.om-quelle-knopf') })
-      .first()
-    await bereich.locator('summary').click()
-    await page
-      .locator('table')
-      .getByRole('button', { name: /^Quelle anzeigen: / })
-      .first()
-      .click()
+    // Alle Tabellenbereiche mit Quelle-Knöpfen öffnen und den ersten Quelle-Knopf der Seite wählen,
+    // dessen Seite laut quellen.json im Querformat liegt (Ostbevern: die Stellenplantabellen,
+    // Hörstel: die Stellenübersicht, z. B. die Nachwuchskräfte).
+    const bereiche = page.locator('wa-details').filter({ has: page.locator('.om-quelle-knopf') })
+    for (let index = 0; index < (await bereiche.count()); index += 1) {
+      await bereiche.nth(index).locator('summary').click()
+    }
+    const knoepfe = page.getByRole('button', { name: /^Quelle anzeigen: .*PDF-Seite \d+$/ })
+    let gewaehlt = -1
+    let seite = 0
+    for (let index = 0; index < (await knoepfe.count()); index += 1) {
+      const name = (await knoepfe.nth(index).getAttribute('aria-label')) ?? ''
+      const nummer = Number(/PDF-Seite (\d+)$/.exec(name)?.[1])
+      const masse = quellen.seiten[String(nummer)]
+      if (masse !== undefined && masse.breite > masse.hoehe) {
+        gewaehlt = index
+        seite = nummer
+        break
+      }
+    }
+    // Hörstel belegt die Stellenübersicht im Querformat (S. 570–574) nur per Fußnote; dann gibt
+    // es auf /stellenplan keinen Knopf zu einer Querformatseite, und der Fall ist nicht prüfbar.
+    test.skip(
+      gewaehlt < 0,
+      'Kein Quelle-Knopf auf /stellenplan zeigt auf eine Querformatseite dieses Jahrgangs',
+    )
+    await knoepfe.nth(gewaehlt).click()
     await expect(page.locator('#om-quelle-drawer img.om-quelle-seite__bild')).toBeVisible()
-    await expect(page.locator('#om-quelle-drawer .om-quelle-seite__markierung')).toBeVisible()
+    const mitRechteck = Object.entries(quellen.belege).some(
+      ([schluessel, beleg]) =>
+        schluessel.startsWith('sp:') && beleg.pdf_seite === seite && beleg.bbox !== null,
+    )
+    if (mitRechteck) {
+      await expect(page.locator('#om-quelle-drawer .om-quelle-seite__markierung')).toBeVisible()
+    }
     await warteAufRuhe(page)
 
     const lage = await page.evaluate(() => {

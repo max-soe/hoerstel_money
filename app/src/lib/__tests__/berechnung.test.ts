@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { haushalt } from '@/data/daten'
-import { anteil, proKopf, summe } from '@/lib/berechnung'
+import { anteil, minderaufwandBetrag, proKopf, summe } from '@/lib/berechnung'
 
 describe('proKopf', () => {
   it('rundet auf ganze Euro (Math.round), nicht ab (Pitfall 3)', () => {
-    expect(proKopf(30455569, 11741)).toBe(2594)
-    expect(proKopf(18443000, 11741)).toBe(1571)
+    expect(proKopf(62038766, 20166)).toBe(3076)
+    expect(proKopf(34214000, 20166)).toBe(1697)
   })
 
   it('rundet .5 auf', () => {
@@ -36,11 +36,36 @@ describe('summe', () => {
   })
 })
 
+// Die eine Minderaufwand-Regel für /geldfluss und /ausgaben (D-08, TXT-02, 05/IN-07). Der Wurf ist
+// nur an der reinen Funktion testbar, weil `haushalt` ein statischer Import ist.
+describe('minderaufwandBetrag (D-08, TXT-02)', () => {
+  it('liefert null für einen fehlenden Wert', () => {
+    expect(minderaufwandBetrag(undefined, 2026)).toBeNull()
+    expect(minderaufwandBetrag(null, 2026)).toBeNull()
+  })
+
+  it('liefert null für 0 (kein Minderaufwand, kein Hinweis)', () => {
+    expect(minderaufwandBetrag(0, 2024)).toBeNull()
+  })
+
+  it('liefert für einen negativen Plan-Wert den positiven Betrag, nie ein Minuszeichen', () => {
+    expect(minderaufwandBetrag(-600_000, 2026)).toBe(600_000)
+  })
+
+  it('wirft bei einem positiven Plan-Wert (Datenfehler) und nennt das Jahr', () => {
+    expect(() => minderaufwandBetrag(5, 2027)).toThrow(
+      /^Globaler Minderaufwand ist positiv: Datenfehler.*2027/,
+    )
+  })
+})
+
 describe.runIf(haushalt.haushaltsjahr === 2026)('Pro-Kopf-Werte Haushalt 2026', () => {
   it('Aufwand und Steuern pro Einwohner entsprechen den Erfolgskriterien', () => {
     const einwohner = Number(haushalt.meta.einwohner.wert)
     const i = haushalt.jahre.indexOf(2026)
-    expect(proKopf(haushalt.ergebnisplan.GESAMT!.berechnet.aufwand[i]!, einwohner)).toBe(2594)
-    expect(proKopf(haushalt.ergebnisplan.GESAMT!.zeilen.steuern![i]!, einwohner)).toBe(1571)
+    // Gesamtergebnisplan S. 79: Aufwand 62.038.766 €, Steuern 34.214.000 €; 20.166 Einwohner (S. 5)
+    expect(einwohner).toBe(20166)
+    expect(proKopf(haushalt.ergebnisplan.GESAMT!.berechnet.aufwand[i]!, einwohner)).toBe(3076)
+    expect(proKopf(haushalt.ergebnisplan.GESAMT!.zeilen.steuern![i]!, einwohner)).toBe(1697)
   })
 })

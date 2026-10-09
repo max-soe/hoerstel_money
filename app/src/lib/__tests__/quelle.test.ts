@@ -4,6 +4,10 @@ import { renderToString } from 'vue/server-renderer'
 
 import DatenTabelle from '@/components/DatenTabelle.vue'
 import QuelleKnopf from '@/components/QuelleKnopf.vue'
+// Warum Quelltext (die drei `?raw`-Importe der Beleg-Komponenten): Gesichert wird die Konvention
+// „keine Drittanbieter-Requests, keine Absolutpfade“ (D-05) im Template. Ein Rendertest sieht nur die
+// Ausgabe der Testdaten, nicht jede Zeichenkette im Template, und in der Testumgebung
+// (`environment: 'node'`) gibt es kein DOM und kein DOM-Paket (D-14).
 import quelleKnopfQuelltext from '@/components/QuelleKnopf.vue?raw'
 import quelleSeiteQuelltext from '@/components/QuelleSeite.vue?raw'
 import quelleSeitenleisteQuelltext from '@/components/QuelleSeitenleiste.vue?raw'
@@ -28,14 +32,28 @@ describe('belegSchluessel (Grammatik wie pipeline/ostbevern/quellen.py)', () => 
     expect(belegSchluessel.vb('steuerarten', 'grundsteuer_a')).toBe('vb:steuerarten:grundsteuer_a')
     expect(belegSchluessel.vbGesamt('steuerarten')).toBe('vb:steuerarten:gesamt')
     expect(belegSchluessel.meta('hebesaetze.gewerbesteuer')).toBe('meta:hebesaetze.gewerbesteuer')
-    expect(belegSchluessel.gz('020701', 3)).toBe('gz:020701:3')
-    expect(belegSchluessel.pr('020701')).toBe('pr:020701')
-    expect(belegSchluessel.inv('020701', 'M1', '785100', 'auszahlung')).toBe(
-      'inv:020701:M1:785100:auszahlung',
+    expect(belegSchluessel.gz('0111102', 2)).toBe('gz:0111102:2')
+    expect(belegSchluessel.pr('0111102')).toBe('pr:0111102')
+    expect(belegSchluessel.inv('0111102', '111.02-001', '785100', 'auszahlung')).toBe(
+      'inv:0111102:111.02-001:785100:auszahlung',
     )
-    expect(belegSchluessel.ve('020701', 'M1', '785100')).toBe('ve:020701:M1:785100')
+    expect(belegSchluessel.ve('0111102', '111.02-004', '785100')).toBe(
+      've:0111102:111.02-004:785100',
+    )
     expect(belegSchluessel.sd('nrw_bank')).toBe('sd:nrw_bank')
-    expect(belegSchluessel.seite(62)).toBe('seite:62')
+    expect(belegSchluessel.seite(79)).toBe('seite:79')
+  })
+
+  it('lässt fehlendes Konto und fehlende Maßnahme leer (IKVS-Layout, Hörstel)', () => {
+    expect(belegSchluessel.inv('0111102', '111.02-001', null, 'auszahlung')).toBe(
+      'inv:0111102:111.02-001::auszahlung',
+    )
+    expect(belegSchluessel.ve('0111102', '111.02-004', null)).toBe('ve:0111102:111.02-004:')
+    expect(belegSchluessel.ve('0111102', null, null)).toBe('ve:0111102::')
+    // Genau diese Formen stehen in quellen.json (S. 123 bzw. die VE-Übersicht S. 586).
+    expect(findeBeleg('inv:0111102:111.02-001::auszahlung')?.pdfSeite).toBe(123)
+    expect(findeBeleg('ve:0111102:111.02-004:')?.pdfSeite).toBe(586)
+    expect(findeBeleg('ve:0111102::')?.pdfSeite).toBe(586)
   })
 
   it('schreibt einen fehlenden Produktbereich im Stellenplan als Strich', () => {
@@ -61,17 +79,31 @@ describe('findeBeleg', () => {
     }
   })
 
-  it('löst jede Zeile des Gesamtergebnis- und Gesamtfinanzplans auf', () => {
+  it('löst jede gedruckte Zeile des Gesamtergebnis- und Gesamtfinanzplans auf', () => {
+    // IKVS (Hörstel) druckt Zeilen ohne einen einzigen Wert nicht (im Gesamtfinanzplan S. 80/81
+    // fehlen z. B. Z. 20 „Veräußerung von Finanzanlagen“ und die Liquiditätskredite); für sie
+    // gibt es keinen Beleg. Jede Zeile mit mindestens einem Wert muss auflösen.
     const gesamt = haushalt.ergebnisplan.GESAMT
     const finanzplan = haushalt.finanzplan.GESAMT
     expect(gesamt).toBeDefined()
     expect(finanzplan).toBeDefined()
-    for (const zeile of Object.keys(gesamt?.zeilen ?? {})) {
-      expect(findeBeleg(belegSchluessel.ep('GESAMT', zeile)), `ep ${zeile}`).not.toBeNull()
+    const mitWert = (werte: readonly number[]): boolean => werte.some((wert) => wert !== 0)
+    let geprueft = 0
+    for (const [zeile, werte] of Object.entries(gesamt?.zeilen ?? {})) {
+      const beleg = findeBeleg(belegSchluessel.ep('GESAMT', zeile))
+      if (mitWert(werte)) {
+        geprueft += 1
+        expect(beleg, `ep ${zeile}`).not.toBeNull()
+      }
     }
-    for (const zeile of Object.keys(finanzplan?.zeilen ?? {})) {
-      expect(findeBeleg(belegSchluessel.fp('GESAMT', zeile)), `fp ${zeile}`).not.toBeNull()
+    for (const [zeile, werte] of Object.entries(finanzplan?.zeilen ?? {})) {
+      const beleg = findeBeleg(belegSchluessel.fp('GESAMT', zeile))
+      if (mitWert(werte)) {
+        geprueft += 1
+        expect(beleg, `fp ${zeile}`).not.toBeNull()
+      }
     }
+    expect(geprueft).toBeGreaterThan(50)
   })
 
   it('liefert Seitenmaß und Bildname der Seite', () => {
@@ -123,17 +155,17 @@ describe('bildUrl', () => {
   })
 
   it('führt in den Ordner quellen unterhalb der App-Basis', () => {
-    const url = bildUrl('s062.webp')
-    expect(url).toBe(`${import.meta.env.BASE_URL}quellen/s062.webp`)
-    expect(url.endsWith('quellen/s062.webp')).toBe(true)
+    const url = bildUrl('s079.webp')
+    expect(url).toBe(`${import.meta.env.BASE_URL}quellen/s079.webp`)
+    expect(url.endsWith('quellen/s079.webp')).toBe(true)
   })
 
   it('beginnt mit der relativen Basis des Builds nie mit einem Schrägstrich', () => {
     // Vitest löst `base: './'` zu '/' auf; der Produktions-Build setzt './' (vite.config.ts).
     vi.stubEnv('BASE_URL', './')
-    const url = bildUrl('s062.webp')
+    const url = bildUrl('s079.webp')
     expect(url.startsWith('/')).toBe(false)
-    expect(url).toBe('./quellen/s062.webp')
+    expect(url).toBe('./quellen/s079.webp')
   })
 })
 
@@ -195,7 +227,7 @@ describe('belegHinweis (D-03)', () => {
 
 describe('originalSeitenUrl (D-06)', () => {
   it('hängt die 1-basierte Seite als #page an die Original-URL', () => {
-    expect(originalSeitenUrl(62)).toBe(`${ORIGINAL_PDF_URL}#page=62`)
+    expect(originalSeitenUrl(79)).toBe(`${ORIGINAL_PDF_URL}#page=79`)
     expect(originalSeitenUrl(1)).toBe(`${ORIGINAL_PDF_URL}#page=1`)
   })
 
@@ -206,13 +238,13 @@ describe('originalSeitenUrl (D-06)', () => {
 
 describe('quellAltText', () => {
   it('beschreibt die Seite und nennt mit Markierung die markierte Zeile', () => {
-    expect(quellAltText(62, 'Erträge', true)).toBe(
-      'Ausschnitt des Haushaltsplans, PDF-Seite 62. Die markierte Zeile gehört zu: Erträge.',
+    expect(quellAltText(79, 'Erträge', true)).toBe(
+      'Ausschnitt des Haushaltsplans, PDF-Seite 79. Die markierte Zeile gehört zu: Erträge.',
     )
   })
 
   it('beschreibt ohne Markierung nur die Seite', () => {
-    expect(quellAltText(62, 'Erträge', false)).toBe('Ausschnitt des Haushaltsplans, PDF-Seite 62.')
+    expect(quellAltText(79, 'Erträge', false)).toBe('Ausschnitt des Haushaltsplans, PDF-Seite 79.')
   })
 })
 
@@ -283,7 +315,7 @@ describe('QuelleKnopf und DatenTabelle-Spalte „Quelle“ (Server-Rendering ohn
       bezeichnung: 'Erträge',
       variante: 'kachel',
     })
-    expect(html).toContain('aria-label="Quelle anzeigen: Erträge, PDF-Seite 62"')
+    expect(html).toContain('aria-label="Quelle anzeigen: Erträge, PDF-Seite 79"')
     expect(html).toContain('>Quelle<')
     expect(html).toContain('name="file-lines"')
   })
@@ -294,7 +326,7 @@ describe('QuelleKnopf und DatenTabelle-Spalte „Quelle“ (Server-Rendering ohn
       bezeichnung: 'Erträge',
       variante: 'produkt',
     })
-    expect(html).toContain('aria-label="Quelle anzeigen: Erträge, PDF-Seite 62"')
+    expect(html).toContain('aria-label="Quelle anzeigen: Erträge, PDF-Seite 79"')
     expect(html).toContain('>Quelle<')
     expect(html).toContain('name="file-lines"')
   })
@@ -305,8 +337,8 @@ describe('QuelleKnopf und DatenTabelle-Spalte „Quelle“ (Server-Rendering ohn
       bezeichnung: 'Steuern',
       variante: 'zeile',
     })
-    expect(html).toContain('aria-label="Quelle anzeigen: Steuern, PDF-Seite 62"')
-    expect(html).toMatch(/>PDF-Seite 62</)
+    expect(html).toContain('aria-label="Quelle anzeigen: Steuern, PDF-Seite 79"')
+    expect(html).toMatch(/>PDF-Seite 79</)
     expect(html).not.toContain('file-lines')
   })
 
@@ -321,7 +353,7 @@ describe('QuelleKnopf und DatenTabelle-Spalte „Quelle“ (Server-Rendering ohn
       ],
     })
     expect(html.match(/<button/g)).toHaveLength(1)
-    expect(html).toContain('aria-label="Quelle anzeigen: Steuern, PDF-Seite 62"')
+    expect(html).toContain('aria-label="Quelle anzeigen: Steuern, PDF-Seite 79"')
     expect(html).toMatch(/<th scope="col"[^>]*>Quelle<\/th>/)
     expect(html).not.toContain('kein Wert')
     // Die beiden Zeilen ohne auflösbaren Beleg haben eine leere Zelle (ohne Strich, ohne Text).

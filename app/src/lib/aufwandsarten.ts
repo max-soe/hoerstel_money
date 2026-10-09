@@ -4,6 +4,7 @@
 
 import { euro, jahr as formatiereJahr } from '@/charts/format'
 import { haushalt } from '@/data/daten'
+import { minderaufwandBetrag } from '@/lib/berechnung'
 import { belegSchluessel } from '@/lib/quelle'
 import { textFuerJahr } from '@/lib/texte'
 import { zeilenName } from '@/lib/zeilen'
@@ -83,6 +84,9 @@ export interface TransferPosten {
 /** Der Posten der Kita-Zuschüsse, unter dem die einzelnen Einrichtungen stehen (MANU-04). */
 const KITA_ZEILE = 'zuschuesse_kindertageseinrichtungen'
 
+/** Vorberichtstabelle mit den einzelnen Einrichtungen; nicht jeder Jahrgang druckt sie. */
+const KITA_TABELLE = 'kita_zuschuesse'
+
 function pruefeJahrIndex(jahrIndex: number): void {
   if (haushalt.jahre[jahrIndex] === undefined) {
     throw new Error(`Jahresindex ${String(jahrIndex)} liegt außerhalb der Jahre`)
@@ -136,7 +140,11 @@ function absteigend(posten: TransferPosten[]): TransferPosten[] {
  */
 export function baueTransferaufwendungen(jahrIndex: number): TransferPosten[] {
   pruefeJahrIndex(jahrIndex)
-  const kinder = absteigend(postenMitWert('kita_zuschuesse', jahrIndex))
+  // Hörstel druckt keine Kita-Einzeltabelle; dann gibt es keine Kinder.
+  const kinder =
+    haushalt.vorbericht[KITA_TABELLE] === undefined
+      ? []
+      : absteigend(postenMitWert(KITA_TABELLE, jahrIndex))
   return absteigend(
     postenMitWert('transferaufwendungen', jahrIndex).map((p) =>
       p.posten === KITA_ZEILE && kinder.length > 0 ? { ...p, kinder } : p,
@@ -168,12 +176,15 @@ export function minderaufwandHinweis(jahrIndex: number): MinderaufwandHinweis | 
   pruefeJahrIndex(jahrIndex)
   const jahr = haushalt.jahre[jahrIndex]
   const wert = haushalt.ergebnisplan.GESAMT?.zeilen[MINDERAUFWAND_ZEILE]?.[jahrIndex]
-  // Der Gesamtergebnisplan führt die Kürzung mit negativem Vorzeichen; ein Wert ab 0 ist keine
-  // Kürzung (kein „Minderaufwand“) und bekommt deshalb keinen Hinweis.
-  if (jahr === undefined || wert === undefined || wert >= 0) {
+  if (jahr === undefined) {
     return null
   }
-  const betrag = -wert
+  // Die Regel steht in `minderaufwandBetrag`: kein Wert oder 0 ergibt keinen Hinweis, ein
+  // positiver Z.-27-Wert wirft einen Datenfehler (D-08, TXT-02).
+  const betrag = minderaufwandBetrag(wert, jahr)
+  if (betrag === null) {
+    return null
+  }
   const hatGepruefterText = textFuerJahr(MINDERAUFWAND_TEXT, jahr) !== null
   return {
     betrag,

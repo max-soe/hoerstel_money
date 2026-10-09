@@ -4,14 +4,17 @@ import { describe, expect, it } from 'vitest'
 import { BERECHNET_DECAL, SCHULDEN_FARBEN } from '@/charts/echartsTheme'
 import { euro, euroKurz, jahr as formatiereJahr } from '@/charts/format'
 import { haushalt, investitionen } from '@/data/daten'
-import { quellenZeile } from '@/lib/kennzahlen'
+import { jahreListe, quellenZeile } from '@/lib/hilfsfunktionen'
 import { belegSchluessel, findeBeleg } from '@/lib/quelle'
+// Warum Quelltext: Der Block „die Seite rendert die Kacheln“ unten pinnt bewusst die Verdrahtung
+// (06/IN-09): Die Seite ruft `schuldenKacheln()` auf und baut sie nicht selbst. Er beschränkt sich
+// auf diese beiden stabilen Aussagen. Ohne DOM in der Testumgebung (`environment: 'node'`, kein
+// DOM-Paket) lässt sich das nicht an der gerenderten Seite prüfen (D-14).
 import investitionenSeiteQuelle from '@/pages/InvestitionenPage.vue?raw'
 import {
   achsenZusatz,
   baueSchuldenstand,
   hatBerechneteJahre,
-  jahreListe,
   jahreOhneLiquiditaetskredite,
   liquiditaetsSatz,
   schuldenKacheln,
@@ -311,18 +314,23 @@ describe('schuldenTabelle (D-09, Pitfall 3)', () => {
 })
 
 describe.runIf(haushalt.haushaltsjahr === 2026)('Jahrgang 2026 (ROADMAP SC 2)', () => {
-  it('Schuldenstand Ende des Vorjahrs 7.710.000 €, je Einwohner 656 €, gedruckt', () => {
+  it('Schuldenstand Ende des Vorjahrs 28.345.000 € (Stand 01.01.2026, S. 587), je Einwohner 1.405 €', () => {
     const kennzahlen = schuldenKennzahlen()
-    expect(kennzahlen.gesamt).toBe(7_710_000)
-    expect(kennzahlen.proKopf).toBe(656)
+    expect(kennzahlen.gesamt).toBe(28_345_000)
+    // 28.345.000 € / 20.166 Einwohner (S. 5) = 1.405,6 €, abgerundet.
+    expect(kennzahlen.proKopf).toBe(Math.floor(28_345_000 / 20_166))
+    expect(kennzahlen.proKopf).toBe(1405)
+    expect(kennzahlen.quelle).toBe(587)
+    expect(kennzahlen.einwohnerQuelle).toBe(5)
     expect(kennzahlen.berechnet).toBe(false)
   })
 
-  it('beide Schuldenkacheln: Ende 2025 mit 7,71 Mio. € und 656 €, ohne „berechnet“', () => {
+  it('beide Schuldenkacheln: Ende 2025 mit 28,3 Mio. € und 1.405 €, ohne „berechnet“', () => {
     const [gesamt, proKopf] = schuldenKacheln()
     expect(gesamt?.bezeichnung).toBe('Schuldenstand Ende 2025')
-    expect(gesamt?.wert).toBe(euroKurz(7_710_000))
-    expect(proKopf?.wert).toBe(euro(656))
+    expect(gesamt?.wert).toBe(euroKurz(28_345_000))
+    expect(gesamt?.wert).toBe('28,3 Mio. €')
+    expect(proKopf?.wert).toBe(euro(1405))
     expect(gesamt?.berechnet).toBe(false)
     expect(proKopf?.berechnet).toBe(false)
   })

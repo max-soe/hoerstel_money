@@ -20,6 +20,7 @@ import UeberPage from '@/pages/UeberPage.vue'
 import { ansagen } from '@/lib/ansage'
 import { findeProdukt } from '@/lib/ansicht'
 import { elementFuerHash, sprungPosition } from '@/lib/sprungziel'
+import { SEITENNAME } from '@/lib/kommune'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -28,7 +29,6 @@ declare module 'vue-router' {
   }
 }
 
-const SEITENNAME = 'Ostbevern Money'
 const PRODUKT_UNBEKANNT = 'Dieses Produkt gibt es nicht'
 
 /** Titel der Zielseite; die Produktseite trägt den Produktnamen (bzw. den Fehlertitel). */

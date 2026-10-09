@@ -1,10 +1,12 @@
 # Hörstel Money
 
-Hörstel Money erklärt dir den Haushalt 2026 der Gemeinde Hörstel. Die App beantwortet zwei Leitfragen: **Wo kommt das Geld der Gemeinde her?** und **Wofür wird es ausgegeben?** Jede Zahl, die du hier siehst, hat eine Python-Pipeline aus dem veröffentlichten Haushalts-PDF extrahiert und automatisch gegen die Planwerte geprüft. Dies ist ein **inoffizielles Projekt** und steht in keiner Verbindung zur Gemeindeverwaltung.
+Hörstel Money erklärt dir den Haushalt 2026 der Stadt Hörstel. Die App beantwortet zwei Leitfragen: **Wo kommt das Geld der Stadt her?** und **Wofür wird es ausgegeben?** Jede Zahl, die du hier siehst, hat eine Python-Pipeline aus dem veröffentlichten Haushalts-PDF extrahiert und automatisch gegen die Planwerte geprüft. Dies ist ein **inoffizielles Projekt** und steht in keiner Verbindung zur Stadtverwaltung.
 
 ## Stand
 
-Die Phasen 1 bis 7 sind umgesetzt: Pipeline mit Prüfregeln, alle Seiten der App, Quellenbelege, Barrierefreiheit, Browser-Tests und der CI-Workflow mit Veröffentlichung auf GitHub Pages. Online geht die App, sobald das Repository auf GitHub angelegt und `main` gepusht ist (Abschnitt „Veröffentlichung auf GitHub Pages“).
+Die App ist aus Ostbevern Money entstanden (Phasen 1 bis 7: Pipeline mit Prüfregeln, alle Seiten der App, Quellenbelege, Barrierefreiheit, Browser-Tests, CI mit Veröffentlichung auf GitHub Pages). In den Phasen 8 bis 12 wurde sie auf den Haushalt der Stadt Hörstel umgestellt: Die Pipeline liest jetzt auch das Layout von Axians IKVS, Bildseiten und Vorberichtstabellen sind in `daten/manuell/` abgeschrieben, und alle Prüfregeln laufen für Hörstel grün (belegte Abweichungen in `daten/pruefberichte/befunde.md`). Ostbevern bleibt als ProFIS+-Referenz unter `pipeline/referenz/ostbevern/` erhalten und wird in Tests und CI mitgeprüft. Stand und offene Punkte: [`.planning/ROADMAP.md`](.planning/ROADMAP.md).
+
+Name und Art der Kommune (`[layout.kommune]` in `pipeline/jahrgaenge/2026.toml`) kommen aus den Daten; die App nennt keinen Ortsnamen im Code.
 
 ## Aufbau
 
@@ -40,16 +42,11 @@ scripts/e2e-wie-ci.sh <Verzeichnis-der-Kopie> --project=ci
 
 Die App ist eine statische Seite ohne Backend. Der Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) baut sie und veröffentlicht sie auf GitHub Pages, sobald der Stand auf `main` liegt und alle Prüfungen grün sind. Ein Pull Request oder ein anderer Branch veröffentlicht nie etwas. Das Anlegen des Repositories und der erste Push sind bewusst deine Handgriffe, damit nichts ungewollt öffentlich wird:
 
-1. Lege in deinem GitHub-Account oder in der Organisation `bitwerkstatt` ein **öffentliches** Repository mit dem Namen `hoerstel_money` an, ohne README, `.gitignore` oder Lizenz (die gibt es hier schon).
-2. Trage es als Remote `origin` ein und pushe `main`:
-
-   ```bash
-   git remote add origin https://github.com/bitwerkstatt/hoerstel_money.git
-   git push -u origin main
-   ```
+1. Das Repository liegt unter `max-soe/hoerstel_money`. Für GitHub Pages im kostenlosen Tarif muss es **öffentlich** sein.
+2. Bringe den Stand auf `main` (Merge des Arbeitsbranches über einen Pull Request).
 
 3. Öffne im Repository **Settings → Pages** und stelle **Source** auf **„GitHub Actions“**. Kostenlose Organisationen brauchen für Pages ein öffentliches Repository; prüfe in den Einstellungen der Organisation, dass Pages erlaubt ist.
-4. Öffne den Reiter **Actions**. Der Workflow „CI“ prüft Pipeline und App, führt den Smoke-Test aus (jede Seite, Konsole, Netzwerk, Barrierefreiheit mit axe) und veröffentlicht erst danach. Ist der Lauf grün, findest du die App unter **https://bitwerkstatt.github.io/hoerstel_money/**. Liegt das Repository in einem anderen Account, ersetze `bitwerkstatt` durch dessen Namen.
+4. Öffne den Reiter **Actions**. Der Workflow „CI“ prüft Pipeline und App, führt den Smoke-Test aus (jede Seite, Konsole, Netzwerk, Barrierefreiheit mit axe) und veröffentlicht erst danach. Ist der Lauf grün, findest du die App unter **https://max-soe.github.io/hoerstel_money/**. Liegt das Repository in einem anderen Account, ersetze `max-soe` durch dessen Namen.
 
 Schlägt eine Prüfung fehl, bleibt die bisherige Seite unverändert online. Du kannst den Workflow auch von Hand starten: **Actions → CI → Run workflow** auf dem Branch `main`.
 
@@ -59,7 +56,9 @@ Die App funktioniert unter jedem Unterpfad: Vite baut mit `base: './'` und die A
 
 Neben der Pipeline-Konfiguration (`pipeline/jahrgaenge/{jahr}.toml`) prüfst du bei einem neuen Haushaltsjahr diese Stellen von Hand:
 
-- **Link auf das Original-PDF:** `ORIGINAL_PDF_URL` in `app/src/config.ts` zeigt auf eine Datei der Gemeinde mit inhaltsgebundenem Pfad. Ersetzt die Gemeinde die Datei (Korrektur, Nachtragshaushalt), liefert der alte Link 404, und alle Links „Seite n im Original-PDF öffnen“ laufen ins Leere, ohne dass ein Test es merkt. Öffne die URL deshalb vor jeder Veröffentlichung einmal und trage bei einem neuen Jahrgang die neue Adresse ein.
+- **Link auf das Original-PDF:** `ORIGINAL_PDF_URL` in `app/src/config.ts` zeigt auf eine Datei der Stadt. Ersetzt die Stadt die Datei (Korrektur, Nachtragshaushalt), liefert der alte Link 404, und alle Links „Seite n im Original-PDF öffnen“ laufen ins Leere, ohne dass ein Test es merkt. Öffne die URL deshalb vor jeder Veröffentlichung einmal und trage bei einem neuen Jahrgang die neue Adresse ein.
+- **Name der Kommune und Texte:** `[layout.kommune]` im Jahrgang sowie die Erklärtexte und das Glossar in `daten/manuell/texte/` (darunter die Leitsätze `nicht_im_haushalt_*`, was außerhalb des Haushalts steht).
+- **Impressum und Kontakt:** `KONTAKT_EMAIL`, `IMPRESSUM_NAME` und `IMPRESSUM_ANSCHRIFT` in `app/src/config.ts`.
 - **Breite der Kennzahl-Kacheln:** Die Mindestspur `--om-kachel-mindestbreite` in `app/src/styles/basis.css` ist an die breitesten Beträge des Jahrgangs 2026 und an die CI-Schrift gekoppelt. Der Breitentest (`app/e2e/kacheln.spec.ts`) schlägt nur bei Überlauf an und protokolliert die Reserve; bei einem Jahrgang mit breiteren Beträgen liest du das Protokoll und hebst den Wert bei Bedarf an.
 
 ## Lizenz
@@ -69,6 +68,6 @@ MIT, siehe [`LICENSE`](LICENSE).
 ## Dank
 
 Inspiriert von [Münster Money (Code for Münster)](https://github.com/codeformuenster/haushalt-muenster-2026). Es wurde kein Code übernommen — die Komponentennamen folgen nur der Vorlage.
-Dies ist ein Fork von https://github.com/bitwerkstatt/ostbevern_money. Der Code wurde für die Gemeinde Hörstel angepasst.
+Dies ist ein Fork von https://github.com/bitwerkstatt/ostbevern_money. Der Code wurde für die Stadt Hörstel angepasst.
 
 Die selbst gehosteten Icons stammen von Font Awesome Free (CC BY 4.0).

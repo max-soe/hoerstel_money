@@ -7,7 +7,7 @@
 
 import { haushalt, investitionen } from '@/data/daten'
 import type { VorberichtPosten, VorberichtTabelle } from '@/data/typen'
-import { belegSchluessel } from '@/lib/quelle'
+import { belegSchluessel, findeBeleg } from '@/lib/quelle'
 import { zeilenName } from '@/lib/zeilen'
 
 /** Ein Posten einer Aufschlüsselung (Vorbericht-Tabelle), bereits für ein Jahr gelesen. */
@@ -31,7 +31,7 @@ export interface PostenZeile {
 }
 
 export interface SteuerZeile extends PostenZeile {
-  /** `true`, wenn die Gemeinde die Steuer selbst festlegt (EINN-02). */
+  /** `true`, wenn die Kommune die Steuer selbst festlegt (EINN-02). */
   selbstFestgelegt: boolean
   /** Hebesatz in Prozentpunkten (nur Haushaltsjahr gedruckt), sonst `null`. */
   hebesatz: number | null
@@ -62,7 +62,7 @@ export interface InvestiveZeile {
 }
 
 /**
- * Steuern, deren Höhe die Gemeinde selbst bestimmt: Hebesatz (Grundsteuer A/B, Gewerbesteuer) bzw.
+ * Steuern, deren Höhe die Kommune selbst bestimmt: Hebesatz (Grundsteuer A/B, Gewerbesteuer) bzw.
  * örtliche Steuer (Hunde-, Vergnügungssteuer). Fachliche Regel (Spez. 6.4); die Anteile an
  * Einkommen- und Umsatzsteuer und die Kompensationszahlungen kommen von Bund und Land.
  */
@@ -206,7 +206,16 @@ export function baueZuwendungen(jahrIndex: number): PostenZeile[] {
     .filter(istAnzeigbar)
 }
 
+/**
+ * Die Konzessionsabgaben nach Sparte aus `meta.vorbericht_werte`. Druckt der Jahrgang keine
+ * Aufteilung (Hörstel), fehlen alle Sparten und die Liste ist leer; fehlt nur ein Teil, ist das
+ * ein Datenfehler.
+ */
 function konzessionsabgabeNachSparte(): SonstigeErtragZeile[] {
+  const werte = haushalt.meta.vorbericht_werte
+  if (KONZESSIONSSPARTEN.every(([schluessel]) => werte[schluessel] === undefined)) {
+    return []
+  }
   return KONZESSIONSSPARTEN.map(([schluessel, name]) => {
     const meta = haushalt.meta.vorbericht_werte[schluessel]
     if (meta === undefined || typeof meta.wert !== 'number') {
@@ -248,9 +257,15 @@ export function baueSonstigeErtraege(jahrIndex: number): SonstigeErtragZeile[] {
   return zeilen
 }
 
-/** Seite des Gesamtfinanzplans, auf dem die Finanzplan-Zeilen stehen. */
-function finanzplanSeite(): number {
-  return investitionen.finanzierung.quelle
+/**
+ * Seite der Finanzplan-Zeile: die Seite ihres Belegs, denn der Gesamtfinanzplan kann über zwei
+ * Seiten gehen (Hörstel S. 80/81); ohne Beleg die erste Seite des Gesamtfinanzplans.
+ */
+function finanzplanSeite(schluessel: string): number {
+  return (
+    findeBeleg(belegSchluessel.fp(FINANZPLAN_KNOTEN, schluessel))?.pdfSeite ??
+    investitionen.finanzierung.quelle
+  )
 }
 
 function finanzplanWert(schluessel: string, jahrIndex: number): number {
@@ -272,7 +287,7 @@ function investiveFinanzplanZeile(
     wert: finanzplanWert(schluessel, jahrIndex),
     gerundet: false,
     berechnet: false,
-    quelle: finanzplanSeite(),
+    quelle: finanzplanSeite(schluessel),
     beleg: belegSchluessel.fp(FINANZPLAN_KNOTEN, schluessel),
     herleitung: null,
     gruppe: 'finanzplan',
@@ -319,7 +334,7 @@ export function baueInvestiveEinnahmen(jahrIndex: number): InvestiveZeile[] {
     wert: finanzplanWert(INVESTITIONSZUWENDUNGEN, jahrIndex) - summeGezeigt,
     gerundet: gezeigt.some((zeile) => zeile.gerundet),
     berechnet: true,
-    quelle: finanzplanSeite(),
+    quelle: finanzplanSeite(INVESTITIONSZUWENDUNGEN),
     beleg: belegSchluessel.fp(FINANZPLAN_KNOTEN, INVESTITIONSZUWENDUNGEN),
     herleitung: herleitungSonstigeInvestiv(),
     gruppe: 'sonstige',

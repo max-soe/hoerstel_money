@@ -6,6 +6,15 @@ passiert, nicht einmal je Testdatei.
 
 from __future__ import annotations
 
+import os
+
+# Die bestehenden Tests sind Regressionstests für das ProFIS+-Layout und laufen gegen den
+# Ostbevern-Referenzstand unter pipeline/referenz/ostbevern/ (Jahrgang, daten/, App-Daten;
+# PDF unter raw_data/ostbevern/). Muss vor dem ersten Import von ostbevern.konfiguration
+# gesetzt sein. Der aktive Hörsteler Jahrgang (IKVS) wird in den test_ikvs*.py ausdrücklich
+# geladen und schreibt nur in temporäre Verzeichnisse.
+os.environ.setdefault("PIPELINE_REFERENZ", "referenz/ostbevern")
+
 import polars as pl
 import pytest
 

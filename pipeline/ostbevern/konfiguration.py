@@ -9,6 +9,7 @@ die `tomllib` importiert.
 from __future__ import annotations
 
 import itertools
+import os
 import re
 import tomllib
 from collections.abc import Mapping
@@ -21,7 +22,21 @@ STANDARD_JAHR = 2026
 
 PIPELINE_WURZEL = Path(__file__).resolve().parent.parent
 PROJEKT_WURZEL = PIPELINE_WURZEL.parent
-JAHRGAENGE_VERZEICHNIS = PIPELINE_WURZEL / "jahrgaenge"
+STANDARD_JAHRGAENGE_VERZEICHNIS = PIPELINE_WURZEL / "jahrgaenge"
+# Die Umgebungsvariable PIPELINE_REFERENZ (Pfad relativ zu pipeline/ oder absolut) lenkt die
+# ganze Pipeline auf einen Referenzstand um: Jahrgangsdateien (`jahrgaenge/`), Daten
+# (`daten/`) und App-Ausgaben (`app/src/data/`, `app/public/quellen/`) liegen dann unter
+# dieser Wurzel statt im Projekt. So laufen Tests und die CI-Reproduzierbarkeitsprüfung des
+# ProFIS+-Layouts gegen den Ostbevern-Referenzstand (`referenz/ostbevern`), während das
+# Projekt selbst den Hörsteler Haushalt verarbeitet. Ausgewertet beim Import, damit die
+# Standardargumente und die importierten Konstanten übereinstimmen.
+_REFERENZ = os.environ.get("PIPELINE_REFERENZ")
+REFERENZ_WURZEL = (PIPELINE_WURZEL / _REFERENZ).resolve() if _REFERENZ else None
+JAHRGAENGE_VERZEICHNIS = (
+    REFERENZ_WURZEL / "jahrgaenge" if REFERENZ_WURZEL else STANDARD_JAHRGAENGE_VERZEICHNIS
+)
+DATEN_WURZEL = (REFERENZ_WURZEL or PROJEKT_WURZEL) / "daten"
+APP_WURZEL = (REFERENZ_WURZEL or PROJEKT_WURZEL) / "app"
 
 # Strukturelle Pipeline-Konzepte (keine Jahrgangsdaten): Plantypen und die
 # Kapitel, die jede Jahrgangsdatei mindestens enthalten muss.
@@ -37,6 +52,9 @@ PFLICHT_SEITENBEREICHE = (
     "querschnitte",
     "verpflichtungen_schulden",
 )
+# Software-Layouts, die die Pipeline lesen kann: "profis" (ProFIS+, Ostbevern) und "ikvs"
+# (Axians IKVS als Word-Export, Hörstel). Fehlt der Schlüssel, gilt "profis".
+SOFTWARE_LAYOUTS = ("profis", "ikvs")
 # Feines Typ-Vokabular im Teilplanbereich (D-17), das jede Jahrgangsdatei unter
 # [kopfzeilen.seitentypen] mit einem Muster belegen muss.
 PFLICHT_SEITENTYPEN = (
@@ -119,6 +137,8 @@ class Jahrgang:
     # Regex-Muster, die gegen Textzeile.text geprüft werden, sofern nicht anders
     # angegeben. Optional, Standard ist eine leere Zuordnung (D-07-Stil).
     layout: Mapping[str, Mapping[str, str | tuple[str, ...]]] = field(default_factory=dict)
+    # Software, die das PDF erzeugt hat (SOFTWARE_LAYOUTS); bestimmt die Leselogik.
+    software: str = "profis"
 
 
 def lade_jahrgang(jahr: int, *, verzeichnis: Path = JAHRGAENGE_VERZEICHNIS) -> Jahrgang:
@@ -175,6 +195,18 @@ def lade_jahrgang(jahr: int, *, verzeichnis: Path = JAHRGAENGE_VERZEICHNIS) -> J
                 f"Jahrgangsdatei {pfad}: anzahlen.{teil_schluessel} muss eine Ganzzahl "
                 f"sein, nicht {wert!r}"
             )
+        if wert < 0:
+            raise KonfigurationsFehler(
+                f"Jahrgangsdatei {pfad}: anzahlen.{teil_schluessel} darf nicht negativ sein, "
+                f"nicht {wert!r}"
+            )
+
+    software = rohdaten.get("software", "profis")
+    if software not in SOFTWARE_LAYOUTS:
+        raise KonfigurationsFehler(
+            f"Jahrgangsdatei {pfad}: software muss einer von {', '.join(SOFTWARE_LAYOUTS)} "
+            f"sein, nicht {software!r}"
+        )
 
     pdf_pfad_roh = rohdaten["pdf_pfad"]
     pdf_pfad_relativ = Path(pdf_pfad_roh)
@@ -431,6 +463,7 @@ def lade_jahrgang(jahr: int, *, verzeichnis: Path = JAHRGAENGE_VERZEICHNIS) -> J
         kopfzeilen=kopfzeilen,
         synthetische_produktgruppen=synthetische_produktgruppen,
         layout=layout,
+        software=software,
     )
 
 
@@ -543,11 +576,13 @@ def lade_sollwerte(jahr: int, *, verzeichnis: Path = JAHRGAENGE_VERZEICHNIS) -> 
                 f"{', '.join(sorted(fehlende_felder))}"
             )
 
+    # Eine leere Tabelle ist erlaubt, solange ein Jahrgang noch keine Teilpläne liest
+    # (Hörstel, IKVS-Layout); ist sie befüllt, müssen beide Summenfelder da sein.
     teilergebnisplaene_pb_summe = rohdaten["teilergebnisplaene_pb_summe"]
     fehlende_summenfelder = [
         feld
         for feld in ("ordentliche_ertraege", "ordentliche_aufwendungen")
-        if feld not in teilergebnisplaene_pb_summe
+        if teilergebnisplaene_pb_summe and feld not in teilergebnisplaene_pb_summe
     ]
     if fehlende_summenfelder:
         raise KonfigurationsFehler(

@@ -20,17 +20,20 @@ from decimal import ROUND_HALF_UP, Decimal
 
 import pytest
 
-from ostbevern.konfiguration import PROJEKT_WURZEL
+from ostbevern.konfiguration import APP_WURZEL, PROJEKT_WURZEL
 from ostbevern.schema import DATEN_WURZEL, ERKLAERUNGEN_MD
 from ostbevern.texte import (
     FORMATKUERZEL,
     PLATZHALTER_MUSTER,
+    festes_jahr,
     lies_erklaerungen,
     loese_auf,
     textwerte,
 )
 
-APP_DATEN_WURZEL = PROJEKT_WURZEL / "app" / "src" / "data"
+# App-Daten des Referenzstands (conftest.py: PIPELINE_REFERENZ, Ostbevern); das Projekt-app/
+# enthält seit Phase 11 Hörstel.
+APP_DATEN_WURZEL = APP_WURZEL / "src" / "data"
 
 _NBSP = "\u00a0"
 
@@ -299,7 +302,9 @@ def _pruefe_absaetze(absaetze: Sequence[str], werte: Mapping[str, int | float]) 
 
     def _ersetze(treffer: re.Match[str]) -> str:
         schluessel, format_kuerzel = treffer.groups()
-        wert = werte[schluessel]
+        # `jahr.fest_JJJJ` steht nicht in `werte`, sondern im Schlüsselnamen (D-02).
+        wert = werte[schluessel] if schluessel in werte else festes_jahr(schluessel)
+        assert wert is not None, schluessel
         for eintrag in _verstoesse(schluessel, wert, format_kuerzel):
             verstoesse.append(f"{treffer.group(0)}: {eintrag}")
         return formatiere_port(wert, format_kuerzel)

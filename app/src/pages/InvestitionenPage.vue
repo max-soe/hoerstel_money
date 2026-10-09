@@ -14,16 +14,16 @@ import SchuldenstandDiagramm from '@/components/SchuldenstandDiagramm.vue'
 import VeFaelligkeiten from '@/components/VeFaelligkeiten.vue'
 import { haushalt, investitionen } from '@/data/daten'
 import { vePdfSeiten, veGesamt } from '@/lib/finanzierung'
+import { quellenZeile } from '@/lib/hilfsfunktionen'
 import { planjahre, useMassnahmenFilter } from '@/lib/investitionen'
 import { wertartFuerJahr, wertartName } from '@/lib/jahr'
-import { quellenZeile } from '@/lib/kennzahlen'
 import { belegSchluessel } from '@/lib/quelle'
 import { baueSchuldenstand, schuldenKacheln } from '@/lib/schulden'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 // Die Seite zeigt alle ausgewiesenen Jahre, ohne Jahr-Umschalter (UI-SPEC Routes). Der Lead
 // enthält keine Zahlen und darf deshalb als Text im Code stehen.
-const lead =
-  'Hier siehst du, was die Gemeinde in den kommenden Jahren baut und anschafft, wie sie das bezahlt und wie hoch ihre Schulden sind.'
+const lead = `Hier siehst du, was die ${KOMMUNE_ART} in den kommenden Jahren baut und anschafft, wie sie das bezahlt und wie hoch ihre Schulden sind.`
 
 const massnahmenTitel = computed(() => {
   const jahre = planjahre()
@@ -38,6 +38,19 @@ const massnahmenTitel = computed(() => {
 // `schuldenKacheln()`; „berechnet“ steht nur, wenn das Datenfeld des Vorjahrs es sagt (WR-03).
 const schuldenstand = baueSchuldenstand()
 const veWertart = wertartName(wertartFuerJahr(haushalt.haushaltsjahr))
+/**
+ * Beleg der VE-Summe: die VE-Spalte der Summenzeile „Auszahlungen aus Investitionstätigkeit“ des
+ * Gesamtfinanzplans (Ostbevern). Druckt der Gesamtfinanzplan keine VE-Spalte (Hörstel), steht die
+ * Summe nur in der VE-Übersicht; dann belegt deren erste Seite sie.
+ */
+function veBeleg(): string | undefined {
+  if (haushalt.finanzplan['GESAMT']?.ve['auszahlungen_investitionen'] !== undefined) {
+    return belegSchluessel.fp('GESAMT', 'auszahlungen_investitionen')
+  }
+  const seite = vePdfSeiten()[0]
+  return seite === undefined ? undefined : belegSchluessel.seite(seite)
+}
+
 const kacheln = [
   ...schuldenKacheln(),
   {
@@ -46,9 +59,7 @@ const kacheln = [
     wert: euroKurz(veGesamt()),
     zeile: quellenZeile(veWertart, haushalt.haushaltsjahr, vePdfSeiten()),
     berechnet: false,
-    // Die VE-Summe steht in der VE-Spalte der gedruckten Summenzeile „Auszahlungen aus
-    // Investitionstätigkeit“ des Gesamtfinanzplans; dieselbe Zeile belegt sie, ohne Herleitung.
-    quelle: belegSchluessel.fp('GESAMT', 'auszahlungen_investitionen'),
+    quelle: veBeleg(),
     herleitung: null as string | null,
     wertart: `${veWertart} ${formatiereJahr(haushalt.haushaltsjahr)}`,
   },
@@ -65,9 +76,10 @@ const schuldenTitel = (() => {
     : `Schuldenstand ${formatiereJahr(erstes)}–${formatiereJahr(letztes)}`
 })()
 
-// Der Filterzustand liegt in der URL (`pb`, `art`); die Filterzeile liest ihn selbst, die Seite
-// braucht die Treffer und den Rücksetzer für den Leerzustand.
-const { vorhaben, zuruecksetzen } = useMassnahmenFilter()
+// Der Filterzustand liegt in der URL (`pb`, `art`) und wird hier genau einmal je Seite angelegt;
+// die Filterzeile bekommt ihn als Prop, die Seite braucht die Treffer und den Rücksetzer.
+const steuerung = useMassnahmenFilter()
+const { vorhaben, zuruecksetzen } = steuerung
 </script>
 
 <template>
@@ -93,7 +105,7 @@ const { vorhaben, zuruecksetzen } = useMassnahmenFilter()
     </ul>
     <section class="om-investitionen__abschnitt" aria-labelledby="om-investitionen-massnahmen">
       <h2 id="om-investitionen-massnahmen">{{ massnahmenTitel }}</h2>
-      <MassnahmenFilter />
+      <MassnahmenFilter :steuerung="steuerung" />
       <ChartCard v-if="vorhaben.length > 0" titel="Die größten Maßnahmen">
         <MassnahmenListe :vorhaben="vorhaben" />
       </ChartCard>

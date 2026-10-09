@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { euroKurz, jahr as formatJahr, prozent } from '@/charts/format'
+import { euroKurz, jahr as formatJahr, kurzMitHinweis, prozent } from '@/charts/format'
 import BerechnetEtikett from '@/components/BerechnetEtikett.vue'
 import KennzahlKachel from '@/components/KennzahlKachel.vue'
 import { haushalt } from '@/data/daten'
 import { klAnteil } from '@/lib/bindungsgrad'
+import { quellenZeile } from '@/lib/hilfsfunktionen'
 import { wertartFuerJahr, wertartName } from '@/lib/jahr'
-import { quellenZeile } from '@/lib/kennzahlen'
 import { nichtBeeinflussbar } from '@/lib/zuschuesse'
 
 // RAT-02, D-02: große Posten, die der Rat nicht steuern kann. Die Kacheln nennen nur Betrag,
@@ -15,10 +15,15 @@ import { nichtBeeinflussbar } from '@/lib/zuschuesse'
 // Die Kacheln der Weitergabe an Kreis und Land stammen aus `lib/kreisumlage.ts` und zeigen
 // dieselben Werte wie /ausgaben.
 
-const props = defineProps<{
-  /** Summe aller Segmente des Bindungsgrad-Balkens in Euro; ohne Angabe entfällt der Vergleichssatz. */
-  balkenSumme?: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** Summe aller Segmente des Bindungsgrad-Balkens in Euro; ohne Angabe entfällt der Vergleichssatz. */
+    balkenSumme?: number
+    /** Worauf sich der Anteil bezieht; ohne Bindungsgrad-Balken (Hörstel) die Produktliste. */
+    vergleichsBezug?: string
+  }>(),
+  { balkenSumme: undefined, vergleichsBezug: 'der Summe im Balken oben' },
+)
 
 defineSlots<{
   /** Platz für weitere Hinweise unter dem Vergleichssatz. */
@@ -49,7 +54,7 @@ const kacheln = computed(() =>
   posten.value.posten.map((p) => ({
     schluessel: p.schluessel,
     bezeichnung: p.name,
-    wert: p.wert === null ? '' : `rd. ${euroKurz(p.wert)}`,
+    wert: p.wert === null ? '' : kurzMitHinweis(p.wert, p.gerundet),
     quelle: p.beleg ?? undefined,
     zeile:
       p.pdfSeite === null
@@ -83,7 +88,7 @@ const kacheln = computed(() =>
     <div class="om-nicht-beeinflussbar__vergleich">
       <p v-if="vergleich !== null" class="om-nicht-beeinflussbar__satz">
         Die Weitergabe an Kreis und Land beträgt {{ vergleich.betrag }}. Das entspricht
-        {{ vergleich.anteil }}<BerechnetEtikett /> der Summe im Balken oben.
+        {{ vergleich.anteil }}<BerechnetEtikett /> {{ vergleichsBezug }}.
       </p>
       <slot name="vergleich" />
     </div>

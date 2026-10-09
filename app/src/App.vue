@@ -9,6 +9,7 @@ import { KONTAKT_EMAIL, ORIGINAL_PDF_URL } from '@/config'
 import { haushalt } from '@/data/daten'
 import { useSchmalerBildschirm } from '@/lib/bildschirm'
 import { useJahr } from '@/lib/jahr'
+import { KOMMUNE_VOLL, SEITENNAME } from '@/lib/kommune'
 import { MENUE, type MenueLink } from '@/lib/menue'
 
 // Datenstand (D-18): das Haushaltsjahr und der Tag des Satzungsbeschlusses, beides aus den
@@ -38,6 +39,8 @@ const schliesstDurchSeitenwechsel = ref(false)
 const menueSchalter = ref<HTMLButtonElement | null>(null)
 
 function oeffneDrawer() {
+  // Ein veralteter Merker aus einer früheren Sitzung darf den Fokus dieser Sitzung nicht lenken.
+  schliesstDurchSeitenwechsel.value = false
   drawerOffen.value = true
   drawerAktiv.value = true
 }
@@ -50,8 +53,44 @@ function beiHide(ereignis: Event) {
   }
 }
 
-// Nach dem Schließen zurück zum Schalter. Nach einem Seitenwechsel gehört der Fokus der neuen
-// Seite (Router: Überschrift, D-13), ihn jetzt zum Schalter zu holen wäre ein Fokusraub.
+// Fokus auf die Überschrift der Seite (D-13, D-21): Ziel des Skip-Links und nach jedem Linkklick
+// im mobilen Menü. Die Überschrift ist von sich aus nicht fokussierbar und bekommt dafür
+// `tabindex="-1"`.
+function fokussiereUeberschrift() {
+  const ziel =
+    document.querySelector<HTMLElement>('h1') ?? document.querySelector<HTMLElement>('main')
+  if (ziel !== null) {
+    if (!ziel.hasAttribute('tabindex')) {
+      ziel.setAttribute('tabindex', '-1')
+    }
+    ziel.focus()
+  }
+}
+
+// Ein Tipp auf einen Link im Menü schließt den Drawer immer, auch beim Link der aktuellen Seite
+// (dann wechselt die Route nicht und der Routenwächter unten greift nicht, D-21, A11Y-02).
+// Klicks mit Zusatztaste oder anderer Maustaste öffnen den Link in einem neuen Tab oder Fenster
+// und navigieren hier nicht: dann bleibt der Drawer, wie er ist, und der Fokus wird nicht zur
+// Überschrift gezogen. Schließt der Drawer bereits, gibt es nichts mehr zu tun.
+function beiDrawerLinkKlick(ereignis: MouseEvent) {
+  if (
+    ereignis.ctrlKey ||
+    ereignis.metaKey ||
+    ereignis.shiftKey ||
+    ereignis.altKey ||
+    ereignis.button !== 0
+  ) {
+    return
+  }
+  if (!drawerOffen.value) {
+    return
+  }
+  schliesstDurchSeitenwechsel.value = true
+  drawerOffen.value = false
+}
+
+// Nach dem Schließen zurück zum Schalter. Nach einem Linkklick oder Seitenwechsel gehört der
+// Fokus der Seite (Überschrift), ihn jetzt zum Schalter zu holen wäre ein Fokusraub.
 function beiAfterHide(ereignis: Event) {
   if (ereignis.target !== ereignis.currentTarget) {
     return
@@ -59,6 +98,10 @@ function beiAfterHide(ereignis: Event) {
   drawerAktiv.value = false
   if (schliesstDurchSeitenwechsel.value) {
     schliesstDurchSeitenwechsel.value = false
+    // `wa-drawer` gibt den Fokus selbst per `setTimeout` an das Element zurück, das beim Öffnen den
+    // Fokus hatte (den Menüknopf), und zwar unmittelbar vor diesem Ereignis. Ein synchroner
+    // Fokus hier würde überschrieben; erst dieser Aufruf kommt danach an die Reihe.
+    setTimeout(fokussiereUeberschrift)
     return
   }
   menueSchalter.value?.focus()
@@ -99,14 +142,7 @@ function beiSeitenklick(ereignis: Event) {
     return
   }
   ereignis.preventDefault()
-  const ziel =
-    document.querySelector<HTMLElement>('h1') ?? document.querySelector<HTMLElement>('main')
-  if (ziel !== null) {
-    if (!ziel.hasAttribute('tabindex')) {
-      ziel.setAttribute('tabindex', '-1')
-    }
-    ziel.focus()
-  }
+  fokussiereUeberschrift()
 }
 
 onMounted(() => {
@@ -122,7 +158,7 @@ onBeforeUnmount(() => {
     <span slot="skip-to-content">Zum Inhalt springen</span>
 
     <div slot="header" class="om-header">
-      <RouterLink :to="{ name: 'start' }" class="om-site-name">Ostbevern Money</RouterLink>
+      <RouterLink :to="{ name: 'start' }" class="om-site-name">{{ SEITENNAME }}</RouterLink>
 
       <nav v-if="!schmal" aria-label="Hauptnavigation" class="om-nav">
         <ul>
@@ -170,11 +206,15 @@ onBeforeUnmount(() => {
                   }}</span>
                   <ul class="om-nav-gruppe__liste" :aria-labelledby="`om-drawer-gruppe-${nummer}`">
                     <li v-for="link in eintrag.eintraege" :key="link.name">
-                      <RouterLink :to="menueZiel(link)">{{ link.text }}</RouterLink>
+                      <RouterLink :to="menueZiel(link)" @click="beiDrawerLinkKlick">{{
+                        link.text
+                      }}</RouterLink>
                     </li>
                   </ul>
                 </template>
-                <RouterLink v-else :to="menueZiel(eintrag)">{{ eintrag.text }}</RouterLink>
+                <RouterLink v-else :to="menueZiel(eintrag)" @click="beiDrawerLinkKlick">{{
+                  eintrag.text
+                }}</RouterLink>
               </li>
             </ul>
           </nav>
@@ -183,6 +223,11 @@ onBeforeUnmount(() => {
     </div>
 
     <main class="om-content">
+      <!-- Auf jeder Seite: privates Projekt, keine Gewähr (die Fußzeile steht erst ganz unten). -->
+      <p class="om-hinweis-privat" role="note">
+        Privates Projekt, keine Veröffentlichung der {{ KOMMUNE_VOLL }}. Alle Angaben ohne Gewähr;
+        maßgeblich ist der Original-Haushaltsplan.
+      </p>
       <RouterView />
     </main>
 
@@ -192,14 +237,12 @@ onBeforeUnmount(() => {
       <p>
         Datenstand: Haushalt {{ haushaltsjahr }}, beschlossen am {{ beschlussDatum }}.
         <a :href="ORIGINAL_PDF_URL" target="_blank" rel="noopener noreferrer"
-          >Original-Haushaltsplan (PDF) der Gemeinde Ostbevern<wa-icon
-            name="arrow-up-right-from-square"
-            class="om-extern-icon"
-          ></wa-icon
+          >Original-Haushaltsplan (PDF) der {{ KOMMUNE_VOLL
+          }}<wa-icon name="arrow-up-right-from-square" class="om-extern-icon"></wa-icon
           ><span class="om-visually-hidden"> (öffnet in neuem Tab)</span></a
         >
       </p>
-      <p>Inoffizielles Projekt, keine Veröffentlichung der Gemeinde Ostbevern.</p>
+      <p>Inoffizielles Projekt, keine Veröffentlichung der {{ KOMMUNE_VOLL }}.</p>
       <p>
         Kontakt:
         <a :href="`mailto:${KONTAKT_EMAIL}`" class="om-kontakt">{{ KONTAKT_EMAIL }}</a>
@@ -316,6 +359,14 @@ onBeforeUnmount(() => {
 .om-content {
   display: block;
   padding: var(--wa-space-l);
+}
+
+.om-hinweis-privat {
+  margin: 0 0 var(--wa-space-m);
+  font-size: var(--wa-font-size-s);
+  line-height: var(--wa-line-height-normal);
+  color: var(--wa-color-text-quiet);
+  overflow-wrap: break-word;
 }
 
 .om-footer {

@@ -14,6 +14,7 @@ from pathlib import Path
 
 import polars as pl
 
+from ostbevern import ikvs
 from ostbevern.konfiguration import Jahrgang
 from ostbevern.pdf import PdfDokument, Textzeile, Wort
 from ostbevern.schema import (
@@ -527,6 +528,9 @@ def extrahiere_plaene(
     (gedruckte und synthetische PG, D-14) an die GESAMT-Zeilen beider Dateien an und
     schreibt beide CSVs einmal.
     """
+    if jahrgang.software == ikvs.SOFTWARE:
+        return _extrahiere_ikvs(jahrgang, daten_wurzel=daten_wurzel)
+
     seiten = lies_seiten_csv(daten_wurzel / SEITEN_CSV)
     hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
 
@@ -553,6 +557,45 @@ def extrahiere_plaene(
             teil_finanzplan,
             pl.DataFrame(synthetisch_finanzplan, schema=PLAN_SPALTEN),
         ]
+    )
+
+    ergebnisplan_pfad = daten_wurzel / ERGEBNISPLAN_CSV
+    finanzplan_pfad = daten_wurzel / FINANZPLAN_CSV
+    schreibe_plan_csv(ergebnisplan_df, ergebnisplan_pfad)
+    schreibe_plan_csv(finanzplan_df, finanzplan_pfad)
+    return (
+        ExtraktionsErgebnis(zeilen_geschrieben=ergebnisplan_df.height, pfad=ergebnisplan_pfad),
+        ExtraktionsErgebnis(zeilen_geschrieben=finanzplan_df.height, pfad=finanzplan_pfad),
+    )
+
+
+def _extrahiere_ikvs(
+    jahrgang: Jahrgang, *, daten_wurzel: Path
+) -> tuple[ExtraktionsErgebnis, ExtraktionsErgebnis]:
+    """IKVS-Layout: Gesamt- und Teilpläne (PB, PG als Summe, Produkt) über `ostbevern.ikvs`.
+
+    Liest `hierarchie.csv` aus Schritt 01; Fehler des IKVS-Lesers werden als PlaeneFehler
+    gemeldet.
+    """
+    hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
+    try:
+        with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
+            gesamt_ergebnisplan = ikvs.gesamtplan_datensaetze(
+                dokument, jahrgang, datei="ergebnisplan"
+            )
+            gesamt_finanzplan = ikvs.gesamtplan_datensaetze(dokument, jahrgang, datei="finanzplan")
+            teilplaene = ikvs.lies_ikvs_teilplaene(dokument, jahrgang)
+        teil_ergebnisplan, teil_finanzplan = ikvs.teilplan_datensaetze(
+            teilplaene, hierarchie, jahrgang
+        )
+    except ikvs.IkvsFehler as fehler:
+        raise PlaeneFehler(str(fehler)) from fehler
+
+    ergebnisplan_df = pl.concat(
+        [pl.DataFrame(gesamt_ergebnisplan, schema=PLAN_SPALTEN), teil_ergebnisplan]
+    )
+    finanzplan_df = pl.concat(
+        [pl.DataFrame(gesamt_finanzplan, schema=PLAN_SPALTEN), teil_finanzplan]
     )
 
     ergebnisplan_pfad = daten_wurzel / ERGEBNISPLAN_CSV

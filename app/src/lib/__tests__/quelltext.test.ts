@@ -4,6 +4,10 @@ import { GLOSSAR_SCHLUESSEL, glossarVerwendungen } from '@/lib/glossar'
 
 // Quelltext-Prüfungen über alle Vue-Dateien der App (GLOS-03, UI-05). Die Quelltexte kommen
 // wie in `glossar.test.ts` über `import.meta.glob` mit `?raw`.
+// Warum Quelltext: Gesichert werden Konventionen, die nur im Template stehen (Glossarverlinkung
+// im Fließtext, getippte Zahlen und veraltete Größen, Typografie der Seiten). In der
+// Testumgebung (`environment: 'node'`) gibt es kein DOM und kein DOM-Paket, das die gerenderte
+// Seite prüfen könnte, deshalb lässt sich das nicht als Verhalten testen (D-14).
 const quelltexte = import.meta.glob<string>('/src/**/*.vue', {
   query: '?raw',
   import: 'default',
@@ -148,7 +152,7 @@ describe('getippteZahlen (UI-05, Fail-first)', () => {
   })
 
   it.each([
-    '<span v-if="zeile[\'gerundet\'] === 1">rd. </span>',
+    '<EuroBetrag :wert="wert" :gerundet="zeile[\'gerundet\'] === 1" />',
     '<wa-details :open="gruppe.id === \'steuern\'" class="om-a-1">',
     '<p>{{ euro(wert) }} und {{ prozent(anteil) }}</p>',
     '<h2 id="om-start-kennzahlen">Die wichtigsten Zahlen {{ jahrText }}</h2>',
@@ -214,5 +218,34 @@ describe('Keine getippten Zahlen in den Templates (UI-05, T-05-40, T-05-41)', ()
 
   it.each(dateien)('%s enthält keine getippte Zahl und keine Roh-HTML-Direktive', (_pfad, text) => {
     expect(getippteZahlen(templateTeil(text))).toEqual([])
+  })
+})
+
+// Phase 12: Name und Art der Kommune kommen aus den Daten (`lib/kommune.ts`). Weder ein
+// Ortsname noch die feste Art („Gemeinde“ bzw. „Stadt“ als Bezeichnung der Kommune) steht in
+// Komponenten, Seiten oder Bibliotheksmodulen; Ausnahmen sind `lib/kommune.ts` selbst und
+// `config.ts` (Impressumsanschrift).
+const anwendungsquelltexte = import.meta.glob<string>(
+  ['/src/**/*.vue', '/src/**/*.ts', '!/src/**/__tests__/**', '!/src/data/**'],
+  { query: '?raw', import: 'default', eager: true },
+)
+
+describe('Keine Ortsnamen im App-Code (Phase 12)', () => {
+  it('nennt weder Ostbevern noch Hörstel und nicht „der Gemeinde“/„der Stadt“ im Text', () => {
+    const treffer: string[] = []
+    for (const [pfad, inhalt] of Object.entries(anwendungsquelltexte)) {
+      // `config.ts` trägt Impressum und PDF-Link, nicht aus dem Haushalt.
+      if (pfad.endsWith('/lib/kommune.ts') || pfad.endsWith('/src/config.ts')) {
+        continue
+      }
+      // Kommentare zählen nicht: sie dürfen Jahrgänge beim Namen nennen.
+      const ohneKommentare = inhalt.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+      for (const muster of [/Ostbevern/, /Hörstel/, /\b(der|die) (Gemeinde|Stadt)\b/]) {
+        if (muster.test(ohneKommentare)) {
+          treffer.push(`${pfad}: ${String(muster)}`)
+        }
+      }
+    }
+    expect(treffer).toEqual([])
   })
 })

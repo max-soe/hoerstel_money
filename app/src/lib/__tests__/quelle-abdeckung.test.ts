@@ -66,13 +66,14 @@ function metaEintrag(pfad: string): MetaWert | undefined {
         : undefined
   }
   const gruppe = META_GRUPPEN.find((name) => name === kopf)
-  return gruppe === undefined ? undefined : haushalt.meta[gruppe][unter]
+  return gruppe === undefined ? undefined : haushalt.meta[gruppe]?.[unter]
 }
 
 function alleMetaPfade(): string[] {
   const pfade = ['einwohner', 'flaeche']
   for (const gruppe of META_GRUPPEN) {
-    for (const name of Object.keys(haushalt.meta[gruppe])) {
+    // Die Gruppe kreisumlage führt nicht jeder Jahrgang (Hörstel nicht).
+    for (const name of Object.keys(haushalt.meta[gruppe] ?? {})) {
       pfade.push(`${gruppe}.${name}`)
     }
   }
@@ -130,12 +131,19 @@ function erwarteteSchluessel(): string[] {
     schluessel.push(belegSchluessel.seite(seite))
   }
 
-  // Gesamtpläne: jede gedruckte GESAMT-Zeile, die die App als Datensatz kennt.
-  for (const zeile of Object.keys(haushalt.ergebnisplan['GESAMT']?.zeilen ?? {})) {
-    schluessel.push(belegSchluessel.ep('GESAMT', zeile))
+  // Gesamtpläne: jede gedruckte GESAMT-Zeile, die die App als Datensatz kennt. IKVS (Hörstel)
+  // druckt Zeilen ohne einen einzigen Wert nicht (Gesamtfinanzplan S. 80/81: Z. 20 und die
+  // Liquiditätskredite fehlen); gedruckt ist eine Zeile mit mindestens einem Wert ungleich 0.
+  const gedruckt = (werte: readonly number[]): boolean => werte.some((wert) => wert !== 0)
+  for (const [zeile, werte] of Object.entries(haushalt.ergebnisplan['GESAMT']?.zeilen ?? {})) {
+    if (gedruckt(werte)) {
+      schluessel.push(belegSchluessel.ep('GESAMT', zeile))
+    }
   }
-  for (const zeile of Object.keys(haushalt.finanzplan['GESAMT']?.zeilen ?? {})) {
-    schluessel.push(belegSchluessel.fp('GESAMT', zeile))
+  for (const [zeile, werte] of Object.entries(haushalt.finanzplan['GESAMT']?.zeilen ?? {})) {
+    if (gedruckt(werte)) {
+      schluessel.push(belegSchluessel.fp('GESAMT', zeile))
+    }
   }
   return schluessel
 }
@@ -182,7 +190,7 @@ function pruefeSchluessel(schluessel: string): string | null {
       return metaEintrag(pfad) === undefined ? 'kein Datensatz' : null
     }
     case 'gz': {
-      const treffer = gruppe(/^gz:(\d{6}):(\d+)$/)
+      const treffer = gruppe(/^gz:(\d{6,7}):(\d+)$/)
       const code = treffer?.[1]
       const position = Number(treffer?.[2])
       if (code === undefined) return 'Grammatik gz:{produkt}:{position}'
@@ -192,31 +200,36 @@ function pruefeSchluessel(schluessel: string): string | null {
         : 'kein Datensatz'
     }
     case 'pr': {
-      const treffer = gruppe(/^pr:(\d{6})$/)
+      const treffer = gruppe(/^pr:(\d{6,7})$/)
       const code = treffer?.[1]
       if (code === undefined) return 'Grammatik pr:{produkt}'
       return produkte.some((p) => p.code === code) ? null : 'kein Datensatz'
     }
     case 'inv': {
-      const treffer = gruppe(/^inv:(\d{6}):([^:]+):(\d{6}):(einzahlung|auszahlung)$/)
+      // Hörstel (IKVS) druckt kein Konto je Maßnahme: der Kontoteil bleibt dann leer.
+      const treffer = gruppe(/^inv:(\d{6,7}):([^:]+):(\d{6})?:(einzahlung|auszahlung)$/)
       if (treffer === null) return 'Grammatik inv:{produkt}:{massnahme}:{konto}:{richtung}'
       const [, produkt, massnahme, konto, richtung] = treffer
       return investitionen.massnahmen.some(
         (m) =>
           m.produkt === produkt &&
           m.massnahme_id === massnahme &&
-          m.konto === konto &&
+          (m.konto ?? undefined) === konto &&
           m.richtung === richtung,
       )
         ? null
         : 'kein Datensatz'
     }
     case 've': {
-      const treffer = gruppe(/^ve:(\d{6}):([^:]+):(\d{6})$/)
+      // Leere Teile stehen für eine fehlende Maßnahme bzw. ein fehlendes Konto (Hörstel).
+      const treffer = gruppe(/^ve:(\d{6,7}):([^:]*):(\d{6})?$/)
       if (treffer === null) return 'Grammatik ve:{produkt}:{massnahme}:{konto}'
       const [, produkt, massnahme, konto] = treffer
       return investitionen.ve_faelligkeiten.some(
-        (v) => v.produkt === produkt && v.massnahme_id === massnahme && v.konto === konto,
+        (v) =>
+          v.produkt === produkt &&
+          (v.massnahme_id ?? '') === massnahme &&
+          (v.konto ?? undefined) === konto,
       )
         ? null
         : 'kein Datensatz'

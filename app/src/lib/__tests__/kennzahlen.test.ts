@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import { euroKurz } from '@/charts/format'
+// Warum Quelltext (auch `StartPage.vue?raw` unten): Gesichert wird die Konvention, dass kein Betrag
+// im Template getippt steht, sondern aus den Daten kommt (UI-05). Ein Rendertest bestätigt nur die
+// Testdaten, und ohne DOM in der Testumgebung (`environment: 'node'`, kein DOM-Paket) ließe sich auch
+// die gerenderte Seite nicht prüfen (D-14).
 import kennzahlKachelQuelle from '@/components/KennzahlKachel.vue?raw'
 import { haushalt, investitionen } from '@/data/daten'
 import { baueErtragsarten } from '@/lib/ertragsarten'
-import { baueEinstiege, baueKennzahlen, quellenZeile } from '@/lib/kennzahlen'
+import { quellenZeile } from '@/lib/hilfsfunktionen'
+import { baueEinstiege, baueKennzahlen } from '@/lib/kennzahlen'
 import { findeKlKnoten } from '@/lib/kreisumlage'
 import startSeiteQuelle from '@/pages/StartPage.vue?raw'
 
@@ -108,22 +113,19 @@ describe('quellenZeile', () => {
 })
 
 describe.runIf(haushalt.haushaltsjahr === 2026)('Kennzahlen Haushalt 2026', () => {
-  it('die fünf Betragskacheln lesen 27,5 / 30,5 / -2,35 / 12,3 / 5,2 Mio. €', () => {
+  // Gesamtergebnisplan S. 79 (Erträge 59.298.436 €, Aufwand 62.038.766 €, Ergebnis
+  // -2.740.330 €) und Gesamtfinanzplan S. 80 (Investitionen 25.955.896 €, Kredite 17.527.000 €)
+  it('die fünf Betragskacheln lesen 59,3 / 62 / -2,74 / 26 / 17,5 Mio. €', () => {
     const kurz = baueKennzahlen()
       .slice(0, 5)
       .map((k) => euroKurz(k.wert))
-    expect(kurz).toEqual([
-      '27,5 Mio. €',
-      '30,5 Mio. €',
-      '-2,35 Mio. €',
-      '12,3 Mio. €',
-      '5,2 Mio. €',
-    ])
+    expect(kurz).toEqual(['59,3 Mio. €', '62 Mio. €', '-2,74 Mio. €', '26 Mio. €', '17,5 Mio. €'])
   })
 
-  it('Pro-Kopf-Werte sind 2594 € und 1571 € (aufgerundet, nicht abgerundet)', () => {
-    expect(kennzahl('aufwand_pro_kopf').wert).toBe(2594)
-    expect(kennzahl('steuern_pro_kopf').wert).toBe(1571)
+  // 62.038.766 € / 20.166 = 3076,40 → 3076; 34.214.000 € / 20.166 = 1696,62 → 1697
+  it('Pro-Kopf-Werte sind 3076 € und 1697 € (aufgerundet, nicht abgerundet)', () => {
+    expect(kennzahl('aufwand_pro_kopf').wert).toBe(3076)
+    expect(kennzahl('steuern_pro_kopf').wert).toBe(1697)
   })
 
   it('das Ergebnis heißt „Defizit nach Minderaufwand“', () => {
@@ -135,7 +137,7 @@ describe('Vorlagen ohne eingetippte Beträge (Probe: Kennzahlwert nie im Templat
   it.each([
     ['StartPage.vue', startSeiteQuelle],
     ['KennzahlKachel.vue', kennzahlKachelQuelle],
-  ])('%s enthält keinen Betrag wie „27,5 Mio.“', (_name, quelle) => {
+  ])('%s enthält keinen Betrag wie „59,3 Mio.“', (_name, quelle) => {
     expect(quelle).not.toMatch(/\d+,\d+ Mio/)
   })
 })
@@ -182,14 +184,15 @@ describe('baueEinstiege (D-20)', () => {
 })
 
 describe.runIf(haushalt.haushaltsjahr === 2026)('Einstiege Haushalt 2026', () => {
-  it('der größte Aufgabenbereich ist Innere Verwaltung mit 4.519.223 €', () => {
+  it('der größte Aufgabenbereich ist Innere Verwaltung mit 12.437.877 €', () => {
     const ausgaben = baueEinstiege().ausgaben
+    expect(ausgaben.code).toBe('01')
     expect(ausgaben.name).toBe('Innere Verwaltung')
-    expect(ausgaben.wert).toBe(4519223)
+    expect(ausgaben.wert).toBe(12437877)
   })
 
-  it('die größte Ertragsart sind die Steuern mit 18.443.000 €', () => {
+  it('die größte Ertragsart sind die Steuern mit 34.214.000 €', () => {
     const einnahmen = baueEinstiege().einnahmen
-    expect(einnahmen.wert).toBe(18443000)
+    expect(einnahmen.wert).toBe(34214000)
   })
 })

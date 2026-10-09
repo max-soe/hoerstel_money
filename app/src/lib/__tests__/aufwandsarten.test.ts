@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { euro } from '@/charts/format'
 import { haushalt, texte } from '@/data/daten'
+import type { VorberichtPosten, VorberichtTabelle } from '@/data/typen'
 import {
   ABSCHREIBUNG_ZEILE,
   baueAufwandsarten,
@@ -112,12 +113,14 @@ describe('baueAufwandsarten (AUSG-04)', () => {
 })
 
 describe.runIf(haushalt.haushaltsjahr === 2026)('Aufwandsarten Haushalt 2026', () => {
-  it('sieben Zeilen, Summe 30.455.569 €, größte Zeile sind die Transferaufwendungen', () => {
+  it('sieben Zeilen, Summe 62.038.766 €, größte Zeile sind die Transferaufwendungen (S. 79)', () => {
     const i = haushalt.jahre.indexOf(2026)
     const arten = baueAufwandsarten(i)
     expect(arten).toHaveLength(7)
-    expect(arten.reduce((s, art) => s + art.wert, 0)).toBe(30455569)
+    expect(arten.reduce((s, art) => s + art.wert, 0)).toBe(62038766)
     expect(arten[0]?.schluessel).toBe('transferaufwendungen')
+    expect(arten[0]?.wert).toBe(28772760)
+    expect(arten.map((art) => art.nummer)).toEqual(['15', '13', '11', '14', '16', '12', '20'])
   })
 })
 
@@ -204,19 +207,31 @@ describe('baueTransferaufwendungen (AUSG-04)', () => {
 })
 
 describe.runIf(haushalt.haushaltsjahr === 2026)('Transferaufwendungen Haushalt 2026', () => {
-  it('nennt die Kreisumlage als größten Posten und sieben Kita-Einrichtungen', () => {
+  it('nennt die Kreisumlage mit 12.465.000 € (S. 34) als größten von sechs Posten', () => {
     const i = haushalt.jahre.indexOf(2026)
     const posten = baueTransferaufwendungen(i)
-    expect(posten[0]?.posten).toBe('kreisumlage')
-    const kita = posten.find((p) => p.posten === KITA_POSTEN)
-    expect(kita?.kinder).toHaveLength(7)
+    expect(posten.map((p) => p.posten)).toEqual([
+      'kreisumlage',
+      'jugendamtsumlage',
+      'zuweisungen_zuschuesse_laufende_zwecke',
+      'sozialtransferaufwendungen',
+      'gewerbesteuerumlage',
+      'sonstige_transferaufwendungen',
+    ])
+    expect(posten[0]?.wert).toBe(12465000)
+    // Seite des Haushaltsjahrs (Tabelle S. 34), nicht die Grafik der Planjahre (S. 35).
+    expect(posten[0]?.quelle).toBe(34)
+    // Die Posten ergeben die gedruckte T€-Summe der Transferaufwendungen (S. 27).
+    expect(posten.reduce((s, p) => s + p.wert, 0)).toBe(28773000)
   })
 
-  it('zeigt in 2025 keine Kita-Einrichtungen', () => {
-    const i = haushalt.jahre.indexOf(2025)
-    const kita = baueTransferaufwendungen(i).find((p) => p.posten === KITA_POSTEN)
-    expect(kita).toBeDefined()
-    expect(kita?.kinder).toBeUndefined()
+  it('druckt keine Kita-Tabelle: kein Jahr zeigt Kita-Einrichtungen', () => {
+    expect(haushalt.vorbericht['kita_zuschuesse']).toBeUndefined()
+    for (const [, i] of JAHRE) {
+      for (const p of baueTransferaufwendungen(i)) {
+        expect(p.kinder, p.posten).toBeUndefined()
+      }
+    }
   })
 })
 
@@ -234,6 +249,16 @@ describe('minderaufwandHinweis (AUSG-02, Pitfall 6)', () => {
     expect(hinweis?.betrag).toBe(-wert)
     expect(hinweis?.betrag ?? 0).toBeGreaterThan(0)
     expect(hinweis?.jahr).toBe(haushalt.jahre[i])
+  })
+
+  it.each(JAHRE)('Jahr %i: der Hinweis zeigt nie ein Minuszeichen (TXT-02)', (_j, i) => {
+    const hinweis = minderaufwandHinweis(i)
+    if (hinweis === null) {
+      return
+    }
+    expect(hinweis.betrag).toBeGreaterThan(0)
+    expect(hinweis.satz).not.toMatch(/[-−]\s?\d/)
+    expect(hinweis.satz).toContain(`von ${euro(hinweis.betrag)}`)
   })
 
   it.each(JAHRE)('Jahr %i: geprüfter Text nur im Haushaltsjahr', (jahr, i) => {
@@ -266,13 +291,141 @@ describe('minderaufwandHinweis (AUSG-02, Pitfall 6)', () => {
 })
 
 describe.runIf(haushalt.haushaltsjahr === 2026)('Minderaufwand Haushalt 2026', () => {
-  it('2024 ohne Hinweis, 2025 mit zusammengesetztem Satz, 2026 mit geprüftem Text', () => {
-    expect(minderaufwandHinweis(haushalt.jahre.indexOf(2024))).toBeNull()
-    const vorjahr = minderaufwandHinweis(haushalt.jahre.indexOf(2025))
-    expect(vorjahr?.betrag).toBe(564600)
+  it('Hörstel setzt in keinem Jahr einen globalen Minderaufwand an: nie ein Hinweis (S. 79)', () => {
+    for (const [jahr, i] of JAHRE) {
+      expect(gep('globaler_minderaufwand', i), String(jahr)).toBe(0)
+      expect(minderaufwandHinweis(i), String(jahr)).toBeNull()
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------------------------
+// Synthetische Daten: Kita-Einrichtungen und globaler Minderaufwand, die Hörstel nicht druckt
+// ---------------------------------------------------------------------------------------------
+
+describe('Kita-Einrichtungen und Minderaufwand mit synthetischen Daten', () => {
+  afterEach(() => {
+    vi.doUnmock('@/data/daten')
+    vi.resetModules()
+  })
+
+  const HJ = haushalt.jahre.indexOf(haushalt.haushaltsjahr)
+  const VORJAHR = HJ - 1
+  const gefunden = haushalt.vorbericht['transferaufwendungen']
+  if (gefunden === undefined || HJ < 1) {
+    throw new Error('Testdaten: Transferaufwendungen oder Vorjahr fehlen')
+  }
+  const transfer: VorberichtTabelle = gefunden
+
+  /** Werte nur im Jahresindex `index`, sonst `null`. */
+  function nurIn(index: number, wert: number): (number | null)[] {
+    return haushalt.jahre.map((_, i) => (i === index ? wert : null))
+  }
+
+  function posten(name: string, werte: (number | null)[]): VorberichtPosten {
+    return {
+      posten: name,
+      name: `Einrichtung ${name}`,
+      werte,
+      gerundet: true,
+      berechnet: false,
+      quelle: 99,
+      anmerkung: null,
+    }
+  }
+
+  /** Lädt `lib/aufwandsarten` mit Kita-Posten, Kita-Tabelle und Minderaufwand neu. */
+  async function ladeSynthetisch() {
+    vi.resetModules()
+    vi.doMock('@/data/daten', async (importOriginal) => {
+      const echt = await importOriginal<typeof import('@/data/daten')>()
+      const kitaPosten: VorberichtPosten = {
+        ...posten(
+          KITA_POSTEN,
+          haushalt.jahre.map(() => 50_000),
+        ),
+        name: 'Zuschüsse an Kindertageseinrichtungen',
+      }
+      const kitaTabelle: VorberichtTabelle = {
+        ...transfer,
+        tabelle: 'kita_zuschuesse',
+        planzeile: null,
+        gesamt_plan: null,
+        gesamt_vorbericht: { werte: nurIn(HJ, 50_000), gerundet: true, quelle: 99 },
+        // Nur im Haushaltsjahr gedruckt, wie der Vorbericht es bei Kita-Tabellen tut.
+        posten: [posten('kita_a', nurIn(HJ, 20_000)), posten('kita_b', nurIn(HJ, 30_000))],
+      }
+      const gesamt = echt.haushalt.ergebnisplan['GESAMT']
+      if (gesamt === undefined) {
+        throw new Error('GESAMT fehlt')
+      }
+      const minderaufwand = haushalt.jahre.map((_, i) =>
+        i === HJ ? -600_000 : i === VORJAHR ? -564_600 : 0,
+      )
+      return {
+        ...echt,
+        haushalt: {
+          ...echt.haushalt,
+          vorbericht: {
+            ...echt.haushalt.vorbericht,
+            transferaufwendungen: {
+              ...transfer,
+              posten: [...transfer.posten, kitaPosten],
+            },
+            kita_zuschuesse: kitaTabelle,
+          },
+          ergebnisplan: {
+            ...echt.haushalt.ergebnisplan,
+            GESAMT: {
+              ...gesamt,
+              zeilen: { ...gesamt.zeilen, globaler_minderaufwand: minderaufwand },
+            },
+          },
+        },
+      }
+    })
+    return import('@/lib/aufwandsarten')
+  }
+
+  it('hängt die Einrichtungen nur im Haushaltsjahr an die Kita-Zuschüsse, absteigend', async () => {
+    const modul = await ladeSynthetisch()
+    const kita = modul.baueTransferaufwendungen(HJ).find((p) => p.posten === KITA_POSTEN)
+    expect(kita?.kinder?.map((k) => [k.posten, k.wert])).toEqual([
+      ['kita_b', 30_000],
+      ['kita_a', 20_000],
+    ])
+    for (const k of kita?.kinder ?? []) {
+      expect(k.gerundet).toBe(true)
+      expect(k.quelle).toBe(99)
+      expect(k.beleg).toBe(`vb:kita_zuschuesse:${k.posten}`)
+    }
+    const vorjahr = modul.baueTransferaufwendungen(VORJAHR).find((p) => p.posten === KITA_POSTEN)
+    expect(vorjahr).toBeDefined()
+    expect(vorjahr?.kinder).toBeUndefined()
+    for (const p of modul.baueTransferaufwendungen(HJ)) {
+      if (p.posten !== KITA_POSTEN) {
+        expect(p.kinder, p.posten).toBeUndefined()
+      }
+    }
+  })
+
+  it('Vorjahr mit zusammengesetztem Satz, Haushaltsjahr mit geprüftem Text, sonst kein Hinweis', async () => {
+    const modul = await ladeSynthetisch()
+    const vorjahr = modul.minderaufwandHinweis(VORJAHR)
+    expect(vorjahr?.betrag).toBe(564_600)
+    expect(vorjahr?.jahr).toBe(haushalt.jahre[VORJAHR])
     expect(vorjahr?.textSchluessel).toBeNull()
-    const jetzt = minderaufwandHinweis(haushalt.jahre.indexOf(2026))
-    expect(jetzt?.betrag).toBe(600000)
+    expect(vorjahr?.satz).toContain(euro(564_600))
+    expect(vorjahr?.satz).toContain(String(haushalt.jahre[VORJAHR]))
+    expect(vorjahr?.satz).not.toMatch(/\{\{|\}\}|NaN|undefined|Infinity/)
+    expect(vorjahr?.pdfSeite).toBe(haushalt.knoten.find((k) => k.code === 'GESAMT')?.pdf_seite)
+    const jetzt = modul.minderaufwandHinweis(HJ)
+    expect(jetzt?.betrag).toBe(600_000)
     expect(jetzt?.textSchluessel).toBe('globaler_minderaufwand')
+    haushalt.jahre.forEach((_, i) => {
+      if (i !== HJ && i !== VORJAHR) {
+        expect(modul.minderaufwandHinweis(i)).toBeNull()
+      }
+    })
   })
 })

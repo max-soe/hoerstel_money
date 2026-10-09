@@ -18,7 +18,7 @@ import polars as pl
 import pytest
 
 from ostbevern import pruefung
-from ostbevern.konfiguration import STANDARD_JAHR, lade_jahrgang
+from ostbevern.konfiguration import STANDARD_JAHR, lade_jahrgang, layout_liste
 from ostbevern.manuell import (
     ManuellFehler,
     investitionskredite_ende,
@@ -34,6 +34,7 @@ from ostbevern.pruefung import (
     pruefe_alles,
     pruefe_eckwerte_konsumiert,
     toleranz_fuer,
+    vorbericht_tabellen,
 )
 from ostbevern.schema import (
     DATEN_WURZEL,
@@ -331,8 +332,12 @@ def test_schema_weitere_vorberichtstabellen_kanonisch(tmp_path: Path) -> None:
 
     assert (df["quelle"] >= 1).all()
 
-    # Exakt die Tabellen aus D-08 (MANU-05) plus 2.1.7 (Phase 5 D-04), keine mehr, keine weniger.
-    assert set(df["tabelle"].unique().to_list()) == set(WEITERE_VORBERICHTSTABELLEN)
+    # Exakt die Tabellen aus D-08 (MANU-05) plus 2.1.7 (Phase 5 D-04), keine mehr, keine
+    # weniger; sie stehen in [layout.vorbericht] und sind erlaubte Tabellen (Phase 11).
+    jahrgang = lade_jahrgang(STANDARD_JAHR)
+    _einzeln, weitere = vorbericht_tabellen(jahrgang)
+    assert set(df["tabelle"].unique().to_list()) == set(weitere)
+    assert set(weitere) <= set(WEITERE_VORBERICHTSTABELLEN)
 
     # Genau eine Gesamtzeile je (tabelle, jahr); eindeutige posten-Schlüssel je tabelle.
     gesamt_je_tabelle_jahr = (
@@ -340,13 +345,12 @@ def test_schema_weitere_vorberichtstabellen_kanonisch(tmp_path: Path) -> None:
     )
     assert (gesamt_je_tabelle_jahr["n"] == 1).all()
 
-    for tabelle in WEITERE_VORBERICHTSTABELLEN:
+    for tabelle in weitere:
         teil = df.filter(pl.col("tabelle") == tabelle)
         posten_je_jahr = teil.group_by("jahr").agg(pl.col("posten").n_unique().alias("n"))
         anzahl_posten = teil.filter(pl.col("jahr") == teil["jahr"][0])["posten"].n_unique()
         assert (posten_je_jahr["n"] == anzahl_posten).all()
 
-    jahrgang = lade_jahrgang(STANDARD_JAHR)
     erwartete_jahre_wertarten = {
         (jahr, wertart)
         for wertart, jahr in (
@@ -534,7 +538,9 @@ def test_regel9_eckwerte_gruen() -> None:
     regel9 = next(regel for regel in bericht.regeln if regel.regel == 9)
     assert regel9.status == "grün"
     assert regel9.abweichungen == ()
-    assert regel9.geprueft == len(REGEL9_ECKWERTE)
+    # Ostbevern nennt alle Eckwerte außer der Hundertstel-Variante der Beamtenstellen
+    # (Hörstel, Phase 11).
+    assert regel9.geprueft == len(REGEL9_ECKWERTE) - 1
 
 
 def test_regel9_hebesatz_abweichung_rot(tmp_path: Path) -> None:
@@ -646,7 +652,9 @@ def test_schema_ve_uebersicht_kanonisch(tmp_path: Path) -> None:
 
 def test_schulden_funktionen() -> None:
     verbindlichkeiten = lies_vorbericht_csv(DATEN_WURZEL / VERBINDLICHKEITEN_CSV)
-    schuldenstand = schuldenstand_euro(verbindlichkeiten, 2025)
+    posten = layout_liste(lade_jahrgang(STANDARD_JAHR), "schulden", "posten")
+    assert posten == ("kredite_investitionen", "transferleistungen")
+    schuldenstand = schuldenstand_euro(verbindlichkeiten, 2025, posten)
     assert schuldenstand == 7710000
     assert pro_kopf_euro(schuldenstand, 11741) == 656
     assert investitionskredite_ende(6879000, 5200000, 450000) == 11629000
@@ -704,7 +712,9 @@ def test_regel9_pro_kopf_verschuldung_gruen() -> None:
     assert regel9.status == "grün"
     treffer = [p for p in regel9.abweichungen if p.zeile == "pro_kopf_verschuldung_vorjahr"]
     assert treffer == []
-    assert regel9.geprueft == len(REGEL9_ECKWERTE)
+    # Ostbevern nennt alle Eckwerte außer der Hundertstel-Variante der Beamtenstellen
+    # (Hörstel, Phase 11).
+    assert regel9.geprueft == len(REGEL9_ECKWERTE) - 1
 
 
 def test_regel9_pro_kopf_verschuldung_erkennt_abweichung(tmp_path: Path) -> None:

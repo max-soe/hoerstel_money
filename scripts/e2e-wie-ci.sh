@@ -22,7 +22,7 @@
 #
 # Umgebung:
 #   E2E_SCHRIFT_CACHE  Verzeichnis für das heruntergeladene Schriftpaket
-#                      (Standard: ${XDG_CACHE_HOME:-$HOME/.cache}/ostbevern-money)
+#                      (Standard: ${XDG_CACHE_HOME:-$HOME/.cache}/hoerstel-money)
 #
 # Der Exit-Code ist der von Playwright (2: ungültiges Verzeichnis, 1: Prüfsumme stimmt nicht).
 # Fortschritt geht nur nach stderr, stdout trägt die Ausgabe von Playwright unverändert. Das
@@ -60,7 +60,7 @@ if [ -n "$fehlt" ]; then
 fi
 APP_DIR="$(cd "$APP_DIR_ARG" && pwd)"
 
-CACHE="${E2E_SCHRIFT_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/ostbevern-money}"
+CACHE="${E2E_SCHRIFT_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/hoerstel-money}"
 PAKET="$CACHE/$SCHRIFT_PAKET"
 mkdir -p "$CACHE"
 

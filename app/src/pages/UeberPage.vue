@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { jahr } from '@/charts/format'
 import PageIntro from '@/components/PageIntro.vue'
-import { IMPRESSUM_ANSCHRIFT, IMPRESSUM_NAME, KONTAKT_EMAIL, ORIGINAL_PDF_URL } from '@/config'
+import {
+  IMPRESSUM_ANSCHRIFT,
+  IMPRESSUM_NAME,
+  KONTAKT_EMAIL,
+  ORIGINAL_PDF_URL,
+  URSPRUNGSPROJEKT_NAME,
+  URSPRUNGSPROJEKT_URL,
+} from '@/config'
 import { haushalt } from '@/data/daten'
+import { KOMMUNE_ART, KOMMUNE_VOLL, SEITENNAME } from '@/lib/kommune'
 
 // Die Jahreszahl im Text kommt aus den Daten, nie aus dem Text selbst (UI-05).
 const haushaltsjahr = jahr(haushalt.haushaltsjahr)
@@ -11,23 +19,21 @@ const haushaltsjahr = jahr(haushalt.haushaltsjahr)
 <template>
   <PageIntro
     titel="Über dieses Projekt"
-    beschreibung="Hier steht, wer hinter Ostbevern Money steckt und was mit deinen Daten passiert."
+    :beschreibung="`Hier steht, wer hinter ${SEITENNAME} steckt und was mit deinen Daten passiert.`"
   />
 
   <div class="om-ueber">
     <section aria-labelledby="om-ueber-inoffiziell" class="om-ueber__abschnitt">
       <h2 id="om-ueber-inoffiziell">Ein inoffizielles Projekt</h2>
       <p>
-        Ostbevern Money ist ein privates Projekt. Es ist keine Veröffentlichung der Gemeinde
-        Ostbevern. Alle Zahlen stammen aus dem Haushaltsplan {{ haushaltsjahr }} der Gemeinde, den
-        du im Original nachlesen kannst.
+        {{ SEITENNAME }} ist ein privates Projekt. Es ist keine Veröffentlichung der
+        {{ KOMMUNE_VOLL }}. Alle Zahlen stammen aus dem Haushaltsplan {{ haushaltsjahr }} der
+        {{ KOMMUNE_ART }}, den du im Original nachlesen kannst.
       </p>
       <p>
         <a :href="ORIGINAL_PDF_URL" target="_blank" rel="noopener noreferrer"
-          >Original-Haushaltsplan (PDF) der Gemeinde Ostbevern<wa-icon
-            name="arrow-up-right-from-square"
-            class="om-extern-icon"
-          ></wa-icon
+          >Original-Haushaltsplan (PDF) der {{ KOMMUNE_VOLL
+          }}<wa-icon name="arrow-up-right-from-square" class="om-extern-icon"></wa-icon
           ><span class="om-visually-hidden"> (öffnet in neuem Tab)</span></a
         >
       </p>
@@ -39,8 +45,8 @@ const haushaltsjahr = jahr(haushalt.haushaltsjahr)
         Das Projekt wurde inspiriert vom Siegerprojekt beim MünsterHack 2026, Münster Money von Code
         for Münster. Danke dafür! Die technische Umsetzung ist unabhängig komplett neu entstanden.
         <br />
-        Der Haushaltsplan der Gemeinde Ostbevern ist ein 400 Seiten starkes PDF-Dokument voller
-        Tabellen und komplexer Zusammenhänge, das durchzulesen und zu verstehen viele Stunden
+        Der Haushaltsplan der {{ KOMMUNE_VOLL }} ist ein mehrere hundert Seiten starkes PDF-Dokument
+        voller Tabellen und komplexer Zusammenhänge, das durchzulesen und zu verstehen viele Stunden
         brauchen kann. In diesem Projekt wurden die Möglichkeiten künstlicher Intelligenz verwendet,
         um das Dokument zu analysieren, relevanten Zahlen zu extrahieren und verständlich
         aufzubereiten. Soweit es möglich war, wurde jede angezeigte Zahl mit ihrer Quelle im
@@ -59,6 +65,18 @@ const haushaltsjahr = jahr(haushalt.haushaltsjahr)
             name="arrow-up-right-from-square"
             class="om-extern-icon"
           ></wa-icon
+          ><span class="om-visually-hidden"> (öffnet in neuem Tab)</span></a
+        >
+      </p>
+      <p>
+        {{ SEITENNAME }} beruht auf der Codebasis von {{ URSPRUNGSPROJEKT_NAME }}. Herzlichen Dank
+        an das Projekt, das seinen Code offen bereitgestellt und damit diese App möglich gemacht
+        hat.
+      </p>
+      <p>
+        <a :href="URSPRUNGSPROJEKT_URL" target="_blank" rel="noopener noreferrer"
+          >{{ URSPRUNGSPROJEKT_NAME
+          }}<wa-icon name="arrow-up-right-from-square" class="om-extern-icon"></wa-icon
           ><span class="om-visually-hidden"> (öffnet in neuem Tab)</span></a
         >
       </p>
@@ -109,6 +127,10 @@ const haushaltsjahr = jahr(haushalt.haushaltsjahr)
 
 .om-ueber__abschnitt {
   max-width: 40rem;
+}
+
+.om-ueber__ursprung {
+  margin-block-start: var(--wa-space-l);
 }
 
 .om-ueber__abschnitt h2 {

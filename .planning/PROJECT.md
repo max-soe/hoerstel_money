@@ -1,8 +1,8 @@
-# Ostbevern Money
+# Hörstel Money
 
 ## What This Is
 
-Eine statische Webanwendung, die den Bürgerinnen und Bürgern von Ostbevern den Haushalt 2026 der Gemeinde erklärt. Sie beantwortet zwei Leitfragen: **Wo kommt das Geld der Gemeinde her?** und **Wofür wird es ausgegeben?**. Ergänzend zeigt sie die Entwicklung 2024–2029, Investitionen und Schulden, den Gestaltungsspielraum des Rats und den Stellenplan. Die Daten stammen aus einer Python-Pipeline, die das 400-seitige ProFIS+-PDF ausliest und gegen die Planwerte prüft. Vorbild ist „Münster Money“ (Code for Münster, Münsterhack '26).
+Eine statische Webanwendung, die den Bürgerinnen und Bürgern einer Kommune ihren Haushalt 2026 erklärt. v1.0 erklärte den Haushalt der Gemeinde Ostbevern; mit v2.0 wechselt das Projekt auf die Stadt Hörstel. Sie beantwortet zwei Leitfragen: **Wo kommt das Geld der Gemeinde her?** und **Wofür wird es ausgegeben?**. Ergänzend zeigt sie die Entwicklung 2024–2029, Investitionen und Schulden, den Gestaltungsspielraum des Rats und den Stellenplan. Die Daten stammen aus einer Python-Pipeline, die das Haushalts-PDF ausliest und gegen die Planwerte prüft: in v1.0 das 400-seitige ProFIS+-PDF aus Ostbevern, in v2.0 das 592-seitige IKVS-PDF (Word-Export) aus Hörstel. Vorbild ist „Münster Money“ (Code for Münster, Münsterhack '26).
 
 Die vollständige fachliche Spezifikation steht in `discussion/SPEZIFIKATION.md`. Sie ist die maßgebliche Detailquelle für Datenmodell, Prüfregeln, Seiteninhalte und Sollwerte (Anhang B).
 
@@ -14,9 +14,15 @@ Die vollständige fachliche Spezifikation steht in `discussion/SPEZIFIKATION.md`
 - App: ~29.900 LOC TypeScript/Vue, vitest und Playwright (axe-Smoke, 360 px, Kachel-Breitentest), Lighthouse-a11y 100
 - Archiv: `.planning/milestones/v1.0-ROADMAP.md`, `v1.0-REQUIREMENTS.md`, `v1.0-phases/`
 
-## Next Milestone Goals
+## Current Milestone: v2.0 Hörstel
 
-Noch nicht festgelegt, kommt über `/gsd-new-milestone`. Kandidaten aus dem v2-Backlog:
+Ziel: Die App erklärt den Haushalt 2026 der Stadt Hörstel. Phasen 8–12 in `ROADMAP.md`, Anforderungen HOE-01 bis HOE-14 in `REQUIREMENTS.md`. Der Meilenstein wird ohne GSD-Befehle bearbeitet und von Hand nachgeführt.
+
+Stand (2026-10-09): Phasen 8 bis 12 abgeschlossen. Der Jahrgang 2026 ist Hörstel (`software = "ikvs"`). `alle.py` liest alle 592 Seiten (16 PB, 50 PG, 69 Produkte), übernimmt die abgeschriebenen Bildseiten und Vorberichtsdaten aus `daten/manuell/` und schreibt `daten/`, `app/src/data/` und die Belegbilder; alle 10 Prüfregeln sind grün, 38 im PDF gedruckte Abweichungen sind in `befunde.md` belegt. Ostbevern bleibt als ProFIS+-Referenz unter `pipeline/referenz/ostbevern/` (`PIPELINE_REFERENZ`) und `raw_data/ostbevern/` testbar. Die App erklärt den Hörsteler Haushalt (Phase 12): Name und Art der Kommune kommen aus `[layout.kommune]`, Impressum Max Soest, PDF-Link auf hoerstel.de; vitest, Browser-Tests mit axe und Sichtprüfung sind grün.
+
+## Backlog (nach v2.0)
+
+Kandidaten aus dem früheren v2-Backlog:
 - Spiele (Planspiel, „Was kostet …?“, Schätzduell). Vorher müssen die Planspiel-Rechenregeln fachlich geklärt sein.
 - Nachweis der Generik mit dem echten Haushalt 2027 (ERW-03)
 - Offene Restpunkte: Code-Review-Befunde aus Phase 2/4, `/gsd-secure-phase 04`
@@ -57,14 +63,28 @@ Jede Zahl in der App ist korrekt aus dem Haushalts-PDF abgeleitet und durch auto
 
 ### Active
 
-- (keine — v1.0 abgeschlossen; neue Anforderungen entstehen mit `/gsd-new-milestone`)
+- HOE-10 bis HOE-13 (siehe `REQUIREMENTS.md`): manuelle Daten, App-Daten, App-Umstellung auf Hörstel
+
+### Validated in v2.0
+
+- ✓ Jahrgang 2026 = Hörstel mit `software = "ikvs"` (HOE-01) — Phase 8
+- ✓ Gesamtergebnis- und Gesamtfinanzplan im IKVS-Layout, Regel 1 und Satzung § 1–2 ohne Abweichung (HOE-02) — Phase 8
+- ✓ Ostbevern als ProFIS+-Referenz für Tests und CI (HOE-03) — Phase 8
+- ✓ Seitenklassifikation im IKVS-Layout mit fortgeschriebenem Kontext, Hierarchie 16 PB / 50 PG / 69 Produkte, PB-Startseiten wie Inhaltsverzeichnis (HOE-04) — Phase 9
+- ✓ Teilergebnis- und Teilfinanzpläne aller PB und Produkte, PG als Summe, Regeln 1–3 nur mit belegten Abweichungen (HOE-05) — Phase 9
+- ✓ Sollwerte je PB und Produktverzeichnis in `2026_sollwerte.toml`, Anhang B.3 ohne Abweichung (HOE-14) — Phase 9
+- ✓ Produktinformationen ohne Personennamen, Stellen und Kennzahlen als Grundzahlen (HOE-06) — Phase 10
+- ✓ Erläuterungen als Blöcke je Teilergebnisplan-Zeile mit Ansatz 2026 (HOE-07) — Phase 10
+- ✓ Investitionsübersichten (188 Maßnahmen) mit Saldo-Gegenproben, Regel 6 nur mit belegten Abweichungen (HOE-08) — Phase 10
+- ✓ Haushaltsquerschnitte je PG und Gesamthaushalt, Regel 7 ohne Abweichung (HOE-09) — Phase 10
+- ✓ App auf Hörstel umgestellt: Daten, Tests, Texte, Namen, Impressum, PDF-Link, Browser-Tests (HOE-13) — Phase 12
 
 ### Out of Scope
 
 - Spiele (Planspiel, Was kostet …?, Schätzduell) — auf v2 verschoben; v1 endet mit den Kontextseiten. Planspiel-Rechenregeln (Hebesatzwirkung auf Umlagen/Schlüsselzuweisung) müssen vorher fachlich geklärt werden
 - Andere Haushaltsjahre außer den Spalten im PDF 2026 — v1 ist ein Jahrgang; die Pipeline wird aber für spätere Jahrgänge vorbereitet
 - Backend, Nutzerkonten — alles statisch auf GitHub Pages
-- Tiefe Darstellung der Wirtschaftspläne BBO (Hallenbad) und TEO AöR (Abwasser) — nur Hinweis „Was nicht im Haushalt steht“; eigene Seite ggf. in einer späteren Version
+- Tiefe Darstellung der Wirtschaftspläne eigener Gesellschaften (Ostbevern: BBO, TEO AöR; Hörstel: Hörsteler Energie GmbH, Stadtmarketing Hörstel UG) — nur Hinweis „Was nicht im Haushalt steht“; eigene Seite ggf. in einer späteren Version
 - Fachbereichsbudgets (S. 377–400) — organisatorische Doppelung der Produktsicht
 - Gehaltsschätzung im Stellenplan — bewusst einfacher als Münsters Stellenatlas
 - CSV-Verarbeitung im Browser — die App liest nur generierte JSON-Dateien
@@ -72,7 +92,8 @@ Jede Zahl in der App ist korrekt aus dem Haushalts-PDF abgeleitet und durch auto
 
 ## Context
 
-- **Quelle:** `raw_data/haushalt-2026.pdf` (seit Phase 1 einzige eingecheckte Kopie; Pfad steht in `pipeline/jahrgaenge/2026.toml`), Gemeinde Ostbevern, 400 Seiten, ProFIS+, Satzungsbeschluss 03.03.2026. Im Code werden ausschließlich 1-basierte PDF-Seiten verwendet.
+- **Quelle (v2.0):** `raw_data/haushalt-2026.pdf`, Stadt Hörstel, 592 Seiten, Word-Export von Axians IKVS, Satzungsbeschluss 04.02.2026; Pfad in `pipeline/jahrgaenge/2026.toml`.
+- **Quelle (v1.0, Referenz):** `raw_data/ostbevern/haushalt-2026.pdf`, Gemeinde Ostbevern, 400 Seiten, ProFIS+, Satzungsbeschluss 03.03.2026; Pfad in `pipeline/referenz/ostbevern/jahrgaenge/2026.toml`. Die fachlichen Fallstricke unten beziehen sich auf Ostbevern. Im Code werden ausschließlich 1-basierte PDF-Seiten verwendet.
 - **Vorbild:** https://github.com/codeformuenster/haushalt-muenster-2026. Die Erlaubnis von Code for Münster zur Übernahme von Code liegt vor. Komponenten (`PageIntro`, `ChartCard`, `BaseChart`, `DatenTabelle`, `GlossarBegriff`, `BegriffeListe`, `ProduktAkkordeon`, `QuelleSeitenleiste`, Sankey, `charts/format.ts`, `echartsTheme.ts`, `lib/bildschirm.ts`) können übernommen werden.
 - **Fachliche Fallstricke** (Details in Spez. Abschnitt 3):
   - Der Ergebnisplan ist die Hauptsicht. Der Finanzplan wird nur für Investitionen, Kredite und Liquidität genutzt. Beide werden nie in einem Diagramm gemischt.
@@ -94,7 +115,7 @@ Jede Zahl in der App ist korrekt aus dem Haushalts-PDF abgeleitet und durch auto
 - **Genauigkeit**: Abweichungen über 1 € gegenüber den Planwerten gelten als Fehler, außer sie sind in `befunde.md` dokumentiert. Bürgerinformation muss stimmen.
 - **Datenschutz**: Mitarbeitendennamen werden extrahiert, aber nicht ausgeliefert.
 - **Sprache**: Die App ist deutsch und durchgehend in der Du-Anrede.
-- **Pro-Kopf-Werte**: Grundlage sind 11.741 Einwohner (IT.NRW, 30.06.2024, Vorbericht S. 24/25). Der Wert ist in `meta.json` konfigurierbar.
+- **Pro-Kopf-Werte**: Grundlage sind in v1.0 11.741 Einwohner (Ostbevern, IT.NRW, 30.06.2024, Vorbericht S. 24/25). Für Hörstel wird der Wert in Phase 11 aus dem Vorbericht übernommen. Der Wert ist in `meta.json` konfigurierbar.
 - **Barrierefreiheit**: Lighthouse a11y ≥ 95, Fokussteuerung, Kontraste, `prefers-reduced-motion`, responsiv ab 360 px.
 
 ## Key Decisions
@@ -131,6 +152,12 @@ Jede Zahl in der App ist korrekt aus dem Haushalts-PDF abgeleitet und durch auto
 | Kontextseiten über Menügruppe „Mehr wissen“ (Disclosure, Drawer-Gruppe mobil), Position rein rechnerisch | Navigation bleibt bei 360 px und nach Resize erreichbar | ✓ Good — Phase 6 |
 | Phase-6-Dateien stehen unter einem Typografie-Wächter (`stiltokens.test.ts`), Bestand aus Phase 5 wird in Phase 7 bereinigt | UI-SPEC-Skala gilt für neuen Code ohne Ausnahme | ✓ Good — Quick 261006-f1w |
 | Kachelraster gegen die CI-Schrift kalibriert: `li`-Einzug von Web Awesome zurückgesetzt, Mindestspalte neu gegen DejaVu Sans Bold, e2e prüft alle Spaltensprünge und loggt die gerenderte Schrift | Lokale Kalibrierung lief mit anderer Fallback-Schrift als der GitHub-Runner (G-07-2) | ✓ Good — Phase 7 (07-14, UAT 2/2) |
+| v2.0: Wechsel auf Hörstel; zweite Leselogik `software = "ikvs"` statt Umbau der ProFIS+-Leser | Hörsteler PDF ist ein Word-Export von Axians IKVS mit anderem Seitenaufbau, Codesystem (7-stellige Produkte) und Zahlenformat; die ProFIS+-Leser bleiben als Referenz | — Pending (Phase 8: Gesamtpläne) |
+| v2.0: Gedruckte IKVS-Zeilennummern werden auf die kanonischen Zeilennummern abgebildet (z. B. Finanzplan „40 Liquide Mittel“ → 41), mittelfristige Jahre („Ansatz 2027“) gehen als Wertart `planung` ein | Prüfregeln, Formeln und App-Daten bleiben layoutunabhängig | ✓ Good — Phase 8 |
+| v2.0: Produktgruppen ohne eigenen Teilplan (IKVS) werden als Summe ihrer Produkte gebildet und als `synthetisch` markiert; PB-Teilfinanzplan Z. 17 wird als Z. 32 − Z. 31 abgeleitet | Hörstel druckt Teilpläne nur für PB und Produkte; Regel 2 prüft so Produkte → PB | ✓ Good — Phase 9 |
+| v2.0: Regel 1 prüft im IKVS-Layout nur Formeln mit mindestens einer gedruckten Komponente (Schalter `nur_mit_gedruckten_komponenten`) | Hörsteler Teilfinanzpläne drucken Z. 17, aber nie Z. 09/16; Ostbevern bleibt unverändert | ✓ Good — Phase 9 |
+| v2.0: Felder, die das IKVS-Layout nicht kennt (Fachbereich, Gremium, Bindungsgrad, Klassifizierung, Ziele, Sachkonto), bleiben in den Daten null; Regel 6/8 prüfen im IKVS-Layout nur, was gedruckt ist | Das Schema bleibt für die App gleich; was Hörstel nicht druckt, wird nicht erfunden | — Pending (App-Umstellung Phase 12, z. B. Rat-Seite ohne Bindungsgrad) |
+| v2.0: Ostbevern bleibt Regressionsreferenz (Referenzstand unter `pipeline/referenz/ostbevern/`, PDF unter `raw_data/ostbevern/`, `PIPELINE_REFERENZ`; bis Phase 10 `PIPELINE_JAHRGAENGE`) | Bestehende Tests sichern die ProFIS+-Leser und die gemeinsame Logik ab, bis Hörstel durchläuft | ✓ Good — Phase 8 |
 | Lighthouse nur als Einmal-Werkzeug im Scratch-Verzeichnis, nie in package.json/CI | Keine neue Abhängigkeit für einen einmaligen Nachweis | ✓ Good — Phase 7 (alle 11 Routen a11y 100) |
 
 ## Evolution
@@ -151,4 +178,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-07 after v1.0 milestone*
+*Last updated: 2026-10-08 after Phase 10 (v2.0 Hörstel, von Hand gepflegt)*

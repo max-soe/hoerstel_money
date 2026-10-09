@@ -6,11 +6,15 @@
 import { describe, expect, it } from 'vitest'
 
 import { haushalt } from '@/data/daten'
-import { veGesamt } from '@/lib/finanzierung'
+import { veGesamt, vePdfSeiten } from '@/lib/finanzierung'
 import { baueKennzahlen } from '@/lib/kennzahlen'
 import { belegSchluessel, findeBeleg } from '@/lib/quelle'
 import { schuldenKacheln } from '@/lib/schulden'
 import { stellenSummen } from '@/lib/stellen'
+// Warum Quelltext (die drei `?raw`-Importe der Seiten): Gesichert wird die Belegabdeckung je Seite,
+// also dass jede `KennzahlKachel` im Template `:quelle` bindet. Die Kacheln entstehen teils im
+// Seitenskript, und ohne DOM in der Testumgebung (`environment: 'node'`, kein DOM-Paket) lässt sich
+// die gerenderte Seite nicht abzählen (D-14).
 import investitionenSeite from '@/pages/InvestitionenPage.vue?raw'
 import startSeite from '@/pages/StartPage.vue?raw'
 import stellenplanSeite from '@/pages/StellenplanPage.vue?raw'
@@ -58,13 +62,25 @@ describe('Quelle an den Kacheln (D-01)', () => {
     }
   })
 
-  it('die Kachel Verpflichtungsermächtigungen zeigt die Summenzeile des Finanzplans, deren VE-Spalte sie nennt', () => {
-    const schluessel = belegSchluessel.fp('GESAMT', 'auszahlungen_investitionen')
-    expect(findeBeleg(schluessel)).not.toBeNull()
-    expect(investitionenSeite).toContain(
-      "belegSchluessel.fp('GESAMT', 'auszahlungen_investitionen')",
-    )
-    expect(haushalt.finanzplan.GESAMT?.ve.auszahlungen_investitionen).toBe(veGesamt())
+  it('die Kachel Verpflichtungsermächtigungen zeigt einen Beleg, der die VE-Summe nennt', () => {
+    const fpSchluessel = "belegSchluessel.fp('GESAMT', 'auszahlungen_investitionen')"
+    const veSpalte = haushalt.finanzplan.GESAMT?.ve.auszahlungen_investitionen
+    if (veSpalte !== undefined) {
+      // ProFIS+ (Ostbevern) druckt die VE-Summe in der VE-Spalte der Summenzeile „Auszahlungen
+      // aus Investitionstätigkeit“ des Gesamtfinanzplans; diese Zeile belegt die Kachel.
+      expect(findeBeleg(belegSchluessel.fp('GESAMT', 'auszahlungen_investitionen'))).not.toBeNull()
+      expect(investitionenSeite).toContain(fpSchluessel)
+      expect(veSpalte).toBe(veGesamt())
+    } else {
+      // IKVS (Hörstel) druckt keine VE-Spalte im Gesamtfinanzplan (S. 80/81); die VE-Summe steht
+      // nur in der VE-Übersicht (S. 586). Die Summenzeile des Finanzplans wäre falsche Evidenz.
+      const seiten = vePdfSeiten()
+      expect(seiten.length).toBeGreaterThan(0)
+      expect(findeBeleg(belegSchluessel.seite(seiten[0] ?? 0))).not.toBeNull()
+      // Die Seite weicht auf die VE-Übersicht aus, wenn die VE-Spalte fehlt.
+      expect(investitionenSeite).toContain("ve['auszahlungen_investitionen'] !== undefined")
+      expect(investitionenSeite).toContain('belegSchluessel.seite(seite)')
+    }
   })
 
   it('die Stellenplan-Kacheln zeigen die erste Seite der Stellenübersicht als Seitenbeleg', () => {

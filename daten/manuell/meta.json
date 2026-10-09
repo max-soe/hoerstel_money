@@ -1,124 +1,64 @@
 {
   "einwohner": {
-    "wert": 11741,
+    "wert": 20166,
     "einheit": "personen",
-    "stichtag": "2024-06-30",
-    "herkunft": "IT.NRW",
-    "quelle": 25
+    "stichtag": "2024-12-31",
+    "herkunft": "Fortschreibung Zensus 2022",
+    "quelle": 5
   },
   "flaeche": {
-    "wert": 8960,
+    "wert": 10754,
     "einheit": "ha",
-    "quelle": 10,
-    "anmerkung": "Vorbericht S. 10 druckt die Gemeindefläche als 89,6 qkm."
+    "quelle": 5,
+    "anmerkung": "Vorbericht S. 5: Gesamtfläche 108 km², Fläche nach Nutzungsarten insgesamt 10.754 ha (Stand 31.12.2024)."
   },
   "hebesaetze": {
     "grundsteuer_a": {
-      "wert": 242,
+      "wert": 312,
       "einheit": "prozent",
-      "quelle": 9
+      "vorjahr": 252,
+      "quelle": 8,
+      "anmerkung": "Satzung § 6 (S. 8); Vorjahr aus der Hebesatztabelle (S. 12)."
     },
     "grundsteuer_b": {
-      "wert": 554,
+      "wert": 800,
       "einheit": "prozent",
-      "quelle": 9
+      "vorjahr": 645,
+      "quelle": 8,
+      "anmerkung": "Satzung § 6 (S. 8); Vorjahr aus der Hebesatztabelle (S. 12)."
     },
     "gewerbesteuer": {
-      "wert": 418,
+      "wert": 421,
       "einheit": "prozent",
-      "quelle": 9
-    }
-  },
-  "kreisumlage": {
-    "netto": {
-      "wert": 10147000,
-      "einheit": "euro",
-      "quelle": 46,
-      "gerundet": true
-    },
-    "rueckstellungsaufloesung": {
-      "wert": 1325478,
-      "einheit": "euro",
-      "quelle": 46
-    },
-    "brutto": {
-      "wert": 11472478,
-      "einheit": "euro",
-      "quelle": 46,
-      "berechnet": true,
-      "gerundet": true,
-      "formel": "netto + rueckstellungsaufloesung"
-    },
-    "hebesatz_kreisumlage": {
-      "wert": 363,
-      "einheit": "promille",
-      "vorjahr": 330,
-      "quelle": 47
-    },
-    "hebesatz_jugendamtsumlage": {
-      "wert": 210,
-      "einheit": "promille",
-      "vorjahr": 203,
-      "quelle": 47
+      "vorjahr": 415,
+      "quelle": 8,
+      "anmerkung": "Satzung § 6 (S. 8); Vorjahr aus der Hebesatztabelle (S. 12)."
     }
   },
   "satzung": {
     "beschluss": {
-      "wert": "2026-03-03",
+      "wert": "2026-02-04",
       "einheit": "datum",
-      "quelle": 8
+      "quelle": 7
     },
     "ausfertigung": {
-      "wert": "2026-03-04",
+      "wert": "2026-02-04",
       "einheit": "datum",
-      "quelle": 9
+      "quelle": 8
     }
   },
   "vorbericht_werte": {
-    "satzung_verringerung_allgemeine_ruecklage": {
-      "wert": 221293,
+    "satzung_inanspruchnahme_ausgleichsruecklage": {
+      "wert": 2740330,
       "einheit": "euro",
-      "quelle": 9,
-      "anmerkung": "Satzung § 4: Verringerung der allgemeinen Rücklage im Haushaltsjahr 2026. Research Pitfall 4: dieser Betrag ist ein Eckwert aus der Satzung, kein roher Jahresdelta der Eigenkapitalübersicht (S. 311) — zusammen mit der Verringerung der Ausgleichsrücklage ergibt er exakt |GEP Z. 28| des Haushaltsjahrs."
+      "quelle": 8,
+      "anmerkung": "Satzung § 4: Inanspruchnahme der Ausgleichsrücklage aufgrund des voraussichtlichen Jahresergebnisses 2026."
     },
-    "bbo_verlustausgleich_wirtschaftsplan": {
-      "wert": 584000,
+    "kredithoechstbetrag_liquiditaet": {
+      "wert": 5000000,
       "einheit": "euro",
-      "quelle": 48,
-      "anmerkung": "BBO-Wirtschaftsplan (Bäder- und Beteiligungsgesellschaft Ostbevern mbH): geplanter Verlustausgleich laut eigenem Wirtschaftsplan, außerhalb des Kernhaushalts (Spez. 3.7). Davon erscheint nur der Transferaufwendungen-Posten 'Verlustübernahme BBO' (transferaufwendungen.csv) im Kernhaushalt."
-    },
-    "konzessionsabgabe_strom": {
-      "wert": 315000,
-      "einheit": "euro",
-      "quelle": 33,
-      "gerundet": true,
-      "anmerkung": "Vorbericht 2.1.7, Text unter der Tabelle: 'Die Konzessionsabgaben betreffen die Sparten Strom- (315 T€), Gas- (40 T€) und Wasserversorgung (115 T€).' Aufteilung nur für das Haushaltsjahr gedruckt."
-    },
-    "konzessionsabgabe_gas": {
-      "wert": 40000,
-      "einheit": "euro",
-      "quelle": 33,
-      "gerundet": true,
-      "anmerkung": "Vorbericht 2.1.7, Text unter der Tabelle: 'Die Konzessionsabgaben betreffen die Sparten Strom- (315 T€), Gas- (40 T€) und Wasserversorgung (115 T€).' Aufteilung nur für das Haushaltsjahr gedruckt."
-    },
-    "konzessionsabgabe_wasser": {
-      "wert": 115000,
-      "einheit": "euro",
-      "quelle": 33,
-      "gerundet": true,
-      "anmerkung": "Vorbericht 2.1.7, Text unter der Tabelle: 'Die Konzessionsabgaben betreffen die Sparten Strom- (315 T€), Gas- (40 T€) und Wasserversorgung (115 T€).' Aufteilung nur für das Haushaltsjahr gedruckt."
-    },
-    "hsk_schwelle_ein_jahr": {
-      "wert": 25,
-      "einheit": "prozent",
-      "quelle": 23,
-      "anmerkung": "Vorbericht S. 23 zitiert § 76 GO NRW: Ein Haushaltssicherungskonzept ist aufzustellen, wenn der in der Schlussbilanz des Vorjahres auszuweisende Ansatz der Allgemeinen Rücklage innerhalb eines Haushaltsjahres 'um mehr als ein Viertel' verringert wird. Bezugsgröße: Ansatz der allgemeinen Rücklage in der Schlussbilanz des Vorjahres. Die App gibt nur den Wortlaut des Vorberichts wieder."
-    },
-    "hsk_schwelle_zwei_jahre": {
-      "wert": 5,
-      "einheit": "prozent",
-      "quelle": 23,
-      "anmerkung": "Vorbericht S. 23 zitiert § 76 GO NRW: Ein Haushaltssicherungskonzept ist auch aufzustellen, wenn 'in zwei aufeinanderfolgenden Haushaltsjahren geplant ist, den in der Schlussbilanz des Vorjahres auszuweisenden Ansatz der Allgemeinen Rücklage jeweils um mehr als ein Zwanzigstel zu verringern'. Bezugsgröße: Ansatz der allgemeinen Rücklage in der Schlussbilanz des Vorjahres. Die App gibt nur den Wortlaut des Vorberichts wieder."
+      "quelle": 8,
+      "anmerkung": "Satzung § 5: Höchstbetrag der Kredite zur Liquiditätssicherung."
     }
   }
 }

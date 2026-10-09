@@ -1,4 +1,4 @@
-// ECharts-Theme für Ostbevern Money. Liest ausschließlich die Web-Awesome-
+// ECharts-Theme der App. Liest ausschließlich die Web-Awesome-
 // Design-Tokens (--wa-color-*, --wa-font-family-body) zur Laufzeit via
 // getComputedStyle — es gibt keine zweite, hart codierte Farbpalette.
 // Diese Datei registriert beim Modul-Laden (Münster-Muster) den Renderer,
@@ -56,6 +56,16 @@ function token(name: string, ersatz: string): string {
   return wert === '' ? ersatz : wert
 }
 
+/**
+ * Flächenfarbe der Karten (Token `--wa-color-surface-default`): Trennerlinien, hohle Marker,
+ * Kachelbeschriftung und Muster-Streifen. Die einzige Quelle dafür (06/IN-01) — außerhalb dieser
+ * Datei steht kein Hex- oder `white`-Ersatz. Eine Funktion und keine Modulkonstante, weil der Token
+ * erst zur Aufrufzeit gelesen werden darf; ohne DOM gilt `#ffffff`.
+ */
+export function flaechenFarbe(): string {
+  return token('--wa-color-surface-default', '#ffffff')
+}
+
 export const CHART_THEME = 'ostbevern-money'
 
 /** Dunkles Grau der kategorischen Palette (zweite Serienfarbe) für Komponenten ohne Rückfallwert. */
@@ -63,7 +73,7 @@ export const NEUTRAL_DUNKEL_FARBE = token('--wa-color-neutral-40', '#545868')
 /** Mittleres Grau der kategorischen Palette (dritte Serienfarbe). */
 export const NEUTRAL_MITTEL_FARBE = token('--wa-color-neutral-60', '#9194a2')
 
-/** Kategorische Serienfarben: Ostbevern-Gold zuerst, dann Grautöne. */
+/** Kategorische Serienfarben: Gold zuerst, dann Grautöne. */
 export const KATEGORIE_FARBEN = [
   token('--wa-color-brand-60', '#da7e00'),
   NEUTRAL_DUNKEL_FARBE,
@@ -71,7 +81,7 @@ export const KATEGORIE_FARBEN = [
   token('--wa-color-neutral-80', '#c7c9d0'),
 ]
 
-/** Sequenzielle Farben hell -> dunkel (Ostbevern-Gold-Verlauf). */
+/** Sequenzielle Farben hell -> dunkel (Gold-Verlauf). */
 export const SEQUENZ_FARBEN = [
   token('--wa-color-brand-90', '#ffe495'),
   token('--wa-color-brand-80', '#fac22b'),
@@ -89,9 +99,10 @@ export const POL_FARBEN = {
 }
 
 /**
- * Aufgabenbereich-Palette (D-08): eine feste Farbe je PB-Code (15 Produktbereiche
+ * Aufgabenbereich-Palette (D-08): eine feste Farbe je PB-Code (16 Produktbereiche
  * plus KL), identisch in Treemap, Balken, Sankey und Mobil-Balken. Nur die Töne
- * 30/40/50 der WA-Hues; kein Gold (Akzent), kein Rot/Grün (Datensemantik).
+ * 30/40/50 der WA-Hues; kein Gold (Akzent), kein Rot/Grün (Datensemantik). PB 07
+ * (Gesundheitsdienste, nur in Hörstel) trägt das dunkle Orange 30.
  * Jede Farbe erreicht gegen Weiß mindestens 4,5:1 (siehe farben.test.ts).
  */
 export const PB_FARBEN: Readonly<Record<string, string>> = {
@@ -110,6 +121,7 @@ export const PB_FARBEN: Readonly<Record<string, string>> = {
   '13': token('--wa-color-purple-30', '#612692'),
   '14': token('--wa-color-purple-40', '#7936b3'),
   '15': token('--wa-color-purple-50', '#9951db'),
+  '07': token('--wa-color-orange-30', '#802700'),
   KL: token('--wa-color-pink-40', '#9e2a6c'),
 }
 
@@ -145,8 +157,9 @@ export function abstufung(farbe: string, rang: number): string {
   return `#${kanaele.join('')}`
 }
 
-/** Unwahrscheinliche Farbe als Marker, um eine vom Browser abgelehnte Farbe zu erkennen. */
-const ABLEHNUNGSMARKER = '#010203'
+/** Zwei verschiedene, unwahrscheinliche Farben als Marker, um eine vom Browser abgelehnte Farbe zu erkennen. */
+const ABLEHNUNGSMARKER_A = '#010203'
+const ABLEHNUNGSMARKER_B = '#030201'
 
 /**
  * Löst eine beliebige CSS-Farbe (Schlüsselwort wie `white`, `rgb()`, `oklch()` …) zu RGB auf,
@@ -165,11 +178,16 @@ function alsRgb(farbe: string): [number, number, number] | null {
   kontext.canvas.height = 1
   kontext.clearRect(0, 0, 1, 1)
   // Eine Zeichenfläche ignoriert eine unlesbare Farbe und behält den vorherigen Wert (sonst
-  // Schwarz). Daher zuerst einen Marker setzen: bleibt er stehen, hat der Browser die Farbe
-  // abgelehnt, und es gibt kein stilles Schwarz.
-  kontext.fillStyle = ABLEHNUNGSMARKER
+  // Schwarz). Daher zweimal mit je einem anderen Marker davor zuweisen: Bleibt jedes Mal der eigene
+  // Marker stehen, hat der Browser die Farbe abgelehnt, und es gibt kein stilles Schwarz. Eine
+  // gültige Farbe, die zufällig wie ein Marker aussieht, besteht höchstens eine der beiden
+  // Prüfungen, nie beide — ein Vergleich mit dem Eingabetext ist dafür nicht nötig.
+  kontext.fillStyle = ABLEHNUNGSMARKER_A
   kontext.fillStyle = farbe
-  if (kontext.fillStyle === ABLEHNUNGSMARKER && farbe.trim().toLowerCase() !== ABLEHNUNGSMARKER) {
+  const ersterWert = kontext.fillStyle
+  kontext.fillStyle = ABLEHNUNGSMARKER_B
+  kontext.fillStyle = farbe
+  if (ersterWert === ABLEHNUNGSMARKER_A && kontext.fillStyle === ABLEHNUNGSMARKER_B) {
     return null
   }
   kontext.fillRect(0, 0, 1, 1)
@@ -206,7 +224,7 @@ export const KL_DECAL: Decal = {
   rotation: Math.PI / 4,
   dashArrayX: [1, 0],
   dashArrayY: [3, 5],
-  color: mitDeckkraft(token('--wa-color-surface-default', '#ffffff'), 0.45),
+  color: mitDeckkraft(flaechenFarbe(), 0.45),
 }
 
 /** Punktmuster für Überschuss und Minderaufwand (nie Farbe allein). */
@@ -215,7 +233,7 @@ export const PUNKT_DECAL: Decal = {
   symbolSize: 1,
   dashArrayX: [1, 0],
   dashArrayY: [2, 6],
-  color: mitDeckkraft(token('--wa-color-surface-default', '#ffffff'), 0.55),
+  color: mitDeckkraft(flaechenFarbe(), 0.55),
 }
 
 /** Erträge: Ertragsbalken, linke Sankey-Knoten, Zeitreihe (Akzent „Geld kommt herein“). */
@@ -226,7 +244,7 @@ export const STEUER_FARBE = token('--wa-color-brand-50', '#b45f04')
 export const INVEST_FARBE = token('--wa-color-neutral-40', '#545868')
 /** Aufwandsarten: neutral, nie PB-Farben. */
 export const AUFWANDSART_FARBE = token('--wa-color-neutral-40', '#545868')
-/** Knoten „Gemeindehaushalt“ (Sankey Mitte). */
+/** Mittlerer Knoten „Haushalt der Stadt/Gemeinde“ (Sankey). */
 export const GEMEINDE_FARBE = token('--wa-color-gray-40', '#545868')
 /** Knoten „Zinsen“ (Sankey rechts). */
 export const ZINSEN_FARBE = token('--wa-color-gray-60', '#9194a2')
@@ -242,6 +260,8 @@ export const BINDUNG_FARBEN = {
   pflichtig: token('--wa-color-gray-30', '#424554'),
   teils: token('--wa-color-gray-50', '#717584'),
   freiwillig: token('--wa-color-gray-60', '#9194a2'),
+  // Produkte ohne Bindungsgrad im Plan (Hörstel); nie im Bindungsgrad-Balken, nur Listen.
+  ohne: token('--wa-color-gray-40', '#545868'),
 }
 
 /** Schuldenstand-Stapel (INV-04): wie die Bindungsgrad-Reihe, 2-px-Weißtrenner im Diagramm. */
@@ -262,7 +282,7 @@ export const BERECHNET_DECAL: Decal = {
   rotation: Math.PI / 2,
   dashArrayX: [1, 0],
   dashArrayY: [2, 2],
-  color: mitDeckkraft(token('--wa-color-surface-default', '#ffffff'), 0.45),
+  color: mitDeckkraft(flaechenFarbe(), 0.45),
 }
 
 /** Schwellenlinie (ENTW-03): ein Bezug, kein Alarm, deshalb nie farbig-rot. */

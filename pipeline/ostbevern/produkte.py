@@ -24,6 +24,7 @@ from pathlib import Path
 
 import polars as pl
 
+from ostbevern import ikvs_produkte
 from ostbevern.freitext import ersetze_eurozeichen, verbinde_zeilen
 from ostbevern.konfiguration import Jahrgang, layout_text
 from ostbevern.pdf import PdfDokument, Textzeile, Wort, WortRahmen
@@ -856,6 +857,8 @@ def personenfeld_rechtecke(
     pi_seiten = seiten.filter(
         pl.col("produkt").is_not_null() & (pl.col("typ") == "produktinformationen")
     ).sort(["produkt", "pdf_seite"])
+    if jahrgang.software == "ikvs":
+        return _ikvs_personenfeld_rechtecke(dokument, jahrgang, pi_seiten)
 
     rechtecke: dict[int, list[tuple[float, float, float, float]]] = {}
     kaesten_je_seite: dict[int, dict[tuple[float, float, str], WortRahmen]] = {}
@@ -906,6 +909,36 @@ def personenfeld_rechtecke(
                     "(nichts zu schwärzen)"
                 )
     return {seite: tuple(sorted(set(liste))) for seite, liste in sorted(rechtecke.items())}
+
+
+def _ikvs_personenfeld_rechtecke(
+    dokument: PdfDokument, jahrgang: Jahrgang, pi_seiten: pl.DataFrame
+) -> dict[int, tuple[tuple[float, float, float, float], ...]]:
+    """IKVS-Layout (Hörstel, Phase 11): Das Label „Produktverantwortlicher“ steht allein auf
+    einer Zeile, der Personenname auf der nächsten Zeile der ersten Produktinformationen-Seite.
+    Je Produkt ein Rechteck um alle Wörter dieser Zeile (mit `_SCHWAERZUNG_RAND`). Bricht ab,
+    wenn das Label fehlt oder keine Folgezeile hat."""
+    label = layout_text(jahrgang, "ikvs_produktinformationen", "verantwortlich")
+    rechtecke: dict[int, tuple[tuple[float, float, float, float], ...]] = {}
+    for produkt in sorted(pi_seiten["produkt"].unique().to_list()):
+        seite = pi_seiten.filter(pl.col("produkt") == produkt)["pdf_seite"].min()
+        zeilen = dokument.zeilen_mit_rahmen(seite)
+        indizes = [i for i, zeile in enumerate(zeilen) if zeile.text == label]
+        if len(indizes) != 1 or indizes[0] + 1 >= len(zeilen):
+            raise ProdukteFehler(
+                f"Produkt {produkt}: Personenfeld {label!r} auf S. {seite} nicht eindeutig "
+                "gefunden; Schwärzung würde nichts decken"
+            )
+        woerter = zeilen[indizes[0] + 1].woerter
+        rechtecke[seite] = (
+            (
+                max(0.0, min(w.x0 for w in woerter) - _SCHWAERZUNG_RAND),
+                max(0.0, min(w.top for w in woerter) - _SCHWAERZUNG_RAND),
+                max(w.x1 for w in woerter) + _SCHWAERZUNG_RAND,
+                max(w.bottom for w in woerter) + _SCHWAERZUNG_RAND,
+            ),
+        )
+    return rechtecke
 
 
 def _baue_produktinfo(
@@ -1024,6 +1057,9 @@ def extrahiere_produkte(
     """Liest Produktinformationen, Grundzahlen und Erläuterungen aller 63 Produkte und
     schreibt produkte.json, grundzahlen.csv sowie erlaeuterungen.csv (EXTR-06, EXTR-07,
     EXTR-08, D-04, D-09)."""
+    if jahrgang.software == "ikvs":
+        return _extrahiere_ikvs(jahrgang, daten_wurzel=daten_wurzel)
+
     seiten = lies_seiten_csv(daten_wurzel / SEITEN_CSV)
     hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
     ergebnisplan = lies_plan_csv(daten_wurzel / ERGEBNISPLAN_CSV)
@@ -1135,6 +1171,38 @@ def extrahiere_produkte(
     grundzahlen_pfad = daten_wurzel / GRUNDZAHLEN_CSV
     schreibe_grundzahlen_csv(grundzahlen_df, grundzahlen_pfad)
 
+    return (
+        ExtraktionsErgebnis(zeilen_geschrieben=len(datensaetze), pfad=produkte_pfad),
+        ExtraktionsErgebnis(zeilen_geschrieben=grundzahlen_df.height, pfad=grundzahlen_pfad),
+        ExtraktionsErgebnis(zeilen_geschrieben=erlaeuterungen_df.height, pfad=erlaeuterungen_pfad),
+    )
+
+
+def _extrahiere_ikvs(
+    jahrgang: Jahrgang, *, daten_wurzel: Path
+) -> tuple[ExtraktionsErgebnis, ExtraktionsErgebnis, ExtraktionsErgebnis]:
+    """IKVS-Layout: Produktinformationen, Kennzahlen und Erläuterungen über
+    `ostbevern.ikvs_produkte`; schreibt dieselben drei Dateien wie das ProFIS+-Layout."""
+    seiten = lies_seiten_csv(daten_wurzel / SEITEN_CSV)
+    hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
+    try:
+        with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
+            infos, grundzahlen = ikvs_produkte.lies_ikvs_produktinformationen(
+                dokument, jahrgang, seiten
+            )
+            erlaeuterungen = ikvs_produkte.lies_ikvs_erlaeuterungen(dokument, jahrgang, seiten)
+        datensaetze = ikvs_produkte.produkte_datensaetze(infos, erlaeuterungen, hierarchie)
+    except ikvs_produkte.IkvsProdukteFehler as fehler:
+        raise ProdukteFehler(str(fehler)) from fehler
+
+    produkte_pfad = daten_wurzel / PRODUKTE_JSON
+    grundzahlen_pfad = daten_wurzel / GRUNDZAHLEN_CSV
+    erlaeuterungen_pfad = daten_wurzel / ERLAEUTERUNGEN_CSV
+    grundzahlen_df = ikvs_produkte.grundzahlen_df(grundzahlen)
+    erlaeuterungen_df = ikvs_produkte.erlaeuterungen_df(erlaeuterungen)
+    schreibe_produkte_json(datensaetze, produkte_pfad)
+    schreibe_grundzahlen_csv(grundzahlen_df, grundzahlen_pfad)
+    schreibe_erlaeuterungen_csv(erlaeuterungen_df, erlaeuterungen_pfad)
     return (
         ExtraktionsErgebnis(zeilen_geschrieben=len(datensaetze), pfad=produkte_pfad),
         ExtraktionsErgebnis(zeilen_geschrieben=grundzahlen_df.height, pfad=grundzahlen_pfad),

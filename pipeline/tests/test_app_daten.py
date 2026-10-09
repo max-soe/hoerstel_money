@@ -30,7 +30,7 @@ from ostbevern.app_daten import (
 from ostbevern.konfiguration import STANDARD_JAHR, Jahrgang, lade_jahrgang, layout_text
 from ostbevern.pdf import PdfDokument
 from ostbevern.produkte import lies_personennamen
-from ostbevern.pruefung import REGEL5_TOLERANZ_GEP_EURO, WEITERGABE_POSTEN, Planwerte
+from ostbevern.pruefung import REGEL5_TOLERANZ_GEP_EURO, Planwerte, weitergabe_posten
 from ostbevern.schema import (
     DATEN_WURZEL,
     ERGEBNISPLAN_CSV,
@@ -335,11 +335,27 @@ def test_zeilen_namen_decken_finanzplan_ab(tmp_path: Path) -> None:
 
 
 def test_zeilen_namen_ist_letzter_schluessel_nach_eigenkapital(tmp_path: Path) -> None:
-    """Das neue Top-Level-Feld hängt hinten an: bestehende Schlüssel behalten ihre
+    """Neue Top-Level-Felder hängen hinten an: bestehende Schlüssel behalten ihre
     Reihenfolge (D-21-Vertrag)."""
     erzeuge_app_daten(STANDARD_JAHR, app_daten_wurzel=tmp_path)
     daten = json.loads((tmp_path / HAUSHALT_JSON).read_text(encoding="utf-8"))
-    assert list(daten)[-2:] == ["eigenkapital", "zeilen_namen"]
+    assert list(daten)[-6:] == [
+        "eigenkapital",
+        "zeilen_namen",
+        "eigenkapital_stand",
+        "finanzierungsprodukt",
+        "bezugsgroessen",
+        "kommune",
+    ]
+    assert daten["kommune"] == {"name": "Ostbevern", "art": "Gemeinde"}
+    assert [b["produkt"] for b in daten["bezugsgroessen"]] == [
+        "030101",
+        "030102",
+        "040301",
+        "060101",
+    ]
+    assert daten["eigenkapital_stand"] == "jahresbeginn"
+    assert daten["finanzierungsprodukt"] == "160101"
 
 
 def test_haushalt_json_meta(tmp_path: Path) -> None:
@@ -355,7 +371,7 @@ def test_haushalt_json_meta(tmp_path: Path) -> None:
 def test_haushalt_json_eigenkapital(tmp_path: Path) -> None:
     erzeuge_app_daten(STANDARD_JAHR, app_daten_wurzel=tmp_path)
     daten = json.loads((tmp_path / HAUSHALT_JSON).read_text(encoding="utf-8"))
-    assert list(daten)[-2] == "eigenkapital"
+    assert list(daten)[-6] == "eigenkapital"
     eigenkapital = daten["eigenkapital"]
     assert eigenkapital["tabelle"] == "eigenkapital"
     assert eigenkapital["quelle_einheit"] == "euro"
@@ -424,6 +440,7 @@ def kl_kontext() -> dict[str, object]:
         ergebnisplan=ergebnisplan,
         transfer_df=transfer_df,
         produkt=produkt,
+        posten_namen=app_daten.weitergabe_posten_namen(jahrgang),
         gep_pdf_seite=gep_pdf_seite,
     )
     ergebnisplan_app = app_daten.baue_ergebnisplan(
@@ -432,6 +449,7 @@ def kl_kontext() -> dict[str, object]:
         transfer_df=transfer_df,
         hierarchie=hierarchie,
         produkt=produkt,
+        posten=weitergabe_posten(jahrgang),
         jahre=jahre,
         wertarten=wertarten,
     )
@@ -514,13 +532,14 @@ def test_kl_knoten_kinder_gerundet(kl_kontext: dict[str, object]) -> None:
     ergebnisplan_app = kl_kontext["ergebnisplan_app"]
     jahre = kl_kontext["jahre"]
 
-    kind_codes = [f"{app_daten.KL_CODE}.{posten}" for posten in WEITERGABE_POSTEN]
+    posten = weitergabe_posten(kl_kontext["jahrgang"])
+    kind_codes = [f"{app_daten.KL_CODE}.{p}" for p in posten]
     for code in kind_codes:
         assert knoten_je_code[code]["gerundet"] is True
         assert knoten_je_code[code]["ebene"] == "PG"
         assert knoten_je_code[code]["eltern"] == app_daten.KL_CODE
 
-    toleranz = len(WEITERGABE_POSTEN) * REGEL5_TOLERANZ_GEP_EURO
+    toleranz = len(posten) * REGEL5_TOLERANZ_GEP_EURO
     for index in range(len(jahre)):
         kinder_summe = sum(
             ergebnisplan_app[code]["zeilen"]["transferaufwendungen"][index] for code in kind_codes
@@ -632,6 +651,10 @@ def test_haushalt_json_knoten_und_ergebnisplan(tmp_path: Path) -> None:
         "vorbericht",
         "eigenkapital",
         "zeilen_namen",
+        "eigenkapital_stand",
+        "finanzierungsprodukt",
+        "bezugsgroessen",
+        "kommune",
     ]
     knoten_je_code = {k["code"]: k for k in daten["knoten"]}
     assert knoten_je_code["KL"]["eltern"] == "GESAMT"
@@ -892,3 +915,113 @@ def test_texte_haushaltsjahr_muss_zu_jahr_wert_passen() -> None:
         app_daten.pruefe_texte_haushaltsjahr(
             {"haushaltsjahr": 2026, "werte": {"jahr.haushaltsjahr": 2027}}
         )
+
+
+def test_massnahmen_ohne_konto_trennen_ein_und_auszahlung() -> None:
+    """IKVS (Hörstel) druckt kein Sachkonto: Ein- und Auszahlung derselben Maßnahme bleiben
+    getrennte Einträge, keine Richtung überschreibt die andere (S. 162, 111.09-001)."""
+    from ostbevern.app_daten import _baue_massnahmen
+    from ostbevern.schema import HIERARCHIE_SPALTEN, INVESTITIONEN_SPALTEN
+
+    hierarchie = pl.DataFrame(
+        [
+            {
+                "ebene": "PB",
+                "code": "01",
+                "name": "PB",
+                "eltern_code": None,
+                "pdf_seite_start": 1,
+                "synthetisch": False,
+            },
+            {
+                "ebene": "P",
+                "code": "0111109",
+                "name": "P",
+                "eltern_code": "01",
+                "pdf_seite_start": 1,
+                "synthetisch": False,
+            },
+        ],
+        schema=HIERARCHIE_SPALTEN,
+    )
+    zeilen = [
+        ("einzahlung", 2024, 300),
+        ("auszahlung", 2024, 985026),
+        ("einzahlung", 2026, 0),
+        ("auszahlung", 2026, 50000),
+    ]
+    investitionen = pl.DataFrame(
+        [
+            {
+                "produkt": "0111109",
+                "massnahme_id": "111.09-001",
+                "massnahme_name": "Maßnahme",
+                "konto": None,
+                "konto_name": None,
+                "richtung": richtung,
+                "art": None,
+                "jahr": jahr,
+                "wertart": "ergebnis" if jahr == 2024 else "ansatz",
+                "betrag": betrag,
+                "pdf_seite": 162,
+            }
+            for richtung, jahr, betrag in zeilen
+        ],
+        schema=INVESTITIONEN_SPALTEN,
+    )
+    massnahmen = _baue_massnahmen(investitionen, hierarchie=hierarchie, jahre=[2024, 2026])
+    assert [(m["richtung"], m["werte"], m["pb"]) for m in massnahmen] == [
+        ("auszahlung", [985026, 50000], "01"),
+        ("einzahlung", [300, 0], "01"),
+    ]
+
+
+def test_massnahmen_doppeltes_jahr_bricht_ab() -> None:
+    from ostbevern.app_daten import AppDatenFehler, _baue_massnahmen
+    from ostbevern.schema import HIERARCHIE_SPALTEN, INVESTITIONEN_SPALTEN
+
+    hierarchie = pl.DataFrame(
+        [
+            {
+                "ebene": "P",
+                "code": "0111109",
+                "name": "P",
+                "eltern_code": None,
+                "pdf_seite_start": 1,
+                "synthetisch": False,
+            }
+        ],
+        schema=HIERARCHIE_SPALTEN,
+    )
+    zeile = {
+        "produkt": "0111109",
+        "massnahme_id": "111.09-001",
+        "massnahme_name": "M",
+        "konto": None,
+        "konto_name": None,
+        "richtung": "auszahlung",
+        "art": None,
+        "jahr": 2026,
+        "wertart": "ansatz",
+        "betrag": 1,
+        "pdf_seite": 162,
+    }
+    investitionen = pl.DataFrame([zeile, zeile], schema=INVESTITIONEN_SPALTEN)
+    with pytest.raises(AppDatenFehler, match="mehrere Werte"):
+        _baue_massnahmen(investitionen, hierarchie=hierarchie, jahre=[2026])
+
+
+def test_bezugsgroessen_unbekanntes_produkt_bricht_ab() -> None:
+    from dataclasses import replace
+
+    from ostbevern.app_daten import AppDatenFehler, baue_bezugsgroessen
+
+    jahrgang = lade_jahrgang(STANDARD_JAHR)
+    falsch = replace(jahrgang, layout={**jahrgang.layout, "bezugsgroessen": {"999999": ("x", "y")}})
+    with pytest.raises(AppDatenFehler, match="unbekanntes Produkt"):
+        baue_bezugsgroessen(falsch, produkt_codes={"030101"})
+    ohne = replace(
+        jahrgang, layout={k: v for k, v in jahrgang.layout.items() if k != "bezugsgroessen"}
+    )
+    with pytest.raises(AppDatenFehler, match="fehlt"):
+        baue_bezugsgroessen(ohne, produkt_codes=set())

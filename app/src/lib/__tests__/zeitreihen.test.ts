@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { euro } from '@/charts/format'
+import { euro, RD_PRAEFIX } from '@/charts/format'
 import { haushalt, produkte } from '@/data/daten'
-import type { Produkt } from '@/data/typen'
+import type { Grundzahl, Produkt } from '@/data/typen'
 import { findeBeleg } from '@/lib/quelle'
 import {
   STANDARD_ZEITREIHE,
@@ -23,6 +23,33 @@ const POSTEN_SCHLUESSEL = ZEITREIHEN_POSTEN.map((eintrag) => eintrag.posten)
 
 function punkt(jahr: number, wert: number | null, wertart: string): Zeitpunkt {
   return { jahr, wert, wertart, quelle: 'vorbericht', pdfSeite: 1, beleg: null, gerundet: true }
+}
+
+/** Synthetische Grundzahl (Ostbevern-Muster „Gewerbesteuer (…)“ mit Ist-Werten in Euro). */
+function grundzahl(
+  position: number,
+  bezeichnung: string,
+  einheit: string | null,
+  werte: { jahr: number; wert: number }[] = [],
+): Grundzahl {
+  return {
+    position,
+    gruppe: null,
+    bezeichnung,
+    einheit,
+    nachkommastellen: 0,
+    pdf_seite: 999,
+    werte: werte.map((w) => ({ ...w, hinweis: null })),
+  }
+}
+
+/** Das echte Finanzierungsprodukt mit ausgetauschten Grundzahlen. */
+function produktMit(grundzahlen: Grundzahl[]): Produkt {
+  const basis = produkte.find((p) => p.code === haushalt.finanzierungsprodukt)
+  if (basis === undefined) {
+    throw new Error('Finanzierungsprodukt fehlt in produkte.json')
+  }
+  return { ...basis, grundzahlen }
 }
 
 describe('ZEITREIHEN_POSTEN (RESEARCH Pitfall 8)', () => {
@@ -52,23 +79,56 @@ describe('ZEITREIHEN_POSTEN (RESEARCH Pitfall 8)', () => {
     expect(tabelle?.posten.map((p) => p.posten)).toContain(posten)
   })
 
+  it('das Zeitreihen-Produkt ist das Finanzierungsprodukt des Haushalts', () => {
+    expect(ZEITREIHEN_PRODUKT).toBe(haushalt.finanzierungsprodukt)
+    expect(produkte.filter((p) => p.code === ZEITREIHEN_PRODUKT)).toHaveLength(1)
+  })
+
   it.each(ZEITREIHEN_POSTEN)(
-    'Posten $posten löst auf genau eine Grundzahl in Euro auf (Bezeichnung beginnt mit dem Präfix)',
+    'Posten $posten löst auf höchstens eine Grundzahl in Euro auf (Bezeichnung beginnt mit dem Präfix)',
     (eintrag) => {
       const grundzahl = findeGrundzahl(eintrag)
-      expect(grundzahl.einheit).toBe('EUR')
-      expect(grundzahl.bezeichnung.startsWith(eintrag.grundzahlPraefix)).toBe(true)
+      if (grundzahl !== null) {
+        expect(grundzahl.einheit).toBe('EUR')
+        expect(grundzahl.bezeichnung.startsWith(eintrag.grundzahlPraefix)).toBe(true)
+      }
     },
   )
 
-  it('findeGrundzahl wirft mit dem Postennamen, wenn keine Grundzahl passt', () => {
+  it.runIf(haushalt.haushaltsjahr === 2026)(
+    'Hörstel: das Finanzierungsprodukt 1661101 führt keine Steuer-Grundzahl in Euro (S. 556)',
+    () => {
+      for (const eintrag of ZEITREIHEN_POSTEN) {
+        expect(findeGrundzahl(eintrag), eintrag.posten).toBeNull()
+      }
+    },
+  )
+
+  it('findeGrundzahl findet genau die Euro-Grundzahl mit dem Präfix', () => {
+    const eintrag = ZEITREIHEN_POSTEN[0]
+    expect(eintrag).toBeDefined()
+    if (eintrag === undefined) {
+      return
+    }
+    const produktliste = [
+      produktMit([
+        grundzahl(1, `${eintrag.grundzahlPraefix}Konto)`, 'EUR'),
+        grundzahl(2, `${eintrag.grundzahlPraefix}Konto) in Prozent`, '%'),
+        grundzahl(3, 'Gewerbesteuerumlage (Zeile 15)', 'EUR'),
+      ]),
+      { ...produktMit([grundzahl(4, `${eintrag.grundzahlPraefix}fremd)`, 'EUR')]), code: 'X' },
+    ]
+    expect(findeGrundzahl(eintrag, produktliste)?.position).toBe(1)
+  })
+
+  it('findeGrundzahl liefert null, wenn keine Grundzahl passt', () => {
     const eintrag = ZEITREIHEN_POSTEN[0]
     expect(eintrag).toBeDefined()
     if (eintrag === undefined) {
       return
     }
     const leer: Produkt[] = produkte.map((produkt) => ({ ...produkt, grundzahlen: [] }))
-    expect(() => findeGrundzahl(eintrag, leer)).toThrow(eintrag.posten)
+    expect(findeGrundzahl(eintrag, leer)).toBeNull()
   })
 
   it('findeGrundzahl wirft mit dem Postennamen, wenn zwei Grundzahlen passen', () => {
@@ -77,12 +137,8 @@ describe('ZEITREIHEN_POSTEN (RESEARCH Pitfall 8)', () => {
     if (eintrag === undefined) {
       return
     }
-    const gezeigt = findeGrundzahl(eintrag)
-    const doppelt: Produkt[] = produkte.map((p) =>
-      p.grundzahlen.includes(gezeigt)
-        ? { ...p, grundzahlen: [...p.grundzahlen, { ...gezeigt }] }
-        : p,
-    )
+    const gezeigt = grundzahl(1, `${eintrag.grundzahlPraefix}Konto)`, 'EUR')
+    const doppelt: Produkt[] = [produktMit([gezeigt, { ...gezeigt, position: 2 }])]
     expect(() => findeGrundzahl(eintrag, doppelt)).toThrow(eintrag.posten)
   })
 
@@ -103,9 +159,16 @@ describe.each(POSTEN_SCHLUESSEL)('baueZeitreihe(%s)', (posten) => {
     expect(jahre).toEqual(expect.arrayContaining([...haushalt.jahre]))
   })
 
-  it('Jahre vor dem ersten Planjahr stammen aus den Grundzahlen (Ist)', () => {
+  it('Jahre vor dem ersten Planjahr stammen aus den Grundzahlen (Ist), ohne Grundzahl gibt es keine', () => {
+    const eintrag = ZEITREIHEN_POSTEN.find((e) => e.posten === posten)
+    const grundzahl = eintrag === undefined ? null : findeGrundzahl(eintrag)
     const davor = punkte.filter((p) => p.jahr < ERSTES_PLANJAHR)
-    expect(davor.length).toBeGreaterThan(0)
+    if (grundzahl === null) {
+      expect(davor).toEqual([])
+      expect(punkte[0]?.jahr).toBe(ERSTES_PLANJAHR)
+    } else {
+      expect(davor.length).toBeGreaterThan(0)
+    }
     for (const p of davor) {
       expect(p.quelle).toBe('grundzahlen')
       expect(p.wertart).toBe('ergebnis')
@@ -229,7 +292,9 @@ describe('zeitreihenSerien', () => {
 
 describe('betragText', () => {
   it('setzt „rd.“ vor einen in T€ gerundeten Betrag', () => {
-    expect(betragText({ wert: 9_511_000, gerundet: true })).toBe(`rd. ${euro(9_511_000)}`)
+    expect(betragText({ wert: 14_357_000, gerundet: true })).toBe(
+      `${RD_PRAEFIX}${euro(14_357_000)}`,
+    )
   })
 
   it('lässt einen eurogenauen Betrag ohne „rd.“', () => {
@@ -281,34 +346,77 @@ describe('Optionen und Quellen', () => {
   })
 })
 
-describe.runIf(haushalt.haushaltsjahr === 2026)(
-  'Gewerbesteuer: Quellenwechsel (D-01, D-02)',
-  () => {
-    const punkte = baueZeitreihe('gewerbesteuer')
-    const wert = (jahr: number) => punkte.find((p) => p.jahr === jahr)?.wert
+describe.runIf(haushalt.haushaltsjahr === 2026)('Gewerbesteuer Hörstel (D-01, D-02)', () => {
+  const punkte = baueZeitreihe('gewerbesteuer')
+  const wert = (jahr: number) => punkte.find((p) => p.jahr === jahr)?.wert
 
-    it('2022 und 2023 stammen aus den Grundzahlen (Ist)', () => {
-      expect(wert(2022)).toBe(9_737_018)
-      expect(wert(2023)).toBe(4_771_497)
-    })
+  it('beginnt ohne Grundzahl mit dem Ergebnis 2024 des Vorberichts (14.357 T€, S. 16)', () => {
+    expect(punkte[0]?.jahr).toBe(2024)
+    expect(wert(2024)).toBe(14_357_000)
+    expect(punkte.every((p) => p.quelle === 'vorbericht' && p.pdfSeite === 16)).toBe(true)
+  })
 
-    it('2024 ist der vorläufige Ist-Wert des Vorberichts (9.511.000 €), nicht die Grundzahl 8.418.043 €', () => {
-      expect(wert(2024)).toBe(9_511_000)
-      expect(wert(2024)).not.toBe(8_418_043)
-    })
+  it('2026 ist der Ansatz 15.734.000 €, 2029 die Planung 18.173.000 € (S. 16)', () => {
+    expect(wert(2026)).toBe(15_734_000)
+    expect(punkte.find((p) => p.jahr === 2026)?.wertart).toBe('ansatz')
+    expect(wert(2029)).toBe(18_173_000)
+    expect(punkte.find((p) => p.jahr === 2029)?.wertart).toBe('planung')
+  })
 
-    it('2026 ist der Ansatz 7.800.000 €, 2029 die Planung 9.300.000 €', () => {
-      expect(wert(2026)).toBe(7_800_000)
-      expect(wert(2029)).toBe(9_300_000)
-    })
+  it('Schlüsselzuweisung: 2025 aus der Grafik des Vorberichts (3.034 T€, S. 22)', () => {
+    const schluessel = baueZeitreihe('schluesselzuweisung')
+    const p2025 = schluessel.find((p) => p.jahr === 2025)
+    expect(p2025?.quelle).toBe('vorbericht')
+    expect(p2025?.wert).toBe(3_034_000)
+    expect(p2025?.pdfSeite).toBe(22)
+  })
 
-    it('Schlüsselzuweisung: 2023 Grundzahl, 2025 Vorbericht', () => {
-      const schluessel = baueZeitreihe('schluesselzuweisung')
-      expect(schluessel.find((p) => p.jahr === 2023)?.quelle).toBe('grundzahlen')
-      expect(schluessel.find((p) => p.jahr === 2025)?.wert).toBe(2_807_000)
+  it('Quellenzeile nennt nur den Vorbericht', () => {
+    expect(quellenFussnote(punkte)).toBe('Quelle: Vorbericht (ab 2024)')
+  })
+})
+
+describe('baueZeitreihe mit Grundzahlen im Finanzierungsprodukt (Ostbevern-Muster, D-01)', () => {
+  afterEach(() => {
+    vi.doUnmock('@/data/daten')
+    vi.resetModules()
+  })
+
+  it('Jahre vor dem ersten Planjahr sind Ist aus der Grundzahl, Planjahre nie', async () => {
+    const gz = grundzahl(7, 'Gewerbesteuer (6013000)', 'EUR', [
+      { jahr: ERSTES_PLANJAHR - 3, wert: 1_000 },
+      { jahr: ERSTES_PLANJAHR - 1, wert: 3_000 },
+      { jahr: ERSTES_PLANJAHR, wert: 99_999 },
+    ])
+    vi.resetModules()
+    vi.doMock('@/data/daten', async (importOriginal) => {
+      const original = await importOriginal<typeof import('@/data/daten')>()
+      return { ...original, produkte: [produktMit([gz])] }
     })
-  },
-)
+    const modul = await import('@/lib/zeitreihen')
+    const punkte = modul.baueZeitreihe('gewerbesteuer')
+    const davor = punkte.filter((p) => p.jahr < ERSTES_PLANJAHR)
+    expect(davor.map((p) => p.jahr)).toEqual([
+      ERSTES_PLANJAHR - 3,
+      ERSTES_PLANJAHR - 2,
+      ERSTES_PLANJAHR - 1,
+    ])
+    expect(davor.map((p) => p.wert)).toEqual([1_000, null, 3_000])
+    for (const p of davor) {
+      expect(p.quelle).toBe('grundzahlen')
+      expect(p.wertart).toBe('ergebnis')
+      expect(p.gerundet).toBe(false)
+      expect(p.pdfSeite).toBe(999)
+      expect(p.beleg).toBe(`gz:${haushalt.finanzierungsprodukt}:7`)
+    }
+    const erstesPlanjahr = punkte.find((p) => p.jahr === ERSTES_PLANJAHR)
+    expect(erstesPlanjahr?.quelle).toBe('vorbericht')
+    expect(erstesPlanjahr?.wert).not.toBe(99_999)
+    expect(modul.quellenFussnote(punkte)).toBe(
+      `Quelle: Grundzahlen (${String(ERSTES_PLANJAHR - 3)}–${String(ERSTES_PLANJAHR - 1)}), Vorbericht (ab ${String(ERSTES_PLANJAHR)})`,
+    )
+  })
+})
 
 describe.each(POSTEN_SCHLUESSEL)('Belegschlüssel der Zeitreihe %s (D-01)', (posten) => {
   const eintrag = ZEITREIHEN_POSTEN.find((e) => e.posten === posten)

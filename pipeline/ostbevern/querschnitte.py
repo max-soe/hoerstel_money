@@ -18,6 +18,7 @@ from pathlib import Path
 
 import polars as pl
 
+from ostbevern.ikvs_querschnitte import IkvsQuerschnitteFehler, lies_ikvs_querschnitte
 from ostbevern.konfiguration import Jahrgang, layout_liste, layout_text
 from ostbevern.pdf import PdfDokument, Textzeile
 from ostbevern.plaene import ExtraktionsErgebnis
@@ -319,6 +320,17 @@ def extrahiere_querschnitte(
 ) -> ExtraktionsErgebnis:
     """Liest die Querschnitte, prüft sie gegen `hierarchie.csv` und schreibt
     `daten_wurzel/QUERSCHNITTE_CSV` (D-14)."""
+    if jahrgang.software == "ikvs":
+        hierarchie = lies_hierarchie_csv(daten_wurzel / HIERARCHIE_CSV)
+        try:
+            with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
+                ikvs_df = lies_ikvs_querschnitte(dokument, jahrgang, hierarchie)
+        except IkvsQuerschnitteFehler as fehler:
+            raise QuerschnitteFehler(str(fehler)) from fehler
+        pfad = daten_wurzel / QUERSCHNITTE_CSV
+        schreibe_querschnitte_csv(ikvs_df, pfad)
+        return ExtraktionsErgebnis(zeilen_geschrieben=ikvs_df.height, pfad=pfad)
+
     with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
         werte = lies_querschnitte(dokument, jahrgang)
 

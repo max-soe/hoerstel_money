@@ -10,6 +10,7 @@ import { haushalt, investitionen } from '@/data/daten'
 import type { Grundzahl, KnotenWerte, Massnahme, Produkt } from '@/data/typen'
 import { findeKnoten, findeProdukt, leseAnsicht } from '@/lib/ansicht'
 import { proKopf } from '@/lib/berechnung'
+import { einwohnerZahl } from '@/lib/einwohner'
 import { wertartFuerJahr, wertartName } from '@/lib/jahr'
 import { belegSchluessel } from '@/lib/quelle'
 
@@ -41,8 +42,8 @@ export interface ProduktKopf {
   zurueckText: string
   /** Erste PDF-Seite des Produkts (1-basiert) für die Quellzeile. */
   quelleSeite: number | null
-  /** Ausgeschriebener Bindungsgrad. */
-  bindungsgrad: string
+  /** Ausgeschriebener Bindungsgrad; `null`, wenn der Plan keinen nennt (Hörstel). */
+  bindungsgrad: string | null
   /** Wortlaut des Plans, wenn er sich vom ausgeschriebenen Bindungsgrad unterscheidet. */
   bindungsgradOriginal: string | null
 }
@@ -83,8 +84,11 @@ export function baueProduktKopf(
     rueckQuery.pg = pg
   }
 
-  const bindungsgrad = bindungsgradText(produkt.bindungsgrad)
-  const abweichend = normiere(produkt.bindungsgrad_original) !== normiere(bindungsgrad)
+  const bindungsgrad = produkt.bindungsgrad === null ? null : bindungsgradText(produkt.bindungsgrad)
+  const abweichend =
+    bindungsgrad !== null &&
+    produkt.bindungsgrad_original !== null &&
+    normiere(produkt.bindungsgrad_original) !== normiere(bindungsgrad)
 
   return {
     produkt,
@@ -153,14 +157,6 @@ const IMMER_ZEIGEN: ReadonlySet<string> = new Set([
   'ordentliche_aufwendungen',
   'jahresergebnis',
 ])
-
-function einwohnerzahl(): number {
-  const wert = haushalt.meta.einwohner.wert
-  if (typeof wert !== 'number') {
-    throw new TypeError('meta.einwohner.wert muss eine Zahl sein')
-  }
-  return wert
-}
 
 function jahrSpalte(jahr: number, wertart: string, art: DatenSpalte['art']): DatenSpalte {
   return {
@@ -232,7 +228,7 @@ export function baueTeilergebnisplan(code: unknown): Teilergebnisplan | null {
     }
   }
 
-  const einwohner = einwohnerzahl()
+  const einwohner = einwohnerZahl()
   const zuschussbedarf = werte.berechnet.zuschussbedarf
   zeilen.push(
     zeile('zuschussbedarf', 'Zuschussbedarf (berechnet)', BERECHNET, zuschussbedarf, null),
@@ -305,23 +301,18 @@ export interface Bezugsgroesse {
 }
 
 /**
- * Die Produkte mit „Zuschussbedarf je Einheit“ (RESEARCH Open Question 6). Freigegeben in
- * Plan 05-03 („Entscheidungen aus der Abnahme“, Antwort „Vorschlag übernehmen“): Grundschulen
- * je Schüler/in, Musikschule je Musikschüler/in, Kindertagesstätten je betreutem Kind (Summe
- * aus „unter 3 Jahre“ und „3 - 6 Jahre“). Für jedes andere Produkt gibt es nur „je Einwohner“.
- * Eine falsche Bezugsgröße würde Bürgerinnen und Bürger in die Irre führen; deshalb nur diese
- * Liste, abgesichert durch einen Test.
+ * Die Produkte mit „Zuschussbedarf je Einheit“ (RESEARCH Open Question 6, Freigabe 05-03). Die
+ * Liste steht im Jahrgang (`[layout.bezugsgroessen]`, über `haushalt.bezugsgroessen`), nicht im
+ * Code: Ostbevern rechnet Grundschulen je Schüler/in, Musikschule je Musikschüler/in und
+ * Kindertagesstätten je betreutem Kind; Hörstel druckt „Produktergebnis je …“ selbst und hat
+ * keine. Für jedes andere Produkt gibt es nur „je Einwohner“. Eine falsche Bezugsgröße würde
+ * Bürgerinnen und Bürger in die Irre führen; deshalb nur diese Liste, abgesichert durch Tests.
  */
-export const BEZUGSGROESSEN: readonly Bezugsgroesse[] = [
-  { produkt: '030101', bezeichnungen: ['Schüler/innen'], einheitText: 'Schüler/in' },
-  { produkt: '030102', bezeichnungen: ['Schüler/innen'], einheitText: 'Schüler/in' },
-  { produkt: '040301', bezeichnungen: ['Musikschüler/innen'], einheitText: 'Musikschüler/in' },
-  {
-    produkt: '060101',
-    bezeichnungen: ['Betreute Kinder unter 3 Jahre', 'Betreute Kinder von 3 - 6 Jahre'],
-    einheitText: 'betreutem Kind',
-  },
-]
+export const BEZUGSGROESSEN: readonly Bezugsgroesse[] = haushalt.bezugsgroessen.map((b) => ({
+  produkt: b.produkt,
+  bezeichnungen: b.bezeichnungen,
+  einheitText: b.einheit_text,
+}))
 
 /** Hinweise ohne Dopplungen; ein Hinweis, der in einem längeren enthalten ist, entfällt. */
 function fasseHinweiseZusammen(grundzahlen: readonly Grundzahl[]): string | null {

@@ -17,11 +17,13 @@ import { ENTWICKLUNG_POSTEN, baueErgebnisReihen, bauePostenReihe } from '@/lib/e
 import { wertartName } from '@/lib/jahr'
 import {
   baueRuecklagen,
+  bestandText,
   hskSchwellen,
   rueckgangFormelText,
   rueckgangPlanjahre,
   ruecklagenTabelle,
 } from '@/lib/ruecklagen'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 // Die Seite zeigt immer alle ausgewiesenen Jahre, ohne Jahr-Umschalter (UI-SPEC Routes).
 // Erstes und letztes Jahr kommen aus den Daten, nie aus dem Quelltext.
@@ -29,7 +31,7 @@ const erstesJahr = formatiereJahr(haushalt.jahre[0] ?? haushalt.haushaltsjahr)
 const letztesJahr = formatiereJahr(
   haushalt.jahre[haushalt.jahre.length - 1] ?? haushalt.haushaltsjahr,
 )
-const lead = `Hier siehst du, wie sich Erträge, Aufwendungen und Ergebnis der Gemeinde bis ${letztesJahr} entwickeln und wie lange die Rücklagen als Polster reichen.`
+const lead = `Hier siehst du, wie sich Erträge, Aufwendungen und Ergebnis der ${KOMMUNE_ART} bis ${letztesJahr} entwickeln und wie lange die Rücklagen als Polster reichen.`
 
 // Das Jahresergebnis steht nach dem globalen Minderaufwand, wie in der Haushaltssatzung und auf der
 // Startseite (Entscheidung 1 der Phase); die Linien zeigen die Werte davor.
@@ -37,14 +39,17 @@ const ERGEBNIS_UNTERTITEL =
   'Jahresergebnis nach globalem Minderaufwand, wie in der Haushaltssatzung. Die Linien oben zeigen Erträge und Aufwendungen vor diesem Abzug. Ein Defizit liegt unter der Nulllinie.'
 
 const ergebnisplanSeite = baueErgebnisReihen().ertraege[0]?.pdfSeite
-const ergebnisplanQuelle = ergebnisplanSeite == null ? undefined : { seite: ergebnisplanSeite }
+const ergebnisplanQuelle =
+  ergebnisplanSeite === null || ergebnisplanSeite === undefined
+    ? undefined
+    : { seite: ergebnisplanSeite }
 
 /** Die fünf Posten-Karten mit ihrer Quellseite (erste Seite, die die Reihe nennt). */
 const karten = ENTWICKLUNG_POSTEN.map((posten) => {
   const seite = bauePostenReihe(posten.schluessel).find(
     (punkt) => punkt.pdfSeite !== null,
   )?.pdfSeite
-  return { posten, pdf: seite == null ? undefined : { seite } }
+  return { posten, pdf: seite === null || seite === undefined ? undefined : { seite } }
 })
 
 // Die Rücklagen stehen in der Eigenkapitalübersicht des Vorberichts (Quellseite aus den Daten).
@@ -58,15 +63,19 @@ const hatRuecklagen = baueRuecklagen().some(
 // Mit nur einem Planjahr gibt es keinen Verlauf: die Rückgang-Karte entfällt, die Tabelle bleibt.
 const zeigeRueckgang = hatRuecklagen && rueckgangPlanjahre().length >= 2
 
+// Nennt der Vorbericht keine Schwellen der Haushaltssicherung (Hörstel), entfällt der Satz.
 const schwellen = hskSchwellen()
-const SCHWELLEN_TEXT = `Laut Vorbericht (PDF-Seite ${String(schwellen.pdfSeite)}) ist die Schwelle ein Rückgang der allgemeinen Rücklage um mehr als ${prozent(schwellen.einJahr)} in einem Jahr oder um mehr als ${prozent(schwellen.zweiJahre)} in zwei aufeinanderfolgenden Jahren.`
-const RUECKGANG_ERKLAERUNG =
-  'Um diesen Anteil sinkt die allgemeine Rücklage im jeweiligen Jahr, bezogen auf ihren Bestand zu Jahresbeginn.'
+const SCHWELLEN_TEXT =
+  schwellen === null
+    ? null
+    : `Laut Vorbericht (PDF-Seite ${String(schwellen.pdfSeite)}) ist die Schwelle ein Rückgang der allgemeinen Rücklage um mehr als ${prozent(schwellen.einJahr)} in einem Jahr oder um mehr als ${prozent(schwellen.zweiJahre)} in zwei aufeinanderfolgenden Jahren.`
+const RUECKGANG_ERKLAERUNG = `Um diesen Anteil sinkt die allgemeine Rücklage im jeweiligen Jahr, bezogen auf den Wert „${bestandText()}“.`
+const BESTAND = bestandText()
 
 const TABELLEN_SPALTEN: DatenSpalte[] = [
   { schluessel: 'jahr', titel: 'Jahr', art: 'text' },
-  { schluessel: 'allgemeine', titel: 'Allgemeine Rücklage (Bestand zu Jahresbeginn)', art: 'euro' },
-  { schluessel: 'ausgleich', titel: 'Ausgleichsrücklage (Bestand zu Jahresbeginn)', art: 'euro' },
+  { schluessel: 'allgemeine', titel: `Allgemeine Rücklage (${BESTAND})`, art: 'euro' },
+  { schluessel: 'ausgleich', titel: `Ausgleichsrücklage (${BESTAND})`, art: 'euro' },
   { schluessel: 'rueckgang', titel: 'Rückgang im Jahr (berechnet)', art: 'prozent' },
 ]
 const tabellenZeilen: DatenZeile[] = ruecklagenTabelle().map((zeile) => ({
@@ -79,7 +88,9 @@ const tabellenFussnote =
   (eigenkapitalSeite === null
     ? ''
     : `Quelle: Eigenkapitalübersicht, PDF-Seite ${String(eigenkapitalSeite)}. `) +
-  `Der Rückgang im Jahr ist berechnet wie im Vorbericht (PDF-Seite ${String(schwellen.pdfSeite)}): ` +
+  (schwellen === null
+    ? 'Der Rückgang im Jahr ist berechnet: '
+    : `Der Rückgang im Jahr ist berechnet wie im Vorbericht (PDF-Seite ${String(schwellen.pdfSeite)}): `) +
   rueckgangFormelText()
 </script>
 
@@ -143,7 +154,9 @@ const tabellenFussnote =
           {{ RUECKGANG_ERKLAERUNG }}
         </p>
         <RueckgangBalken />
-        <p class="om-entwicklung__unterschrift">{{ SCHWELLEN_TEXT }}</p>
+        <p v-if="SCHWELLEN_TEXT !== null" class="om-entwicklung__unterschrift">
+          {{ SCHWELLEN_TEXT }}
+        </p>
       </ChartCard>
 
       <template v-if="hatRuecklagen">

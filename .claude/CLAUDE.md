@@ -6,6 +6,8 @@
 
 Eine statische Webanwendung, die den Bürgerinnen und Bürgern von Ostbevern den Haushalt 2026 der Gemeinde erklärt. Sie beantwortet zwei Leitfragen: **Wo kommt das Geld der Gemeinde her?** und **Wofür wird es ausgegeben?**. Ergänzend zeigt sie die Entwicklung 2024–2029, Investitionen und Schulden, den Gestaltungsspielraum des Rats und den Stellenplan. Die Daten stammen aus einer Python-Pipeline, die das 400-seitige ProFIS+-PDF ausliest und gegen die Planwerte prüft. Vorbild ist „Münster Money“ (Code for Münster, Münsterhack '26).
 
+**Stand v2.0 (Hörstel):** Der Jahrgang 2026 ist jetzt der Haushalt der Stadt Hörstel (`raw_data/haushalt-2026.pdf`, 592 Seiten, Word-Export von Axians IKVS, `software = "ikvs"` in `pipeline/jahrgaenge/2026.toml`). Die IKVS-Leselogik steht in `pipeline/ostbevern/ikvs*.py`; Bildseiten (Stellenplan, Fraktionszuwendungen, Eigenkapital) und Vorberichtsdaten sind in `daten/manuell/` abgeschrieben. `alle.py` läuft für Hörstel vollständig (alle Prüfregeln grün, Befunde in `daten/pruefberichte/befunde.md`); `daten/`, `app/src/data/` und `app/public/quellen/` stammen aus Hörstel. Die App ist auf Hörstel umgestellt (Phase 12 abgeschlossen: Daten, Tests, Texte, Impressum, Browser-Tests); Name und Art der Kommune kommen aus `[layout.kommune]` im Jahrgang (`app/src/lib/kommune.ts`). Ostbevern bleibt als ProFIS+-Referenz unter `pipeline/referenz/ostbevern/` (Jahrgang, `daten/`, App-Daten und Belegbilder) und `raw_data/ostbevern/`; Tests (`tests/conftest.py`) und der zweite CI-Reproduzierbarkeitsschritt lenken über `PIPELINE_REFERENZ=referenz/ostbevern` die ganze Pipeline dorthin um. Stand und Phasen: `.planning/ROADMAP.md`, Strukturvergleich: `discussion/HOERSTEL_MACHBARKEIT.md`. Dieses Repository ist ein Fork von `bitwerkstatt/ostbevern_money` (Remote `upstream`); eingearbeiteter Stand und Vorgehen für weitere Abgleiche: `.planning/UPSTREAM.md`.
+
 Die vollständige fachliche Spezifikation steht in `discussion/SPEZIFIKATION.md`. Sie ist die maßgebliche Detailquelle für Datenmodell, Prüfregeln, Seiteninhalte und Sollwerte (Anhang B).
 
 **Core Value:** Jede Zahl in der App ist korrekt aus dem Haushalts-PDF abgeleitet und durch automatische Prüfungen gegen den Gesamtplan und die Satzung belegt. Die beiden Leitfragen „Woher?“ und „Wofür?“ sind für Laien verständlich beantwortet.
@@ -42,6 +44,8 @@ Pipeline (vom Repo-Root aus):
 - `uv run --directory pipeline ruff format .`
 - `uv run --directory pipeline python alle.py --jahr 2026` (ohne `--jahr` gilt `STANDARD_JAHR`)
 
+Ostbevern-Referenzlauf (wie der CI-Reproduzierbarkeitsschritt): `PIPELINE_REFERENZ=referenz/ostbevern uv run --directory pipeline python alle.py`
+
 Hinweis: Ein bloßes `uv run pipeline/SKRIPT.py` vom Repo-Root nutzt **nicht** die Pipeline-Umgebung — deshalb immer `--directory pipeline` angeben (Abweichung von Spez. 5.2).
 
 App (vom Repo-Root aus):
@@ -57,7 +61,10 @@ CI lokal nachstellen (identisch zu `.github/workflows/ci.yml`):
 ```
 (cd pipeline && uv sync --locked && uv run ruff check . && uv run ruff format --check . && uv run pytest)
 (cd app && npm ci && npm run type-check && npm run lint && npm run format:check && npm run test && npm run build)
+uv run --directory pipeline python alle.py && git diff --stat --exit-code -- daten app/src/data && test -z "$(git status --porcelain --untracked-files=all -- daten app/src/data app/public/quellen)"
+(cd app && npm run build-only) && scripts/e2e-wie-ci.sh <scratch>/app
 ```
+Die dritte Zeile ist die Reproduzierbarkeitsprüfung der CI: Die Pipeline muss `daten/`, `app/src/data/` und `app/public/quellen` byte-identisch neu erzeugen. Die vierte Zeile ist der Playwright-Schritt; die CI selbst startet ihn als `npm run test:e2e` (Projekt `ci`). Enthält `app/node_modules` Binärdateien eines anderen Betriebssystems (macOS), laufen die App-Prüfungen in einer Scratch-Kopie von `app/` mit eigenem `npm ci`.
 <!-- GSD:stack-end -->
 
 <!-- GSD:conventions-start source:CONVENTIONS.md -->
