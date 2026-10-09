@@ -1,12 +1,26 @@
 position,produkt,massnahme,ist_gesamt,faellig_jahr,betrag_teur,anmerkung,quelle
-1,020701,Auszahlung für Baumaßnahmen - Neubau,false,2027,2000,,309
-1,020701,Auszahlung für Baumaßnahmen - Neubau,false,2028,1200,,309
-2,030101,Auszahlung für Baumaßnahmen - Erweiterung,false,2027,2000,,309
-3,030102,Auszahlung für Baumaßnahmen - Erweiterung,false,2027,1700,,309
-4,030103,Auszahlung für Baumaßnahmen - Erweiterung,false,2027,1000,,309
-4,030103,Auszahlung für Baumaßnahmen - Erweiterung,false,2028,1000,,309
-5,120101,Erschließung BG Kohkamp IIII,false,2027,1000,"S. 309 druckt ""Kohkamp IIII"", S. 25 ""Kohkamp III"" (wortwörtlich übernommen, D-09).",309
-6,120101,Sanierung Wischhausstraße,false,2027,1700,,309
-7,,Summe (VE-Gesamtbetrag),true,,11600,,309
-7,,Summe (fällig 2027),true,2027,9400,,309
-7,,Summe (fällig 2028),true,2028,2200,,309
+1,0111102,Einrichtungsgegenstände Neubau Verwaltungsgebäude Hörstel,false,2027,250,,586
+2,0111102,Kosten für Beschaffung Dokumentenausgabesystem,false,2027,57,,586
+3,0111102,Neubau eines Verwaltungsgebäudes Hörstel,false,2027,5100,,586
+4,0111108,Anschaffung von EDV-Software,false,2027,47,,586
+5,0111108,Anschaffung von EDV Hardware,false,2027,107,,586
+6,0212601,Neuanschaffung von Feuerwehrfahrzeugen,false,2027,325,,586
+6,0212601,Neuanschaffung von Feuerwehrfahrzeugen,false,2029,325,,586
+7,0321101,Energetische Sanierung St.-Ludgerus-Grundschule Hörstel,false,2027,3000,,586
+7,0321101,Energetische Sanierung St.-Ludgerus-Grundschule Hörstel,false,2028,1750,,586
+8,0842402,Sanierung Harkenberg-Sporthalle,false,2027,1000,,586
+9,0842402,Erweiterung Parkplatz Ludgerus-Sporthalle,false,2027,130,,586
+10,1153801,SW- und RW-Kanal Energie-Innovationspark ehem. Flugplatz Dreierwalde,false,2027,750,,586
+10,1153801,SW- und RW-Kanal Energie-Innovationspark ehem. Flugplatz Dreierwalde,false,2028,750,,586
+11,1153801,"Entwässerungsmäßige Erschließung Gewerbepark ehem. Flugplatz Dreierwalde, II. BA",false,2027,500,,586
+11,1153801,"Entwässerungsmäßige Erschließung Gewerbepark ehem. Flugplatz Dreierwalde, II. BA",false,2028,500,,586
+12,1254101,Straßenmäßige Erschließung Energie-Innovationspark ehem. Flugplatz Dreierwalde,false,2027,900,,586
+12,1254101,Straßenmäßige Erschließung Energie-Innovationspark ehem. Flugplatz Dreierwalde,false,2028,900,,586
+13,1254101,"Straßenmäßige Erschließung Gewerbepark ehem. Flugplatz Dreierwalde, II. BA",false,2027,800,,586
+13,1254101,"Straßenmäßige Erschließung Gewerbepark ehem. Flugplatz Dreierwalde, II. BA",false,2028,800,,586
+14,1254101,Erneuerung Wegenerstraße,false,2027,200,,586
+15,1254101,"Baustraßen im Baugebiet ""Südlich Riehenweg"", Riesenbeck-Birgte",false,2027,140,,586
+16,,Summe (VE-Gesamtbetrag),true,,18331,,586
+16,,Summe (fällig 2027),true,2027,13306,,586
+16,,Summe (fällig 2028),true,2028,4700,,586
+16,,Summe (fällig 2029),true,2029,325,,586

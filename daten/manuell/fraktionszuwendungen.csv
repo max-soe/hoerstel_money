@@ -1,0 +1,22 @@
+tabelle,position,posten,posten_name,ist_gesamt,jahr,wertart,betrag,anmerkung,quelle
+fraktionszuwendungen_geld,1,cdu_fraktion,CDU- Fraktion,false,2024,ergebnis,3370,,576
+fraktionszuwendungen_geld,1,cdu_fraktion,CDU- Fraktion,false,2025,ansatz,3370,,576
+fraktionszuwendungen_geld,1,cdu_fraktion,CDU- Fraktion,false,2026,ansatz,3766,,576
+fraktionszuwendungen_geld,2,spd_fraktion,SPD-Fraktion,false,2024,ergebnis,2578,,576
+fraktionszuwendungen_geld,2,spd_fraktion,SPD-Fraktion,false,2025,ansatz,2578,,576
+fraktionszuwendungen_geld,2,spd_fraktion,SPD-Fraktion,false,2026,ansatz,2182,,576
+fraktionszuwendungen_geld,3,gruene_fraktion,Fraktion Bündins 90/ Die GRÜNEN,false,2024,ergebnis,1390,,576
+fraktionszuwendungen_geld,3,gruene_fraktion,Fraktion Bündins 90/ Die GRÜNEN,false,2025,ansatz,1390,,576
+fraktionszuwendungen_geld,3,gruene_fraktion,Fraktion Bündins 90/ Die GRÜNEN,false,2026,ansatz,994,,576
+fraktionszuwendungen_geld,4,uwg_fraktion,UWG-Fraktion,false,2024,ergebnis,796,,576
+fraktionszuwendungen_geld,4,uwg_fraktion,UWG-Fraktion,false,2025,ansatz,796,,576
+fraktionszuwendungen_geld,4,uwg_fraktion,UWG-Fraktion,false,2026,ansatz,796,,576
+fraktionszuwendungen_geld,5,linke_fraktion,Fraktion Die Linke,false,2026,ansatz,796,,576
+fraktionszuwendungen_geld,6,fdp_ratsmitglied,Ratsmitglied der FDP,false,2024,ergebnis,265,,576
+fraktionszuwendungen_geld,6,fdp_ratsmitglied,Ratsmitglied der FDP,false,2025,ansatz,266,,576
+fraktionszuwendungen_geld,6,fdp_ratsmitglied,Ratsmitglied der FDP,false,2026,ansatz,266,,576
+fraktionszuwendungen_geld,7,gesamt,gesamt,true,2024,ergebnis,8399,"Sockelbetrag 400,00 EUR jährlich je Fraktion, 16,50 EUR monatlich je Ratsmitglied",576
+fraktionszuwendungen_geld,7,gesamt,gesamt,true,2025,ansatz,8400,"Sockelbetrag 400,00 EUR jährlich je Fraktion, 16,50 EUR monatlich je Ratsmitglied",576
+fraktionszuwendungen_geld,7,gesamt,gesamt,true,2026,ansatz,8800,"Sockelbetrag 400,00 EUR jährlich je Fraktion, 16,50 EUR monatlich je Ratsmitglied",576
+fraktionszuwendungen_geldwert,1,telefon_datenuebertragung,"Telefon, Telefax, Datenübertragungsanlagen",false,2025,ansatz,15000,"Den Ratsmitgliedern werde, so weit gewünscht, iPads kostenlos bereitgestellt",577
+fraktionszuwendungen_geldwert,1,telefon_datenuebertragung,"Telefon, Telefax, Datenübertragungsanlagen",false,2026,ansatz,3500,"Den Ratsmitgliedern werde, so weit gewünscht, iPads kostenlos bereitgestellt",577

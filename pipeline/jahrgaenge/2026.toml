@@ -181,3 +181,25 @@ kennzahl_praefix_muster = '^\d{2}\.\d{3}\.\d{2}\s+'
 [layout.ikvs_erlaeuterungen]
 titel = "Erläuterungen und Hinweise"
 ansatz_muster = '^Ansatz (?P<jahr1>\d{4,5}) ?= ?(?P<betrag1>-?\d{1,3}(?:\.\d{3})*) ?€,? Ansatz (?P<jahr2>\d{4}) ?= ?(?P<betrag2>-?\d{1,3}(?:\.\d{3})*) ?€$'
+
+# [layout.weitergabe_kreis_land] (Phase 11, D-01): Die Transferaufwendungen (TP Z. 15) von
+# Produkt 1661101 „Steuern, allg. Zuweisungen u. allg. Umlagen“ bestehen ausschließlich aus
+# Gewerbesteuerumlage, Allgemeiner Kreisumlage und Jugendamtsumlage (Erläuterungen S. 559/560:
+# 2026 23.994.000 EUR = 1.327 + 12.465 + 10.202 T€). posten: Schlüssel in
+# transferaufwendungen.csv, namen: Anzeigenamen der App, gleiche Reihenfolge.
+[layout.weitergabe_kreis_land]
+produkt = "1661101"
+posten = ["kreisumlage", "jugendamtsumlage", "gewerbesteuerumlage"]
+namen = ["Kreisumlage", "Jugendamtsumlage", "Gewerbesteuerumlage"]
+
+# [layout.schulden] (Phase 11, D-14): Hörstel zählt nur die Investitionskredite (S. 587,
+# Zeile 2.5.1); die Verbindlichkeiten aus Transferleistungen sind keine Kredite.
+[layout.schulden]
+posten = ["kredite_investitionen"]
+
+# [layout.vorbericht] (Phase 11): die manuell abgeschriebenen Vorberichtstabellen. Hörstel
+# druckt keine Kita- und Einzelzuschusstabellen und für die Kostenerstattungen nur den
+# Gesamtbetrag; dafür die privatrechtlichen Leistungsentgelte (S. 24).
+[layout.vorbericht]
+einzeltabellen = ["steuerarten", "zuwendungen", "transferaufwendungen", "investitionszuwendungen"]
+weitere_tabellen = ["leistungsentgelte", "privatrechtliche_leistungsentgelte", "personal", "sachaufwand", "sonstige_aufwendungen", "sonstige_ertraege"]

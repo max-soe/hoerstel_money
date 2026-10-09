@@ -175,6 +175,23 @@ eurozeichen = "C"
 # dessen Teilergebnisplan-Zeile 15 Regel 5 die Summe der drei Vorbericht-Posten abzieht.
 [layout.weitergabe_kreis_land]
 produkt = "160101"
+# posten: Schlüssel in transferaufwendungen.csv (Reihenfolge = App-Kinder des KL-Knotens),
+# namen: Anzeigenamen der App in derselben Reihenfolge (Phase 11, vorher im Code).
+posten = ["kreisumlage", "gewerbesteuerumlage", "krankenhausinvestitionsumlage"]
+namen = ["Kreisumlage", "Gewerbesteuerumlage", "Krankenhausinvestitionsumlage"]
+
+# [layout.schulden] (Phase 11, D-14): Posten der Tabelle verbindlichkeiten, die der
+# Vorbericht als Schulden zählt (S. 24): Investitionskredite plus die NRW.Bank-Mittel für
+# Flüchtlingsunterkünfte, die haushaltsrechtlich unter den Transferverbindlichkeiten stehen.
+[layout.schulden]
+posten = ["kredite_investitionen", "transferleistungen"]
+
+# [layout.vorbericht] (Phase 11): die manuell abgeschriebenen Vorberichtstabellen dieses
+# Jahrgangs, Einzeldateien und Tabellen in weitere_vorberichtstabellen.csv, jeweils in der
+# Reihenfolge der App-Daten.
+[layout.vorbericht]
+einzeltabellen = ["steuerarten", "zuwendungen", "transferaufwendungen", "kita_zuschuesse", "zuschuesse_lfd_zwecke", "investitionszuwendungen"]
+weitere_tabellen = ["leistungsentgelte", "kostenerstattungen", "personal", "sachaufwand", "sonstige_aufwendungen", "sonstige_ertraege"]
 
 # [layout.stellenplan] (Phase 4, Plan 04-03, D-18 bis D-20): gedruckte Titel und
 # Spaltenlayout von S. 284-290 (EXTR-10). Titel werden exakt gegen Textzeile.text

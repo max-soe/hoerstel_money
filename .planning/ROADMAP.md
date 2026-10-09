@@ -63,7 +63,7 @@ Die Phasen werden ohne GSD-Befehle bearbeitet und hier von Hand nachgeführt.
 **Plans**: 5 plans (von Hand geführt)
 - [x] 11-01: Ostbevern-Referenzstand nach `pipeline/referenz/ostbevern/` auslagern (`PIPELINE_REFERENZ`)
 - [x] 11-02: Stellenplan (Bildseiten S. 568–574) abschreiben, Schritt 05 und Regel 10 im IKVS-Layout
-- [ ] 11-03: Vorberichtstabellen, Fraktionszuwendungen, Eigenkapital (Bild S. 588), Verbindlichkeiten, VE-Übersicht, `meta.json`, Eckwerte; Regel 5/9
+- [x] 11-03: Vorberichtstabellen, Fraktionszuwendungen, Eigenkapital (Bild S. 588), Verbindlichkeiten, VE-Übersicht, `meta.json`, Eckwerte; Regel 5/9
 - [ ] 11-04: Erklärtexte und Glossar für Hörstel
 - [ ] 11-05: `befunde.md`, Prüfbericht, App-Daten, Quellenbelege mit Schwärzliste, `alle.py` durchgehend, CI-Reproduzierbarkeit auf Hörstel
 

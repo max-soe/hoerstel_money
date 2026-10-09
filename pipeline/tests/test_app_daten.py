@@ -30,7 +30,7 @@ from ostbevern.app_daten import (
 from ostbevern.konfiguration import STANDARD_JAHR, Jahrgang, lade_jahrgang, layout_text
 from ostbevern.pdf import PdfDokument
 from ostbevern.produkte import lies_personennamen
-from ostbevern.pruefung import REGEL5_TOLERANZ_GEP_EURO, WEITERGABE_POSTEN, Planwerte
+from ostbevern.pruefung import REGEL5_TOLERANZ_GEP_EURO, Planwerte, weitergabe_posten
 from ostbevern.schema import (
     DATEN_WURZEL,
     ERGEBNISPLAN_CSV,
@@ -424,6 +424,7 @@ def kl_kontext() -> dict[str, object]:
         ergebnisplan=ergebnisplan,
         transfer_df=transfer_df,
         produkt=produkt,
+        posten_namen=app_daten.weitergabe_posten_namen(jahrgang),
         gep_pdf_seite=gep_pdf_seite,
     )
     ergebnisplan_app = app_daten.baue_ergebnisplan(
@@ -432,6 +433,7 @@ def kl_kontext() -> dict[str, object]:
         transfer_df=transfer_df,
         hierarchie=hierarchie,
         produkt=produkt,
+        posten=weitergabe_posten(jahrgang),
         jahre=jahre,
         wertarten=wertarten,
     )
@@ -514,13 +516,14 @@ def test_kl_knoten_kinder_gerundet(kl_kontext: dict[str, object]) -> None:
     ergebnisplan_app = kl_kontext["ergebnisplan_app"]
     jahre = kl_kontext["jahre"]
 
-    kind_codes = [f"{app_daten.KL_CODE}.{posten}" for posten in WEITERGABE_POSTEN]
+    posten = weitergabe_posten(kl_kontext["jahrgang"])
+    kind_codes = [f"{app_daten.KL_CODE}.{p}" for p in posten]
     for code in kind_codes:
         assert knoten_je_code[code]["gerundet"] is True
         assert knoten_je_code[code]["ebene"] == "PG"
         assert knoten_je_code[code]["eltern"] == app_daten.KL_CODE
 
-    toleranz = len(WEITERGABE_POSTEN) * REGEL5_TOLERANZ_GEP_EURO
+    toleranz = len(posten) * REGEL5_TOLERANZ_GEP_EURO
     for index in range(len(jahre)):
         kinder_summe = sum(
             ergebnisplan_app[code]["zeilen"]["transferaufwendungen"][index] for code in kind_codes

@@ -71,6 +71,11 @@ VERBINDLICHKEITEN_CSV = MANUELL_WURZEL / "verbindlichkeiten.csv"
 # Eigenkapital (Phase 4, D-11, D-12, S. 311): EIGENKAPITAL_SPALTEN-Format (int-Euro,
 # kaufmännisch gerundete Cent).
 EIGENKAPITAL_CSV = MANUELL_WURZEL / "eigenkapital.csv"
+# Fraktionszuwendungen (Phase 11, Hörstel S. 576/577, Bildseiten): EIGENKAPITAL_SPALTEN-Format
+# (int-Euro). Tabellen `fraktionszuwendungen_geld` (Teil A, mit Gesamtzeile) und
+# `fraktionszuwendungen_geldwert` (Teil B, ohne Gesamtzeile). Optional: nur Jahrgänge, die
+# die Übersicht drucken, haben die Datei.
+FRAKTIONSZUWENDUNGEN_CSV = MANUELL_WURZEL / "fraktionszuwendungen.csv"
 # VE-Übersicht (Phase 4, D-11, S. 309): VE_UEBERSICHT_SPALTEN-Format.
 VE_UEBERSICHT_CSV = MANUELL_WURZEL / "ve_uebersicht.csv"
 # Erklärtexte (Phase 4, Plan 04-05, D-15 bis D-17, MANU-08): von Hand entworfene,
@@ -528,6 +533,11 @@ def lies_eigenkapital_csv(pfad: Path) -> pl.DataFrame:
     return lies_csv(pfad, EIGENKAPITAL_SPALTEN)
 
 
+# Fraktionszuwendungen (Phase 11, Hörstel S. 576/577, Bildseiten): EIGENKAPITAL_SPALTEN-Format
+# (int-Euro). Tabellen `fraktionszuwendungen_geld` (Teil A, mit Gesamtzeile) und
+# `fraktionszuwendungen_geldwert` (Teil B, ohne Gesamtzeile). Optional: nur Jahrgänge, die
+# die Übersicht drucken, haben die Datei.
+FRAKTIONSZUWENDUNGEN_CSV = MANUELL_WURZEL / "fraktionszuwendungen.csv"
 # VE-Übersicht (Phase 4, D-11, S. 309): ein Wert je Fälligkeits- oder Summenzeile.
 # `produkt`/`massnahme` sind null auf einer Summenzeile (`ist_gesamt` true, kein
 # einzelnes Produkt); `faellig_jahr` ist null auf der VE-Gesamtbetrag-Summenzeile

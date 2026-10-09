@@ -62,23 +62,16 @@ from ostbevern.konfiguration import (
 from ostbevern.pdf import PdfDokument, RahmenZeile, WortRahmen
 from ostbevern.plaene import lies_abschnitte
 from ostbevern.produkte import personenfeld_rechtecke
-from ostbevern.pruefung import zerlege_weitere_vorberichtstabellen
+from ostbevern.pruefung import lies_vorberichtstabellen
 from ostbevern.schema import (
     DATEN_WURZEL,
     EIGENKAPITAL_CSV,
     ERGEBNISPLAN_CSV,
     FINANZPLAN_CSV,
     HIERARCHIE_CSV,
-    INVESTITIONSZUWENDUNGEN_CSV,
-    KITA_ZUSCHUESSE_CSV,
     QUELLENBELEGE_MD,
     SEITEN_CSV,
-    STEUERARTEN_CSV,
-    TRANSFERAUFWENDUNGEN_CSV,
     VERBINDLICHKEITEN_CSV,
-    WEITERE_VORBERICHTSTABELLEN_CSV,
-    ZUSCHUESSE_LFD_ZWECKE_CSV,
-    ZUWENDUNGEN_CSV,
     lies_eigenkapital_csv,
     lies_hierarchie_csv,
     lies_plan_csv,
@@ -1006,18 +999,10 @@ def _sammle_plaene(
             )
 
 
-def _lies_vorbericht_tabellen(daten_wurzel: Path) -> dict[str, pl.DataFrame]:
+def _lies_vorbericht_tabellen(daten_wurzel: Path, jahrgang: Jahrgang) -> dict[str, pl.DataFrame]:
     """Die manuellen Vorberichtstabellen wie in `app_daten.erzeuge_app_daten` (nur lesend)."""
     return {
-        "steuerarten": lies_vorbericht_csv(daten_wurzel / STEUERARTEN_CSV),
-        "zuwendungen": lies_vorbericht_csv(daten_wurzel / ZUWENDUNGEN_CSV),
-        "transferaufwendungen": lies_vorbericht_csv(daten_wurzel / TRANSFERAUFWENDUNGEN_CSV),
-        "kita_zuschuesse": lies_vorbericht_csv(daten_wurzel / KITA_ZUSCHUESSE_CSV),
-        "zuschuesse_lfd_zwecke": lies_vorbericht_csv(daten_wurzel / ZUSCHUESSE_LFD_ZWECKE_CSV),
-        "investitionszuwendungen": lies_vorbericht_csv(daten_wurzel / INVESTITIONSZUWENDUNGEN_CSV),
-        **zerlege_weitere_vorberichtstabellen(
-            lies_vorbericht_csv(daten_wurzel / WEITERE_VORBERICHTSTABELLEN_CSV)
-        ),
+        **lies_vorberichtstabellen(daten_wurzel, jahrgang),
         "eigenkapital": lies_eigenkapital_csv(daten_wurzel / EIGENKAPITAL_CSV),
     }
 
@@ -1034,7 +1019,7 @@ def _sammle_vorbericht(
     sammler: _Sammler, jahrgang: Jahrgang, daten_wurzel: Path, haushalt: Mapping[str, object]
 ) -> None:
     """vb für jeden Posten und jede gedruckte Gesamtzeile mit Quellseite (inkl. Eigenkapital)."""
-    tabellen_df = _lies_vorbericht_tabellen(daten_wurzel)
+    tabellen_df = _lies_vorbericht_tabellen(daten_wurzel, jahrgang)
     index = _haushaltsjahr_index(jahrgang, haushalt["jahre"])
     tabellen = {**haushalt["vorbericht"], "eigenkapital": haushalt["eigenkapital"]}
     for tabelle, daten in tabellen.items():

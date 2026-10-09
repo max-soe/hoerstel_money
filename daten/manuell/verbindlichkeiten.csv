@@ -1,25 +1,31 @@
 tabelle,position,posten,posten_name,ist_gesamt,jahr,wertart,betrag_teur,anmerkung,quelle
-buergschaften,1,bbo_buergschaft,Bürgschaft Bäder- und Beteiligungsgesellschaft Ostbevern mbH,false,2024,ergebnis,307,,310
-buergschaften,1,bbo_buergschaft,Bürgschaft Bäder- und Beteiligungsgesellschaft Ostbevern mbH,false,2025,ansatz,242,,310
-buergschaften,1,bbo_buergschaft,Bürgschaft Bäder- und Beteiligungsgesellschaft Ostbevern mbH,false,2026,ansatz,177,,310
-verbindlichkeiten,2,kredite_investitionen,Verbindlichkeiten aus Krediten für Investitionen,false,2024,ergebnis,7208,,310
-verbindlichkeiten,2,kredite_investitionen,Verbindlichkeiten aus Krediten für Investitionen,false,2025,ansatz,6879,,310
-verbindlichkeiten,2,kredite_investitionen,Verbindlichkeiten aus Krediten für Investitionen,false,2026,ansatz,11629,,310
-verbindlichkeiten,3,liquiditaetskredite,Verbindlichkeiten aus Krediten zur Liquiditätssicherung,false,2024,ergebnis,447,,310
-verbindlichkeiten,3,liquiditaetskredite,Verbindlichkeiten aus Krediten zur Liquiditätssicherung,false,2025,ansatz,418,,310
-verbindlichkeiten,3,liquiditaetskredite,Verbindlichkeiten aus Krediten zur Liquiditätssicherung,false,2026,ansatz,389,,310
-verbindlichkeiten,5,lieferungen_leistungen,Verbindlichkeiten aus Lieferungen und Leistungen,false,2024,ergebnis,1919,,310
-verbindlichkeiten,5,lieferungen_leistungen,Verbindlichkeiten aus Lieferungen und Leistungen,false,2025,ansatz,1000,,310
-verbindlichkeiten,5,lieferungen_leistungen,Verbindlichkeiten aus Lieferungen und Leistungen,false,2026,ansatz,1000,,310
-verbindlichkeiten,6,transferleistungen,Verbindlichkeiten aus Transferleistungen,false,2024,ergebnis,1221,"Enthält die abgerufenen NRW.Bank-Mittel für Flüchtlingsunterkünfte, die haushaltsrechtlich als Transferverbindlichkeit (nicht als Kredit) ausgewiesen werden (S. 24).",310
-verbindlichkeiten,6,transferleistungen,Verbindlichkeiten aus Transferleistungen,false,2025,ansatz,831,"Enthält die abgerufenen NRW.Bank-Mittel für Flüchtlingsunterkünfte, die haushaltsrechtlich als Transferverbindlichkeit (nicht als Kredit) ausgewiesen werden (S. 24).",310
-verbindlichkeiten,6,transferleistungen,Verbindlichkeiten aus Transferleistungen,false,2026,ansatz,746,"Enthält die abgerufenen NRW.Bank-Mittel für Flüchtlingsunterkünfte, die haushaltsrechtlich als Transferverbindlichkeit (nicht als Kredit) ausgewiesen werden (S. 24).",310
-verbindlichkeiten,7,sonstige_verbindlichkeiten,Sonstige Verbindlichkeiten,false,2024,ergebnis,288,,310
-verbindlichkeiten,7,sonstige_verbindlichkeiten,Sonstige Verbindlichkeiten,false,2025,ansatz,500,,310
-verbindlichkeiten,7,sonstige_verbindlichkeiten,Sonstige Verbindlichkeiten,false,2026,ansatz,500,,310
-verbindlichkeiten,8,erhaltene_anzahlungen,Erhaltene Anzahlungen,false,2024,ergebnis,17548,,310
-verbindlichkeiten,8,erhaltene_anzahlungen,Erhaltene Anzahlungen,false,2025,ansatz,10000,,310
-verbindlichkeiten,8,erhaltene_anzahlungen,Erhaltene Anzahlungen,false,2026,ansatz,10000,,310
-verbindlichkeiten,9,gesamt,Summe aller Verbindlichkeiten,true,2024,ergebnis,28631,,310
-verbindlichkeiten,9,gesamt,Summe aller Verbindlichkeiten,true,2025,ansatz,19628,,310
-verbindlichkeiten,9,gesamt,Summe aller Verbindlichkeiten,true,2026,ansatz,24264,,310
+buergschaften,1,haftungsverhaeltnisse,Haftungsverhältnisse aus der Bestellung von Sicherheiten (z. B. Bürgschaften),false,2024,ergebnis,226,nachrichtlich,587
+buergschaften,1,haftungsverhaeltnisse,Haftungsverhältnisse aus der Bestellung von Sicherheiten (z. B. Bürgschaften),false,2025,ansatz,226,nachrichtlich,587
+buergschaften,1,haftungsverhaeltnisse,Haftungsverhältnisse aus der Bestellung von Sicherheiten (z. B. Bürgschaften),false,2026,ansatz,226,nachrichtlich,587
+verbindlichkeiten,1,anleihen,1. Anleihen,false,2024,ergebnis,0,Stand 01.01.2025,587
+verbindlichkeiten,1,anleihen,1. Anleihen,false,2025,ansatz,0,Stand 01.01.2026,587
+verbindlichkeiten,1,anleihen,1. Anleihen,false,2026,ansatz,0,,587
+verbindlichkeiten,2,kredite_investitionen,2. Verbindlichkeiten aus Krediten für Investitionen,false,2024,ergebnis,24884,Stand 01.01.2025,587
+verbindlichkeiten,2,kredite_investitionen,2. Verbindlichkeiten aus Krediten für Investitionen,false,2025,ansatz,28345,Stand 01.01.2026,587
+verbindlichkeiten,2,kredite_investitionen,2. Verbindlichkeiten aus Krediten für Investitionen,false,2026,ansatz,43887,,587
+verbindlichkeiten,3,liquiditaetskredite,3. Verbindlichkeiten aus Krediten zur Liquiditätssicherung,false,2024,ergebnis,0,Stand 01.01.2025,587
+verbindlichkeiten,3,liquiditaetskredite,3. Verbindlichkeiten aus Krediten zur Liquiditätssicherung,false,2025,ansatz,0,Stand 01.01.2026,587
+verbindlichkeiten,3,liquiditaetskredite,3. Verbindlichkeiten aus Krediten zur Liquiditätssicherung,false,2026,ansatz,0,,587
+verbindlichkeiten,4,kreditaehnliche_vorgaenge,"4. Verbindlichkeiten aus Vorgängen, die Kreditaufnahmen wirtschaftlich gleichkommen",false,2024,ergebnis,0,Stand 01.01.2025,587
+verbindlichkeiten,4,kreditaehnliche_vorgaenge,"4. Verbindlichkeiten aus Vorgängen, die Kreditaufnahmen wirtschaftlich gleichkommen",false,2025,ansatz,0,Stand 01.01.2026,587
+verbindlichkeiten,4,kreditaehnliche_vorgaenge,"4. Verbindlichkeiten aus Vorgängen, die Kreditaufnahmen wirtschaftlich gleichkommen",false,2026,ansatz,0,,587
+verbindlichkeiten,5,lieferungen_leistungen,5. Verbindlichkeiten aus Lieferungen und Leistungen,false,2024,ergebnis,2587,Stand 01.01.2025,587
+verbindlichkeiten,5,lieferungen_leistungen,5. Verbindlichkeiten aus Lieferungen und Leistungen,false,2025,ansatz,3021,Stand 01.01.2026,587
+verbindlichkeiten,5,lieferungen_leistungen,5. Verbindlichkeiten aus Lieferungen und Leistungen,false,2026,ansatz,3201,,587
+verbindlichkeiten,6,transferleistungen,6. Verbindlichkeiten aus Transferleistungen,false,2024,ergebnis,144,Stand 01.01.2025,587
+verbindlichkeiten,6,transferleistungen,6. Verbindlichkeiten aus Transferleistungen,false,2025,ansatz,315,Stand 01.01.2026,587
+verbindlichkeiten,6,transferleistungen,6. Verbindlichkeiten aus Transferleistungen,false,2026,ansatz,315,,587
+verbindlichkeiten,7,sonstige_verbindlichkeiten,7. Sonstige Verbindlichkeiten,false,2024,ergebnis,725,Stand 01.01.2025,587
+verbindlichkeiten,7,sonstige_verbindlichkeiten,7. Sonstige Verbindlichkeiten,false,2025,ansatz,704,Stand 01.01.2026,587
+verbindlichkeiten,7,sonstige_verbindlichkeiten,7. Sonstige Verbindlichkeiten,false,2026,ansatz,704,,587
+verbindlichkeiten,8,erhaltene_anzahlungen,8. Erhaltene Anzahlungen,false,2024,ergebnis,9843,Stand 01.01.2025,587
+verbindlichkeiten,8,erhaltene_anzahlungen,8. Erhaltene Anzahlungen,false,2025,ansatz,8608,Stand 01.01.2026,587
+verbindlichkeiten,8,erhaltene_anzahlungen,8. Erhaltene Anzahlungen,false,2026,ansatz,8608,,587
+verbindlichkeiten,9,gesamt,9. Summe aller Verbindlichkeiten,true,2024,ergebnis,38183,,587
+verbindlichkeiten,9,gesamt,9. Summe aller Verbindlichkeiten,true,2025,ansatz,40993,,587
+verbindlichkeiten,9,gesamt,9. Summe aller Verbindlichkeiten,true,2026,ansatz,56535,,587

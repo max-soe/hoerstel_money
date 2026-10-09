@@ -120,3 +120,46 @@ ordentliche_aufwendungen = 61330757
 "14" = { name = "Umweltschutz", pdf_seite = 514 }
 "15" = { name = "Wirtschaft und Tourismus", pdf_seite = 524 }
 "16" = { name = "Allgemeine Finanzwirtschaft", pdf_seite = 552 }
+
+# Eckwerte (Anhang B.6, Phase 11): feste Vergleichswerte aus dem Hörsteler PDF, möglichst aus
+# einer anderen Stelle als die geprüften Daten. Regel 9 prüft genau die hier genannten Namen,
+# Regel 5 die Satzung § 4 (Ausgleichsrücklage). Hörstel druckt keine Kreisumlage-Hebesätze
+# und keine Pro-Kopf-Verschuldung; diese Eckwerte fehlen deshalb.
+[eckwerte.einwohner]
+wert = 20166
+pdf_seite = 67
+
+[eckwerte.hebesatz_grundsteuer_a]
+wert = 312
+pdf_seite = 12
+
+[eckwerte.hebesatz_grundsteuer_b]
+wert = 800
+pdf_seite = 12
+
+[eckwerte.hebesatz_gewerbesteuer]
+wert = 421
+pdf_seite = 12
+
+[eckwerte.schluesselzuweisung_teur]
+wert = 4478
+pdf_seite = 22
+
+# Vorjahr: Text S. 22 „verändern sich gegenüber 2025 um 1.444 Tausend EUR“ (4.478 − 1.444).
+[eckwerte.schluesselzuweisung_vorjahr_teur]
+wert = 3034
+pdf_seite = 22
+
+[eckwerte.stellen_beamte_hundertstel]
+wert = 1981
+pdf_seite = 568
+
+[eckwerte.verringerung_ausgleichsruecklage]
+wert = 2740330
+pdf_seite = 8
+
+# Satzung § 4 nennt nur die Inanspruchnahme der Ausgleichsrücklage; die allgemeine Rücklage
+# wird 2026 nicht verringert.
+[eckwerte.verringerung_allgemeine_ruecklage]
+wert = 0
+pdf_seite = 8
