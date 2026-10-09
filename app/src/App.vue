@@ -184,6 +184,11 @@ onBeforeUnmount(() => {
     </div>
 
     <main class="om-content">
+      <!-- Auf jeder Seite: privates Projekt, keine Gewähr (die Fußzeile steht erst ganz unten). -->
+      <p class="om-hinweis-privat" role="note">
+        Privates Projekt, keine Veröffentlichung der {{ KOMMUNE_VOLL }}. Alle Angaben ohne Gewähr;
+        maßgeblich ist der Original-Haushaltsplan.
+      </p>
       <RouterView />
     </main>
 
@@ -315,6 +320,14 @@ onBeforeUnmount(() => {
 .om-content {
   display: block;
   padding: var(--wa-space-l);
+}
+
+.om-hinweis-privat {
+  margin: 0 0 var(--wa-space-m);
+  font-size: var(--wa-font-size-s);
+  line-height: var(--wa-line-height-normal);
+  color: var(--wa-color-text-quiet);
+  overflow-wrap: break-word;
 }
 
 .om-footer {

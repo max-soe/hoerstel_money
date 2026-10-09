@@ -104,7 +104,6 @@ const haushaltsjahr = jahr(haushalt.haushaltsjahr)
           </dd>
         </div>
       </dl>
-      
     </section>
 
     <section aria-labelledby="om-ueber-datenschutz" class="om-ueber__abschnitt">

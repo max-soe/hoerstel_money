@@ -123,6 +123,13 @@ describe('App.vue (Fußzeile, D-17, D-18)', () => {
     expect(quelle).not.toContain(ORIGINAL_PDF_URL)
   })
 
+  it('zeigt auf jeder Seite über dem Inhalt den Hinweis „privat, ohne Gewähr“', () => {
+    const vorInhalt = quelle.slice(0, quelle.indexOf('<RouterView />'))
+    expect(vorInhalt).toContain('class="om-hinweis-privat"')
+    expect(vorInhalt).toMatch(/Privates Projekt/)
+    expect(vorInhalt).toMatch(/ohne Gewähr/)
+  })
+
   it('zeigt alle fünf Fußzeilen-Zeilen ohne Build-Datum', () => {
     expect(quelle).toContain('Datenstand: Haushalt')
     // Der Name der Kommune kommt aus den Daten (`lib/kommune.ts`), nie als getippter Ortsname.
