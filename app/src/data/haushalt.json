@@ -38612,7 +38612,7 @@
           30963000
         ],
         "gerundet": true,
-        "quelle": 27
+        "quelle": 33
       },
       "posten": [
         {
@@ -38676,8 +38676,8 @@
           ],
           "gerundet": true,
           "berechnet": false,
-          "quelle": 35,
-          "anmerkung": "2024 und 2027-2029 aus der Grafik „Die Umlagen an den Kreis Steinfurt“ (S. 35)"
+          "quelle": 34,
+          "anmerkung": null
         },
         {
           "posten": "jugendamtsumlage",
@@ -38692,8 +38692,8 @@
           ],
           "gerundet": true,
           "berechnet": false,
-          "quelle": 35,
-          "anmerkung": "2024 und 2027-2029 aus der Grafik „Die Umlagen an den Kreis Steinfurt“ (S. 35)"
+          "quelle": 34,
+          "anmerkung": null
         },
         {
           "posten": "gewerbesteuerumlage",
@@ -38708,8 +38708,8 @@
           ],
           "gerundet": true,
           "berechnet": true,
-          "quelle": 557,
-          "anmerkung": "berechnet: Teilergebnisplan 1661101 Z. 15 abzüglich Kreis- und Jugendamtsumlage (S. 557)"
+          "quelle": 33,
+          "anmerkung": null
         },
         {
           "posten": "uebrige_transferaufwendungen",
@@ -40009,5 +40009,6 @@
     ]
   },
   "eigenkapital_stand": "jahresende_vor_verrechnung",
-  "finanzierungsprodukt": "1661101"
+  "finanzierungsprodukt": "1661101",
+  "bezugsgroessen": []
 }

@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: Hörstel
 status: In progress
-stopped_at: Phase 11 complete (von Hand gepflegt, ohne GSD-Befehle)
+stopped_at: Phase 12, Plan 02 complete (von Hand gepflegt, ohne GSD-Befehle)
 last_updated: "2026-10-09T00:00:00.000Z"
 last_activity: 2026-10-09
-last_activity_desc: Phase 11 abgeschlossen (manuelle Daten, Texte, befunde.md, alle.py und CI auf Hörstel)
+last_activity_desc: 12-02 abgeschlossen (App-Module und App-Tests auf Hörstel, sieben Fehler in App und Pipeline behoben)
 progress:
   total_phases: 5
   completed_phases: 4
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-09)
 ## Current Position
 
 Milestone: v2.0 Hörstel (Phases 8-12)
-Phase: 11 of 8-12 (Manuelle Daten und App-Daten Hörstel) — complete
+Phase: 12 of 8-12 (App auf Hörstel umstellen) — Plans 01–02 complete
 Plan: 11-05 complete
-Status: Ready for Phase 12 (App auf Hörstel umstellen)
-Last activity: 2026-10-09 — Phase 11 abgeschlossen
+Status: Ready for 12-03 (Texte, Namen, Links, README, Deployment)
+Last activity: 2026-10-09 — 12-02 abgeschlossen
 
 Hinweis: Dieser Meilenstein wird in einer Cloud-Session ohne GSD-Befehle bearbeitet. ROADMAP, REQUIREMENTS, STATE und die Phasen-Summaries unter `.planning/phases/` werden von Hand nachgeführt; PLAN-, VERIFICATION- und UAT-Dateien gibt es für diese Phasen nicht.
 
@@ -79,7 +79,7 @@ None.
 ### Blockers/Concerns
 
 Aus v2.0:
-- Die App ist noch auf Ostbevern zugeschnitten und schlägt mit den Hörsteler Daten fehl (Typprüfung, 242 von 1.640 vitest-Tests, Stand 11-05): fehlender `meta.kreisumlage`-Block, Produkte ohne Fachbereich/Bindungsgrad, Maßnahmen ohne Sachkonto (`konto: null`, Belegschlüssel mit leerem Konto), keine Kita-/Einzelzuschuss-Tabellen, keine HSK-Schwellen, keine Bilanzierungshilfe, keine Konzessions-Sparten, Reihe `nrw_bank` = 0, Grundzahlen-Zeitreihen (Produkt 160101) und Stellen-Gruppennamen. Die CI läuft nur für `main` und Pull Requests; der App-Job wird erst mit Phase 12 wieder grün → Phase 12 (HOE-13).
+- Die App lädt die Hörsteler Daten; Typprüfung, Lint, Format, 2.067 vitest-Tests und Build sind grün (Stand 12-02). Texte, Namen und Links nennen noch Ostbevern bzw. „Gemeinde“ (z. B. Knoten „Gemeindehaushalt“ im Geldfluss) → 12-03; Browser-Tests und Sichtprüfung → 12-04. Die CI läuft nur für `main` und Pull Requests.
 - Quellenbelege Hörstel: 899 von 2.768 Belegen ohne Markierung (597 davon berechnete Produktgruppen-Zeilen, 171 Stellenplan auf Bildseiten, Rest Vorberichtsgrafiken und umbrochene Tabellenzeilen); die App zeigt dann die Seite ohne Markierung.
 - Hörstel druckt Ist-Ergebnisse 2024 mit Cent; gerundet wird kaufmännisch auf Euro (Rundungsbefunde in `befunde.md`).
 
@@ -104,7 +104,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-10-08
-Stopped at: Phase 11 complete
+Stopped at: Phase 12, Plan 02 complete
 Resume file: .planning/phases/11-manuelle-daten-und-app-daten-hoerstel/11-05-SUMMARY.md
 
 ## Operator Next Steps

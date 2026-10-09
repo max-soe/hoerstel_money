@@ -308,23 +308,18 @@ export interface Bezugsgroesse {
 }
 
 /**
- * Die Produkte mit „Zuschussbedarf je Einheit“ (RESEARCH Open Question 6). Freigegeben in
- * Plan 05-03 („Entscheidungen aus der Abnahme“, Antwort „Vorschlag übernehmen“): Grundschulen
- * je Schüler/in, Musikschule je Musikschüler/in, Kindertagesstätten je betreutem Kind (Summe
- * aus „unter 3 Jahre“ und „3 - 6 Jahre“). Für jedes andere Produkt gibt es nur „je Einwohner“.
- * Eine falsche Bezugsgröße würde Bürgerinnen und Bürger in die Irre führen; deshalb nur diese
- * Liste, abgesichert durch einen Test.
+ * Die Produkte mit „Zuschussbedarf je Einheit“ (RESEARCH Open Question 6, Freigabe 05-03). Die
+ * Liste steht im Jahrgang (`[layout.bezugsgroessen]`, über `haushalt.bezugsgroessen`), nicht im
+ * Code: Ostbevern rechnet Grundschulen je Schüler/in, Musikschule je Musikschüler/in und
+ * Kindertagesstätten je betreutem Kind; Hörstel druckt „Produktergebnis je …“ selbst und hat
+ * keine. Für jedes andere Produkt gibt es nur „je Einwohner“. Eine falsche Bezugsgröße würde
+ * Bürgerinnen und Bürger in die Irre führen; deshalb nur diese Liste, abgesichert durch Tests.
  */
-export const BEZUGSGROESSEN: readonly Bezugsgroesse[] = [
-  { produkt: '030101', bezeichnungen: ['Schüler/innen'], einheitText: 'Schüler/in' },
-  { produkt: '030102', bezeichnungen: ['Schüler/innen'], einheitText: 'Schüler/in' },
-  { produkt: '040301', bezeichnungen: ['Musikschüler/innen'], einheitText: 'Musikschüler/in' },
-  {
-    produkt: '060101',
-    bezeichnungen: ['Betreute Kinder unter 3 Jahre', 'Betreute Kinder von 3 - 6 Jahre'],
-    einheitText: 'betreutem Kind',
-  },
-]
+export const BEZUGSGROESSEN: readonly Bezugsgroesse[] = haushalt.bezugsgroessen.map((b) => ({
+  produkt: b.produkt,
+  bezeichnungen: b.bezeichnungen,
+  einheitText: b.einheit_text,
+}))
 
 /** Hinweise ohne Dopplungen; ein Hinweis, der in einem längeren enthalten ist, entfällt. */
 function fasseHinweiseZusammen(grundzahlen: readonly Grundzahl[]): string | null {

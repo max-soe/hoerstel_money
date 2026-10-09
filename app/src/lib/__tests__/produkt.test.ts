@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { haushalt, investitionen, produkte } from '@/data/daten'
+import type { Grundzahl, HaushaltBezugsgroesse, Produkt } from '@/data/typen'
 import { proKopf } from '@/lib/berechnung'
 import { wertartFuerJahr, wertartName } from '@/lib/jahr'
 import {
@@ -21,9 +22,14 @@ import { zeilenName } from '@/lib/zeilen'
 const erstes = produkte[0]
 
 describe('Testdaten', () => {
-  it('enthalten die 63 Produkte des Haushalts', () => {
-    expect(produkte).toHaveLength(63)
+  it('enthalten genau die Produkte (Ebene P) des Haushalts', () => {
+    const codes = haushalt.knoten.filter((k) => k.ebene === 'P').map((k) => k.code)
+    expect(produkte.map((p) => p.code).sort()).toEqual([...codes].sort())
     expect(erstes).toBeDefined()
+  })
+
+  it.runIf(haushalt.haushaltsjahr === 2026)('Hörstel 2026: 69 Produkte', () => {
+    expect(produkte).toHaveLength(69)
   })
 })
 
@@ -117,16 +123,28 @@ describe('baueProduktKopf (D-09)', () => {
     },
   )
 
-  it('nennt ein abweichendes Original des Bindungsgrads, sonst nicht', () => {
+  it('schreibt den Bindungsgrad aus und nennt nur ein abweichendes Original', () => {
     for (const produkt of produkte) {
       const kopf = baueProduktKopf(produkt.code)
-      expect(kopf?.bindungsgrad).toBe(bindungsgradText(produkt.bindungsgrad))
+      expect(kopf?.bindungsgrad).toBe(
+        produkt.bindungsgrad === null ? null : bindungsgradText(produkt.bindungsgrad),
+      )
       if (kopf?.bindungsgradOriginal !== null) {
         expect(kopf?.bindungsgradOriginal).toBe(produkt.bindungsgrad_original)
       }
     }
-    const rein = produkte.find((p) => p.bindungsgrad === 'pflichtig')
-    expect(baueProduktKopf(rein?.code ?? '')?.bindungsgradOriginal).toBeNull()
+  })
+
+  it('zeigt ohne Bindungsgrad im Plan weder Text noch Original (Hörstel: keinem Produkt zugeordnet)', () => {
+    const ohne = produkte.filter((p) => p.bindungsgrad === null)
+    for (const produkt of ohne) {
+      const kopf = baueProduktKopf(produkt.code)
+      expect(kopf?.bindungsgrad).toBeNull()
+      expect(kopf?.bindungsgradOriginal).toBeNull()
+    }
+    if (haushalt.haushaltsjahr === 2026) {
+      expect(ohne).toHaveLength(produkte.length)
+    }
   })
 })
 
@@ -225,33 +243,94 @@ describe('baueTeilergebnisplan (AUSG-05, D-23)', () => {
   )
 })
 
+/** Bezugsgrößen, deren Produkt es im Jahrgang gibt (Hörstel 2026: keine, siehe unten). */
+const ANWENDBARE_BEZUGSGROESSEN = BEZUGSGROESSEN.filter((b) =>
+  produkte.some((p) => p.code === b.produkt),
+)
+
 describe('BEZUGSGROESSEN (Freigabe 05-03, Open Question 6)', () => {
-  it('enthält genau die freigegebenen Produkte', () => {
-    expect(BEZUGSGROESSEN.map((b) => b.produkt)).toEqual(['030101', '030102', '040301', '060101'])
+  it('nennt je Bezugsgröße mindestens eine Grundzahl und eine Einheit', () => {
+    for (const bezug of BEZUGSGROESSEN) {
+      expect(bezug.bezeichnungen.length).toBeGreaterThan(0)
+      expect(bezug.einheitText).not.toBe('')
+    }
   })
 
-  it.each(BEZUGSGROESSEN.map((b) => [b.produkt, b] as const))(
-    'nennt für %s Grundzahlen, die im Produkt genau einmal vorkommen',
-    (_code, bezug) => {
+  it('nennt für jedes vorhandene Produkt Grundzahlen, die im Produkt genau einmal vorkommen', () => {
+    for (const bezug of ANWENDBARE_BEZUGSGROESSEN) {
       const produkt = produkte.find((p) => p.code === bezug.produkt)
-      expect(produkt).toBeDefined()
-      expect(bezug.bezeichnungen.length).toBeGreaterThan(0)
       for (const bezeichnung of bezug.bezeichnungen) {
-        expect(produkt?.grundzahlen.filter((g) => g.bezeichnung === bezeichnung)).toHaveLength(1)
+        expect(
+          produkt?.grundzahlen.filter((g) => g.bezeichnung === bezeichnung),
+          `${bezug.produkt}: ${bezeichnung}`,
+        ).toHaveLength(1)
       }
+    }
+  })
+
+  it.runIf(haushalt.haushaltsjahr === 2026)(
+    'Hörstel 2026: keine freigegebene Bezugsgröße trifft ein Produkt (Kennzahlen „je …“ sind gedruckt)',
+    () => {
+      expect(ANWENDBARE_BEZUGSGROESSEN).toEqual([])
     },
   )
 })
 
+/** Was die Prüfung von „Zuschussbedarf je Einheit“ braucht: echte oder synthetische Daten. */
+interface ZuschussQuelle {
+  baueGrundzahlen: typeof baueGrundzahlen
+  produkte: readonly Produkt[]
+  ergebnisplan: typeof haushalt.ergebnisplan
+  jahre: readonly number[]
+}
+
+/** Prüft die Zeile „Zuschussbedarf je {Einheit} (berechnet)“ einer Bezugsgröße. */
+function pruefeZuschussJeEinheit(
+  quelle: ZuschussQuelle,
+  bezug: (typeof BEZUGSGROESSEN)[number],
+): void {
+  const produkt = quelle.produkte.find((p) => p.code === bezug.produkt)
+  const zuschuss = quelle.ergebnisplan[bezug.produkt]?.berechnet.zuschussbedarf ?? []
+  const tabelle = quelle.baueGrundzahlen(bezug.produkt)
+  const zeile = tabelle?.zeilen.find((z) => z.etikett === 'berechnet')
+  expect(zeile?.name).toBe(`Zuschussbedarf je ${bezug.einheitText} (berechnet)`)
+  const jahrSpalten = tabelle?.spalten.slice(2, -1) ?? []
+  for (const spalte of jahrSpalten) {
+    const j = Number(spalte.schluessel.slice(1))
+    const planIndex = quelle.jahre.indexOf(j)
+    const teile = bezug.bezeichnungen.map((bezeichnung) =>
+      produkt?.grundzahlen
+        .find((g) => g.bezeichnung === bezeichnung)
+        ?.werte.find((w) => w.jahr === j),
+    )
+    const wert = zeile?.[spalte.schluessel]
+    if (planIndex < 0 || teile.some((t) => t === undefined)) {
+      expect(wert).toBeNull()
+    } else {
+      const summe = teile.reduce((gesamt, t) => gesamt + (t?.wert ?? 0), 0)
+      expect(wert).toBe(Math.round((zuschuss[planIndex] ?? Number.NaN) / summe))
+    }
+  }
+  // Mindestens ein Jahr hat beide Werte.
+  expect(jahrSpalten.some((s) => zeile?.[s.schluessel] !== null)).toBe(true)
+}
+
 describe('baueGrundzahlen (AUSG-05)', () => {
-  it('liefert null für Produkte ohne Grundzahlen', () => {
+  it('liefert null für Produkte ohne Grundzahlen und unbekannte Codes', () => {
     const ohne = produkte.filter((p) => p.grundzahlen.length === 0)
-    expect(ohne).toHaveLength(15)
     for (const produkt of ohne) {
       expect(baueGrundzahlen(produkt.code)).toBeNull()
     }
     expect(baueGrundzahlen('__proto__')).toBeNull()
+    expect(baueGrundzahlen('999999')).toBeNull()
   })
+
+  it.runIf(haushalt.haushaltsjahr === 2026)(
+    'Hörstel 2026: jedes Produkt druckt Grundzahlen',
+    () => {
+      expect(produkte.filter((p) => p.grundzahlen.length === 0)).toEqual([])
+    },
+  )
 
   it.each(produkte.filter((p) => p.grundzahlen.length > 0).map((p) => p.code))(
     'zeigt für %s jede Grundzahl mit ihren Werten und nur freigegebene Je-Einheit-Zeilen',
@@ -272,9 +351,11 @@ describe('baueGrundzahlen (AUSG-05)', () => {
         }
       })
 
+      // Gedruckte Grundzahlen dürfen selbst „Zuschussbedarf je …“ heißen (Hörstel 0842403
+      // Hallenbad Riesenbeck); berechnet sind nur die Zeilen mit Etikett.
       const freigegeben = BEZUGSGROESSEN.filter((b) => b.produkt === code)
       expect(berechnet).toHaveLength(freigegeben.length)
-      expect(zeilen.filter((z) => String(z.name).includes('Zuschussbedarf je'))).toHaveLength(
+      expect(berechnet.filter((z) => String(z.name).includes('Zuschussbedarf je'))).toHaveLength(
         freigegeben.length,
       )
     },
@@ -291,31 +372,11 @@ describe('baueGrundzahlen (AUSG-05)', () => {
   })
 
   it('rechnet Zuschussbedarf je Einheit nur für Jahre mit beiden Werten', () => {
-    for (const bezug of BEZUGSGROESSEN) {
-      const produkt = produkte.find((p) => p.code === bezug.produkt)
-      const zuschuss = ergebnisplanVon(bezug.produkt).berechnet.zuschussbedarf
-      const tabelle = baueGrundzahlen(bezug.produkt)
-      const zeile = tabelle?.zeilen.find((z) => z.etikett === 'berechnet')
-      expect(zeile?.name).toBe(`Zuschussbedarf je ${bezug.einheitText} (berechnet)`)
-      const jahrSpalten = tabelle?.spalten.slice(2, -1) ?? []
-      for (const spalte of jahrSpalten) {
-        const j = Number(spalte.schluessel.slice(1))
-        const planIndex = haushalt.jahre.indexOf(j)
-        const teile = bezug.bezeichnungen.map((bezeichnung) =>
-          produkt?.grundzahlen
-            .find((g) => g.bezeichnung === bezeichnung)
-            ?.werte.find((w) => w.jahr === j),
-        )
-        const wert = zeile?.[spalte.schluessel]
-        if (planIndex < 0 || teile.some((t) => t === undefined)) {
-          expect(wert).toBeNull()
-        } else {
-          const summe = teile.reduce((gesamt, t) => gesamt + (t?.wert ?? 0), 0)
-          expect(wert).toBe(Math.round((zuschuss[planIndex] ?? Number.NaN) / summe))
-        }
-      }
-      // Mindestens ein Jahr hat beide Werte (2024/2025 liegen im Plan und bei den Grundzahlen).
-      expect(jahrSpalten.some((s) => zeile?.[s.schluessel] !== null)).toBe(true)
+    for (const bezug of ANWENDBARE_BEZUGSGROESSEN) {
+      pruefeZuschussJeEinheit(
+        { baueGrundzahlen, produkte, ergebnisplan: haushalt.ergebnisplan, jahre: haushalt.jahre },
+        bezug,
+      )
     }
   })
 
@@ -370,13 +431,17 @@ describe('baueProduktInvestitionen (AUSG-05)', () => {
 })
 
 describe('baueErlaeuterungen (AUSG-05)', () => {
-  it('liefert für Produkte ohne Erläuterungen eine leere Liste', () => {
+  it('liefert für Produkte ohne Erläuterungen und unbekannte Codes eine leere Liste', () => {
     const ohne = produkte.filter((p) => p.erlaeuterungen.length === 0)
-    expect(ohne).toHaveLength(13)
     for (const produkt of ohne) {
       expect(baueErlaeuterungen(produkt.code)).toEqual([])
     }
     expect(baueErlaeuterungen('__proto__')).toEqual([])
+    expect(baueErlaeuterungen('999999')).toEqual([])
+  })
+
+  it.runIf(haushalt.haushaltsjahr === 2026)('Hörstel 2026: jedes Produkt hat Erläuterungen', () => {
+    expect(produkte.filter((p) => p.erlaeuterungen.length === 0)).toEqual([])
   })
 
   it('löst zweistellige Zeilennummern zu gedruckten Zeilennamen auf', () => {
@@ -411,7 +476,7 @@ describe('baueErlaeuterungen (AUSG-05)', () => {
   })
 })
 
-describe('Probe AUSG-05: alle 63 Produkte', () => {
+describe('Probe AUSG-05: alle Produkte', () => {
   it('baut jedes Seitenmodell ohne Fehler', () => {
     for (const produkt of produkte) {
       expect(() => {
@@ -472,7 +537,7 @@ describe('Quelle-Spalte der Produkttabellen (D-01, UI-02)', () => {
         berechnete += 1
       }
     }
-    expect(berechnete).toBeGreaterThan(0)
+    expect(berechnete).toBe(ANWENDBARE_BEZUGSGROESSEN.length)
   })
 
   it('die Investitionen haben als letzte Spalte „Quelle“ mit inv-Schlüsseln', () => {
@@ -497,8 +562,9 @@ describe('Quelle-Spalte der Produkttabellen (D-01, UI-02)', () => {
   })
 
   it('jeder Schlüssel einer Tabellenzeile löst auf, außer bei Planzeilen ohne Wert, die das PDF nicht druckt', () => {
-    // „Ordentliche Erträge“ zeigt der Teilergebnisplan immer; hat ein Produkt keine Erträge, druckt
-    // der Haushaltsplan die Zeile nicht und quellen.json hat keinen Beleg (leere Zelle, kein Knopf).
+    // „Ordentliche Erträge“ und „Ordentliche Aufwendungen“ zeigt der Teilergebnisplan immer; hat
+    // ein Produkt keine Erträge (bzw. keine Aufwendungen, Hörstel 1153101 und 1153201), druckt der
+    // Haushaltsplan die Zeile nicht und quellen.json hat keinen Beleg (leere Zelle, kein Knopf).
     const ungedruckt: string[] = []
     const unaufgeloest: string[] = []
     for (const produkt of produkte) {
@@ -524,8 +590,160 @@ describe('Quelle-Spalte der Produkttabellen (D-01, UI-02)', () => {
       }
     }
     expect(unaufgeloest).toEqual([])
-    expect(ungedruckt.every((schluessel) => schluessel.endsWith(':ordentliche_ertraege'))).toBe(
-      true,
+    expect(
+      ungedruckt.filter(
+        (schluessel) =>
+          !schluessel.endsWith(':ordentliche_ertraege') &&
+          !schluessel.endsWith(':ordentliche_aufwendungen'),
+      ),
+    ).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------------------------
+// Synthetische Produkte: Bindungsgrad und Bezugsgrößen, die der Hörsteler Plan nicht trägt
+// ---------------------------------------------------------------------------------------------
+
+describe('Synthetische Produkte (Bindungsgrad, Bezugsgrößen)', () => {
+  afterEach(() => {
+    vi.doUnmock('@/data/daten')
+    vi.resetModules()
+  })
+
+  if (erstes === undefined) {
+    throw new Error('Keine Produkte in den Daten')
+  }
+  const vorlage: Produkt = erstes
+  const planVorlage = ergebnisplanVon(vorlage.code)
+
+  /** Ein Produkt auf Basis der Vorlage (gleicher PB/PG, damit die Namen auflösen). */
+  function synthetisch(code: string, felder: Partial<Produkt>): Produkt {
+    return {
+      ...vorlage,
+      code,
+      bindungsgrad: null,
+      bindungsgrad_original: null,
+      grundzahlen: [],
+      ...felder,
+    }
+  }
+
+  /** Grundzahl mit Werten je Jahr. */
+  function grundzahl(position: number, bezeichnung: string, werte: [number, number][]): Grundzahl {
+    return {
+      position,
+      gruppe: null,
+      bezeichnung,
+      einheit: null,
+      nachkommastellen: 0,
+      pdf_seite: 1,
+      werte: werte.map(([jahr, wert]) => ({ jahr, wert, hinweis: null })),
+    }
+  }
+
+  /** Lädt `lib/produkt` neu mit den echten Daten plus den synthetischen Produkten. */
+  async function ladeMit(
+    zusatz: Produkt[],
+    bezugsgroessen: HaushaltBezugsgroesse[] | undefined = undefined,
+  ) {
+    vi.resetModules()
+    vi.doMock('@/data/daten', async (importOriginal) => {
+      const echt = await importOriginal<typeof import('@/data/daten')>()
+      const plaene = Object.fromEntries(zusatz.map((p) => [p.code, planVorlage]))
+      return {
+        ...echt,
+        produkte: [...echt.produkte, ...zusatz],
+        haushalt: {
+          ...echt.haushalt,
+          ergebnisplan: { ...echt.haushalt.ergebnisplan, ...plaene },
+          bezugsgroessen: bezugsgroessen ?? echt.haushalt.bezugsgroessen,
+        },
+      }
+    })
+    return import('@/lib/produkt')
+  }
+
+  it('nennt ein abweichendes Original des Bindungsgrads, sonst nicht', async () => {
+    const modul = await ladeMit([
+      synthetisch('S000001', { bindungsgrad: 'pflichtig' }),
+      synthetisch('S000002', {
+        bindungsgrad: 'teils',
+        bindungsgrad_original: 'Teils pflichtig, teils  freiwillig',
+      }),
+      synthetisch('S000003', {
+        bindungsgrad: 'pflichtig',
+        bindungsgrad_original: 'pflichtig (Gesetz)',
+      }),
+      synthetisch('S000004', { bindungsgrad: 'freiwillig', bindungsgrad_original: 'freiwillig' }),
+    ])
+    expect(modul.baueProduktKopf('S000001')?.bindungsgrad).toBe('pflichtig')
+    expect(modul.baueProduktKopf('S000001')?.bindungsgradOriginal).toBeNull()
+    expect(modul.baueProduktKopf('S000002')?.bindungsgrad).toBe('teils pflichtig, teils freiwillig')
+    expect(modul.baueProduktKopf('S000002')?.bindungsgradOriginal).toBeNull()
+    expect(modul.baueProduktKopf('S000003')?.bindungsgrad).toBe('pflichtig')
+    expect(modul.baueProduktKopf('S000003')?.bindungsgradOriginal).toBe('pflichtig (Gesetz)')
+    expect(modul.baueProduktKopf('S000004')?.bindungsgradOriginal).toBeNull()
+  })
+
+  it('rechnet Zuschussbedarf je Einheit nur für Jahre mit beiden Werten', async () => {
+    const [erstesJahr, zweitesJahr] = haushalt.jahre
+    if (erstesJahr === undefined || zweitesJahr === undefined) {
+      throw new Error('Zu wenige Planjahre')
+    }
+    // Synthetische Bezugsgrößen nach dem Ostbevern-Muster ([layout.bezugsgroessen], eine und
+    // zwei Grundzahlen im Nenner); Hörstel führt keine. Je Bezugsgröße ein Produkt mit ihrem
+    // Code: die erste Grundzahl hat beide Planjahre und ein Jahr vor dem Plan, weitere
+    // Grundzahlen nur das erste Planjahr.
+    const bezugsgroessen: HaushaltBezugsgroesse[] = [
+      { produkt: 'S100001', einheit_text: 'Schüler/in', bezeichnungen: ['Schüler/innen'] },
+      {
+        produkt: 'S100002',
+        einheit_text: 'betreutem Kind',
+        bezeichnungen: ['Betreute Kinder unter 3 Jahre', 'Betreute Kinder von 3 - 6 Jahre'],
+      },
+    ]
+    const zusatz = bezugsgroessen.map((bezug) =>
+      synthetisch(bezug.produkt, {
+        grundzahlen: bezug.bezeichnungen.map((bezeichnung, index) =>
+          grundzahl(
+            index + 1,
+            bezeichnung,
+            index === 0
+              ? [
+                  [erstesJahr - 1, 40],
+                  [erstesJahr, 50],
+                  [zweitesJahr, 60],
+                ]
+              : [[erstesJahr, 25]],
+          ),
+        ),
+      }),
     )
+    const modul = await ladeMit(zusatz, bezugsgroessen)
+    const echt = await import('@/data/daten')
+    expect(modul.BEZUGSGROESSEN.map((b) => b.produkt)).toEqual(['S100001', 'S100002'])
+    for (const bezug of modul.BEZUGSGROESSEN) {
+      pruefeZuschussJeEinheit(
+        {
+          baueGrundzahlen: modul.baueGrundzahlen,
+          produkte: echt.produkte,
+          ergebnisplan: echt.haushalt.ergebnisplan,
+          jahre: echt.haushalt.jahre,
+        },
+        bezug,
+      )
+      const tabelle = modul.baueGrundzahlen(bezug.produkt)
+      const berechnet = tabelle?.zeilen.filter((z) => z.etikett === 'berechnet') ?? []
+      expect(berechnet).toHaveLength(1)
+      expect(berechnet[0]?.quelle).toBeNull()
+      // Das Jahr vor dem Plan hat keinen Zuschussbedarf: kein erfundener Wert.
+      expect(berechnet[0]?.[jahrSchluessel(erstesJahr - 1)]).toBeNull()
+    }
+  })
+
+  it('liefert null für ein Produkt ohne Grundzahlen', async () => {
+    const modul = await ladeMit([synthetisch('S000005', { grundzahlen: [] })])
+    expect(modul.baueGrundzahlen('S000005')).toBeNull()
+    expect(modul.baueProduktKopf('S000005')).not.toBeNull()
   })
 })

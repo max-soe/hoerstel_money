@@ -18078,6 +18078,16 @@
         597.4
       ]
     },
+    "inv:0111102:111.02-002::auszahlung": {
+      "pdf_seite": 123,
+      "bild": "s123.webp",
+      "bbox": [
+        40.24,
+        648.87,
+        89.66,
+        660.91
+      ]
+    },
     "inv:0111102:111.02-002::einzahlung": {
       "pdf_seite": 123,
       "bild": "s123.webp",
@@ -18094,6 +18104,16 @@
       "bbox": null
     },
     "inv:0111102:111.02-004::auszahlung": {
+      "pdf_seite": 124,
+      "bild": "s124.webp",
+      "bbox": [
+        40.24,
+        167.95,
+        89.66,
+        179.99
+      ]
+    },
+    "inv:0111102:111.02-004::einzahlung": {
       "pdf_seite": 124,
       "bild": "s124.webp",
       "bbox": [
@@ -18163,6 +18183,16 @@
         611.2
       ]
     },
+    "inv:0111109:111.09-001::auszahlung": {
+      "pdf_seite": 162,
+      "bild": "s162.webp",
+      "bbox": [
+        40.24,
+        482.28,
+        89.66,
+        494.32
+      ]
+    },
     "inv:0111109:111.09-001::einzahlung": {
       "pdf_seite": 162,
       "bild": "s162.webp",
@@ -18183,6 +18213,11 @@
         580.48
       ]
     },
+    "inv:0111109:111.09-003::auszahlung": {
+      "pdf_seite": 163,
+      "bild": "s163.webp",
+      "bbox": null
+    },
     "inv:0111109:111.09-003::einzahlung": {
       "pdf_seite": 162,
       "bild": "s162.webp",
@@ -18201,6 +18236,16 @@
         147.55,
         89.66,
         159.59
+      ]
+    },
+    "inv:0111109:111.09-005::auszahlung": {
+      "pdf_seite": 163,
+      "bild": "s163.webp",
+      "bbox": [
+        40.24,
+        257.11,
+        89.66,
+        269.15
       ]
     },
     "inv:0111109:111.09-005::einzahlung": {
@@ -18273,6 +18318,16 @@
         484.12
       ]
     },
+    "inv:0111110:111.10-001::einzahlung": {
+      "pdf_seite": 171,
+      "bild": "s171.webp",
+      "bbox": [
+        40.24,
+        472.08,
+        89.66,
+        484.12
+      ]
+    },
     "inv:0111110:111.10-002::auszahlung": {
       "pdf_seite": 171,
       "bild": "s171.webp",
@@ -18281,6 +18336,16 @@
         539.88,
         89.66,
         551.92
+      ]
+    },
+    "inv:0111112:111.12-001::auszahlung": {
+      "pdf_seite": 180,
+      "bild": "s180.webp",
+      "bbox": [
+        40.24,
+        503.76,
+        89.66,
+        515.8
       ]
     },
     "inv:0111112:111.12-001::einzahlung": {
@@ -18304,6 +18369,16 @@
       ]
     },
     "inv:0111112:111.12-003::auszahlung": {
+      "pdf_seite": 180,
+      "bild": "s180.webp",
+      "bbox": [
+        40.24,
+        635.04,
+        89.66,
+        647.08
+      ]
+    },
+    "inv:0111112:111.12-003::einzahlung": {
       "pdf_seite": 180,
       "bild": "s180.webp",
       "bbox": [
@@ -18362,6 +18437,16 @@
       "pdf_seite": 209,
       "bild": "s209.webp",
       "bbox": null
+    },
+    "inv:0212601:126.01-005::auszahlung": {
+      "pdf_seite": 209,
+      "bild": "s209.webp",
+      "bbox": [
+        40.24,
+        167.95,
+        89.66,
+        179.99
+      ]
     },
     "inv:0212601:126.01-005::einzahlung": {
       "pdf_seite": 209,
@@ -18511,6 +18596,16 @@
         362.26,
         89.66,
         374.3
+      ]
+    },
+    "inv:0321101:211.01-009::auszahlung": {
+      "pdf_seite": 222,
+      "bild": "s222.webp",
+      "bbox": [
+        40.24,
+        425.86,
+        89.66,
+        437.9
       ]
     },
     "inv:0321101:211.01-009::einzahlung": {
@@ -18758,6 +18853,16 @@
         281.18
       ]
     },
+    "inv:0636601:366.01-003::auszahlung": {
+      "pdf_seite": 343,
+      "bild": "s343.webp",
+      "bbox": [
+        40.24,
+        332.62,
+        89.66,
+        344.66
+      ]
+    },
     "inv:0636601:366.01-003::einzahlung": {
       "pdf_seite": 343,
       "bild": "s343.webp",
@@ -18779,6 +18884,16 @@
       ]
     },
     "inv:0842401:424.01-003::auszahlung": {
+      "pdf_seite": 364,
+      "bild": "s364.webp",
+      "bbox": [
+        40.24,
+        598.8,
+        89.66,
+        610.84
+      ]
+    },
+    "inv:0842401:424.01-003::einzahlung": {
       "pdf_seite": 364,
       "bild": "s364.webp",
       "bbox": [
@@ -18838,6 +18953,16 @@
         373.46
       ]
     },
+    "inv:0842401:424.01-010::einzahlung": {
+      "pdf_seite": 365,
+      "bild": "s365.webp",
+      "bbox": [
+        40.24,
+        361.42,
+        89.66,
+        373.46
+      ]
+    },
     "inv:0842401:424.01-012::auszahlung": {
       "pdf_seite": 365,
       "bild": "s365.webp",
@@ -18888,6 +19013,16 @@
         645.88
       ]
     },
+    "inv:0842402:424.02-004::auszahlung": {
+      "pdf_seite": 371,
+      "bild": "s371.webp",
+      "bbox": [
+        40.24,
+        697.35,
+        89.66,
+        709.39
+      ]
+    },
     "inv:0842402:424.02-004::einzahlung": {
       "pdf_seite": 371,
       "bild": "s371.webp",
@@ -18918,6 +19053,16 @@
         209.63
       ]
     },
+    "inv:0842402:424.02.-006::einzahlung": {
+      "pdf_seite": 372,
+      "bild": "s372.webp",
+      "bbox": [
+        40.24,
+        197.59,
+        91.94,
+        209.63
+      ]
+    },
     "inv:0842403:424.03-001::auszahlung": {
       "pdf_seite": 378,
       "bild": "s378.webp",
@@ -18929,6 +19074,16 @@
       ]
     },
     "inv:0842403:424.03-002::auszahlung": {
+      "pdf_seite": 378,
+      "bild": "s378.webp",
+      "bbox": [
+        40.24,
+        558.0,
+        89.66,
+        570.04
+      ]
+    },
+    "inv:0842403:424.03-002::einzahlung": {
       "pdf_seite": 378,
       "bild": "s378.webp",
       "bbox": [
@@ -19443,6 +19598,16 @@
         361.34
       ]
     },
+    "inv:1254101:541.01-2-004::einzahlung": {
+      "pdf_seite": 450,
+      "bild": "s450.webp",
+      "bbox": [
+        40.24,
+        349.3,
+        96.74,
+        361.34
+      ]
+    },
     "inv:1254101:541.01-2-005::auszahlung": {
       "pdf_seite": 450,
       "bild": "s450.webp",
@@ -19454,6 +19619,16 @@
       ]
     },
     "inv:1254101:541.01-2-006::auszahlung": {
+      "pdf_seite": 450,
+      "bild": "s450.webp",
+      "bbox": [
+        40.24,
+        517.44,
+        96.74,
+        529.48
+      ]
+    },
+    "inv:1254101:541.01-2-006::einzahlung": {
       "pdf_seite": 450,
       "bild": "s450.webp",
       "bbox": [
@@ -19518,6 +19693,26 @@
         353.06
       ]
     },
+    "inv:1254101:541.01-3-004::einzahlung": {
+      "pdf_seite": 451,
+      "bild": "s451.webp",
+      "bbox": [
+        40.24,
+        341.02,
+        96.74,
+        353.06
+      ]
+    },
+    "inv:1254101:541.01-3-005::auszahlung": {
+      "pdf_seite": 451,
+      "bild": "s451.webp",
+      "bbox": [
+        40.24,
+        445.66,
+        96.74,
+        457.7
+      ]
+    },
     "inv:1254101:541.01-3-005::einzahlung": {
       "pdf_seite": 451,
       "bild": "s451.webp",
@@ -19547,6 +19742,11 @@
         96.74,
         653.32
       ]
+    },
+    "inv:1254101:541.01-3-008::auszahlung": {
+      "pdf_seite": 452,
+      "bild": "s452.webp",
+      "bbox": null
     },
     "inv:1254101:541.01-3-008::einzahlung": {
       "pdf_seite": 452,
@@ -19583,7 +19783,27 @@
         375.74
       ]
     },
+    "inv:1254101:541.01-4-002::einzahlung": {
+      "pdf_seite": 452,
+      "bild": "s452.webp",
+      "bbox": [
+        40.24,
+        363.7,
+        96.74,
+        375.74
+      ]
+    },
     "inv:1254101:541.01-5-002::auszahlung": {
+      "pdf_seite": 452,
+      "bild": "s452.webp",
+      "bbox": [
+        40.24,
+        440.74,
+        96.74,
+        452.78
+      ]
+    },
+    "inv:1254101:541.01-5-002::einzahlung": {
       "pdf_seite": 452,
       "bild": "s452.webp",
       "bbox": [
@@ -19623,6 +19843,16 @@
         675.19
       ]
     },
+    "inv:1254101:541.01-5-005::einzahlung": {
+      "pdf_seite": 452,
+      "bild": "s452.webp",
+      "bbox": [
+        40.24,
+        663.15,
+        96.74,
+        675.19
+      ]
+    },
     "inv:1254101:541.01-5-006::auszahlung": {
       "pdf_seite": 453,
       "bild": "s453.webp",
@@ -19636,6 +19866,26 @@
         177.19,
         96.74,
         189.23
+      ]
+    },
+    "inv:1254101:541.01-5-007::einzahlung": {
+      "pdf_seite": 453,
+      "bild": "s453.webp",
+      "bbox": [
+        40.24,
+        177.19,
+        96.74,
+        189.23
+      ]
+    },
+    "inv:1254101:541.01-5-008::auszahlung": {
+      "pdf_seite": 453,
+      "bild": "s453.webp",
+      "bbox": [
+        40.24,
+        244.99,
+        96.74,
+        257.03
       ]
     },
     "inv:1254101:541.01-5-008::einzahlung": {
@@ -19688,6 +19938,16 @@
         447.38
       ]
     },
+    "inv:1254701:547.01-001::einzahlung": {
+      "pdf_seite": 485,
+      "bild": "s485.webp",
+      "bbox": [
+        40.24,
+        435.34,
+        89.66,
+        447.38
+      ]
+    },
     "inv:1254701:547.01-002::auszahlung": {
       "pdf_seite": 485,
       "bild": "s485.webp",
@@ -19718,6 +19978,16 @@
         515.8
       ]
     },
+    "inv:1355101:551.01-002::auszahlung": {
+      "pdf_seite": 494,
+      "bild": "s494.webp",
+      "bbox": [
+        40.24,
+        567.24,
+        89.66,
+        579.28
+      ]
+    },
     "inv:1355101:551.01-002::einzahlung": {
       "pdf_seite": 494,
       "bild": "s494.webp",
@@ -19729,6 +19999,16 @@
       ]
     },
     "inv:1456101:561.01-001::auszahlung": {
+      "pdf_seite": 519,
+      "bild": "s519.webp",
+      "bbox": [
+        40.24,
+        382.18,
+        89.66,
+        394.22
+      ]
+    },
+    "inv:1456101:561.01-001::einzahlung": {
       "pdf_seite": 519,
       "bild": "s519.webp",
       "bbox": [
@@ -19769,6 +20049,16 @@
       ]
     },
     "inv:1456101:561.01-009::auszahlung": {
+      "pdf_seite": 520,
+      "bild": "s520.webp",
+      "bbox": [
+        40.24,
+        134.11,
+        89.66,
+        146.15
+      ]
+    },
+    "inv:1456101:561.01-009::einzahlung": {
       "pdf_seite": 520,
       "bild": "s520.webp",
       "bbox": [
@@ -19886,6 +20176,16 @@
         515.76,
         89.66,
         527.8
+      ]
+    },
+    "inv:1661201:612.01/0/001::auszahlung": {
+      "pdf_seite": 565,
+      "bild": "s565.webp",
+      "bbox": [
+        40.24,
+        634.44,
+        96.02,
+        646.48
       ]
     },
     "inv:1661201:612.01/0/001::einzahlung": {
@@ -23434,28 +23734,28 @@
       ]
     },
     "vb:transferaufwendungen:gesamt": {
-      "pdf_seite": 27,
-      "bild": "s027.webp",
+      "pdf_seite": 33,
+      "bild": "s033.webp",
       "bbox": [
         40.24,
-        230.11,
-        555.08,
-        242.15
+        315.34,
+        555.2,
+        327.38
       ]
     },
     "vb:transferaufwendungen:gewerbesteuerumlage": {
-      "pdf_seite": 557,
-      "bild": "s557.webp",
+      "pdf_seite": 33,
+      "bild": "s033.webp",
       "bbox": null
     },
     "vb:transferaufwendungen:jugendamtsumlage": {
-      "pdf_seite": 35,
-      "bild": "s035.webp",
+      "pdf_seite": 34,
+      "bild": "s034.webp",
       "bbox": null
     },
     "vb:transferaufwendungen:kreisumlage": {
-      "pdf_seite": 35,
-      "bild": "s035.webp",
+      "pdf_seite": 34,
+      "bild": "s034.webp",
       "bbox": null
     },
     "vb:transferaufwendungen:sonstige_transferaufwendungen": {
@@ -23481,12 +23781,7 @@
     "vb:transferaufwendungen:uebrige_transferaufwendungen": {
       "pdf_seite": 27,
       "bild": "s027.webp",
-      "bbox": [
-        40.24,
-        230.11,
-        555.08,
-        242.15
-      ]
+      "bbox": null
     },
     "vb:transferaufwendungen:zuweisungen_zuschuesse_laufende_zwecke": {
       "pdf_seite": 33,

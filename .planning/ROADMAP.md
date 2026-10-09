@@ -71,7 +71,7 @@ Die Phasen werden ohne GSD-Befehle bearbeitet und hier von Hand nachgeführt.
 **Goal**: Die öffentliche App erklärt den Hörsteler Haushalt.
 **Requirements**: HOE-13
 **Plans**: 4 plans (von Hand geführt)
-- [ ] 12-01: App lädt die Hörsteler Daten: Typen, optionale Ostbevern-Strukturen (Kita, Einzelzuschüsse, Konzessions-Sparten, HSK-Schwellen, Bindungsgrad, Steuer-Zeitreihen), Eigenkapitalstände zum Jahresende, Maßnahmen ohne Sachkonto
-- [ ] 12-02: App-Tests auf die Hörsteler Daten
+- [x] 12-01: App lädt die Hörsteler Daten: Typen, optionale Ostbevern-Strukturen (Kita, Einzelzuschüsse, Konzessions-Sparten, HSK-Schwellen, Bindungsgrad, Steuer-Zeitreihen), Eigenkapitalstände zum Jahresende, Maßnahmen ohne Sachkonto
+- [x] 12-02: App-Tests auf die Hörsteler Daten
 - [ ] 12-03: Texte, Namen und Links (Stadt Hörstel, PDF, Repository, Impressum), README, Deployment
 - [ ] 12-04: Browser-Tests (Playwright, axe, Kachelbreiten) und Sichtprüfung

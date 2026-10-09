@@ -218,3 +218,8 @@ schwaerzen_nach = []
 # Spalte ist noch nicht verrechnet. Die App rechnet Polster und Rücklagenabbau danach.
 [layout.eigenkapital]
 stand = "jahresende_vor_verrechnung"
+
+# [layout.bezugsgroessen] (Phase 12): Produkte mit der berechneten Zeile „Zuschussbedarf je
+# Einheit“ (Freigabe 05-03), je Produktcode [Einheit im Zeilennamen, Grundzahl-Bezeichnungen …].
+# Hörstel druckt „Produktergebnis je …“ selbst als Grundzahl; die App rechnet deshalb nichts nach.
+[layout.bezugsgroessen]

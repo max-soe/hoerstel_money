@@ -36707,7 +36707,7 @@
           "gerundet": true,
           "berechnet": false,
           "quelle": 46,
-          "anmerkung": null
+          "anmerkung": "Der Vorbericht druckt für 2026 \"10.1473\": die Fußnotenziffer 3 ist an den Betrag 10.147 angeklebt. Die Fußnote (S. 46) erläutert, dass zur Entlastung des Haushalts 2026 eine Rückstellung aus dem Jahresabschluss 2024 in Höhe von 1.325.478 EUR aufgelöst wird und die Umlage 2026 bei rd. 11,5 Mio. EUR liegt (Kreisumlage brutto, siehe meta.json); der hier gespeicherte Betrag 10.147 T€ ist die Kreisumlage netto."
         },
         {
           "posten": "verlustuebernahme_bbo",
@@ -39151,5 +39151,36 @@
     ]
   },
   "eigenkapital_stand": "jahresbeginn",
-  "finanzierungsprodukt": "160101"
+  "finanzierungsprodukt": "160101",
+  "bezugsgroessen": [
+    {
+      "produkt": "030101",
+      "einheit_text": "Schüler/in",
+      "bezeichnungen": [
+        "Schüler/innen"
+      ]
+    },
+    {
+      "produkt": "030102",
+      "einheit_text": "Schüler/in",
+      "bezeichnungen": [
+        "Schüler/innen"
+      ]
+    },
+    {
+      "produkt": "040301",
+      "einheit_text": "Musikschüler/in",
+      "bezeichnungen": [
+        "Musikschüler/innen"
+      ]
+    },
+    {
+      "produkt": "060101",
+      "einheit_text": "betreutem Kind",
+      "bezeichnungen": [
+        "Betreute Kinder unter 3 Jahre",
+        "Betreute Kinder von 3 - 6 Jahre"
+      ]
+    }
+  ]
 }

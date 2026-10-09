@@ -44,10 +44,30 @@
       "massnahme_name": "Anschaffung von Elektrofahrzeugen und Ladestationen",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         89395,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 123
+    },
+    {
+      "produkt": "0111102",
+      "pb": "01",
+      "massnahme_id": "111.02-002",
+      "massnahme_name": "Anschaffung von Elektrofahrzeugen und Ladestationen",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        18160,
         null,
         null,
         null,
@@ -95,6 +115,26 @@
         null
       ],
       "ve": 250000,
+      "pdf_seite": 124
+    },
+    {
+      "produkt": "0111102",
+      "pb": "01",
+      "massnahme_id": "111.02-004",
+      "massnahme_name": "Neubau Verwaltungsgebäude Hörstel",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        null,
+        null,
+        1010000,
+        null,
+        null
+      ],
+      "ve": null,
       "pdf_seite": 124
     },
     {
@@ -224,11 +264,31 @@
       "massnahme_name": "Grunderwerb und Grundstücksverkauf Wohnbaugelände",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         985026,
         600000,
+        600000,
+        800000,
+        300000,
+        300000
+      ],
+      "ve": null,
+      "pdf_seite": 162
+    },
+    {
+      "produkt": "0111109",
+      "pb": "01",
+      "massnahme_id": "111.09-001",
+      "massnahme_name": "Grunderwerb und Grundstücksverkauf Wohnbaugelände",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        300,
+        450000,
         1986000,
         1440000,
         1650000,
@@ -264,15 +324,35 @@
       "massnahme_name": "Grunderwerb und Grundstücksverkauf Industrie- und Gewerbegebiete",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
-        253651,
+        null,
         600000,
         200000,
         500000,
         500000,
         500000
+      ],
+      "ve": null,
+      "pdf_seite": 163
+    },
+    {
+      "produkt": "0111109",
+      "pb": "01",
+      "massnahme_id": "111.09-003",
+      "massnahme_name": "Grunderwerb und Grundstücksverkauf Industrie- und Gewerbegebiete",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        253651,
+        200000,
+        200000,
+        200000,
+        200000,
+        200000
       ],
       "ve": null,
       "pdf_seite": 162
@@ -304,12 +384,32 @@
       "massnahme_name": "Allgemeines Grundvermögen",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         283508,
         null,
         1300000,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 163
+    },
+    {
+      "produkt": "0111109",
+      "pb": "01",
+      "massnahme_id": "111.09-005",
+      "massnahme_name": "Allgemeines Grundvermögen",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        45823,
+        null,
+        null,
         null,
         null,
         null
@@ -440,6 +540,26 @@
     {
       "produkt": "0111110",
       "pb": "01",
+      "massnahme_id": "111.10-001",
+      "massnahme_name": "Erneuerung der Gebäudeleittechnik",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        null,
+        null,
+        100000,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 171
+    },
+    {
+      "produkt": "0111110",
+      "pb": "01",
       "massnahme_id": "111.10-002",
       "massnahme_name": "Erneuerung der Gebäudeleittechnik am Sportplatz Bevergern (BgA)",
       "konto": null,
@@ -464,11 +584,31 @@
       "massnahme_name": "Beschaffung von Elektrofahrzeugen",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         47442,
         118000,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 180
+    },
+    {
+      "produkt": "0111112",
+      "pb": "01",
+      "massnahme_id": "111.12-001",
+      "massnahme_name": "Beschaffung von Elektrofahrzeugen",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        3000,
+        30000,
         null,
         null,
         null,
@@ -513,6 +653,26 @@
         265000,
         265000,
         265000
+      ],
+      "ve": null,
+      "pdf_seite": 180
+    },
+    {
+      "produkt": "0111112",
+      "pb": "01",
+      "massnahme_id": "111.12-003",
+      "massnahme_name": "Beschaffung Fahrzeuge, Maschinen und Geräte",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        2725,
+        6600,
+        5000,
+        5000,
+        5000
       ],
       "ve": null,
       "pdf_seite": 180
@@ -644,7 +804,7 @@
       "massnahme_name": "Feuerwehrfahrzeuge",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         375932,
@@ -655,6 +815,26 @@
         0
       ],
       "ve": 650000,
+      "pdf_seite": 209
+    },
+    {
+      "produkt": "0212601",
+      "pb": "02",
+      "massnahme_id": "126.01-005",
+      "massnahme_name": "Feuerwehrfahrzeuge",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        18800,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
       "pdf_seite": 209
     },
     {
@@ -944,10 +1124,30 @@
       "massnahme_name": "Digitalpakt Schule",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         12699,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 222
+    },
+    {
+      "produkt": "0321101",
+      "pb": "03",
+      "massnahme_id": "211.01-009",
+      "massnahme_name": "Digitalpakt Schule",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        10558,
         null,
         null,
         null,
@@ -1444,10 +1644,30 @@
       "massnahme_name": "Einrichtung eines Bewegungsparks für Kinder und Jugendliche",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         17552,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 343
+    },
+    {
+      "produkt": "0636601",
+      "pb": "06",
+      "massnahme_id": "366.01-003",
+      "massnahme_name": "Einrichtung eines Bewegungsparks für Kinder und Jugendliche",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        12000,
         170000,
         null,
         null,
@@ -1493,6 +1713,26 @@
         5000,
         5000,
         5000
+      ],
+      "ve": null,
+      "pdf_seite": 364
+    },
+    {
+      "produkt": "0842401",
+      "pb": "08",
+      "massnahme_id": "424.01-003",
+      "massnahme_name": "Beschaffung von Fahrzeugen, Maschinen und Geräten -netto-",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        315,
+        null,
+        null,
+        null,
+        null
       ],
       "ve": null,
       "pdf_seite": 364
@@ -1591,6 +1831,26 @@
         160000,
         null,
         64000,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 365
+    },
+    {
+      "produkt": "0842401",
+      "pb": "08",
+      "massnahme_id": "424.01-010",
+      "massnahme_name": "Kosten für die Umrüstung von 5 Flutlichtanlagen der Sportananlagen Bevergern, Dreierwalde, Hörstel und Riesenbeck auf LED netto-",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        47500,
+        null,
+        19000,
         null,
         null
       ],
@@ -1704,13 +1964,33 @@
       "massnahme_name": "Sanierung St.Ludgerus-Sporthalle",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         32204,
         80000,
         178000,
         3000000,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 371
+    },
+    {
+      "produkt": "0842402",
+      "pb": "08",
+      "massnahme_id": "424.02-004",
+      "massnahme_name": "Sanierung St.Ludgerus-Sporthalle",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        7448,
+        null,
+        null,
+        null,
         1800000,
         null
       ],
@@ -1752,9 +2032,29 @@
         1000000,
         1500000,
         2500000,
-        1656750
+        1000000
       ],
       "ve": 1000000,
+      "pdf_seite": 372
+    },
+    {
+      "produkt": "0842402",
+      "pb": "08",
+      "massnahme_id": "424.02.-006",
+      "massnahme_name": "Sanierung Harkenberg-Sporthalle",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        1656750
+      ],
+      "ve": null,
       "pdf_seite": 372
     },
     {
@@ -1791,6 +2091,26 @@
         95000,
         150000,
         5400000,
+        250000,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 378
+    },
+    {
+      "produkt": "0842403",
+      "pb": "08",
+      "massnahme_id": "424.03-002",
+      "massnahme_name": "Sanierung Hallenbad",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        null,
+        null,
+        null,
         3710000,
         null
       ],
@@ -2829,6 +3149,26 @@
       "werte": [
         null,
         200000,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 450
+    },
+    {
+      "produkt": "1254101",
+      "pb": "12",
+      "massnahme_id": "541.01-2-004",
+      "massnahme_name": "Baustraßen im Baugebiet Zum Hügel II",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        null,
         100000,
         65000,
         null,
@@ -2868,6 +3208,26 @@
       "art": null,
       "werte": [
         4283,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 450
+    },
+    {
+      "produkt": "1254101",
+      "pb": "12",
+      "massnahme_id": "541.01-2-006",
+      "massnahme_name": "Wohnstraßen im Baugebiet Rodder Straße (Stüwweplacken), Bevergern",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
         75000,
         null,
         null,
@@ -2992,9 +3352,49 @@
         null,
         900000,
         900000,
-        500000
+        null
       ],
       "ve": 1800000,
+      "pdf_seite": 451
+    },
+    {
+      "produkt": "1254101",
+      "pb": "12",
+      "massnahme_id": "541.01-3-004",
+      "massnahme_name": "Straßenmäßige Erschließung Energie-Innovationspark ehem. Flugplatz Dreierwalde, I. BA",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        null,
+        null,
+        null,
+        300000,
+        500000
+      ],
+      "ve": null,
+      "pdf_seite": 451
+    },
+    {
+      "produkt": "1254101",
+      "pb": "12",
+      "massnahme_id": "541.01-3-005",
+      "massnahme_name": "Errichtung einer Lärmschutzwand zur Abgrenzung der MRV-Klinik vom Gewerbegebiet ehem. Flugplatz Dreierwalde",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "auszahlung",
+      "art": null,
+      "werte": [
+        81925,
+        100000,
+        null,
+        3000000,
+        null,
+        null
+      ],
+      "ve": null,
       "pdf_seite": 451
     },
     {
@@ -3007,7 +3407,7 @@
       "richtung": "einzahlung",
       "art": null,
       "werte": [
-        81925,
+        0,
         100000,
         null,
         3100000,
@@ -3064,12 +3464,32 @@
       "massnahme_name": "Ausbau der Wirtschaftswege Kahlenborgstr. (Teilabschnitt) und Feldkante, Dreierwalde",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         null,
         null,
         790000,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 452
+    },
+    {
+      "produkt": "1254101",
+      "pb": "12",
+      "massnahme_id": "541.01-3-008",
+      "massnahme_name": "Ausbau der Wirtschaftswege Kahlenborgstr. (Teilabschnitt) und Feldkante, Dreierwalde",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        null,
+        550000,
         null,
         null,
         null
@@ -3128,6 +3548,26 @@
       "art": null,
       "werte": [
         162049,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 452
+    },
+    {
+      "produkt": "1254101",
+      "pb": "12",
+      "massnahme_id": "541.01-4-002",
+      "massnahme_name": "Baustraßen im Baugebiet \"Uferquartier\", Hörstel",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
         120000,
         125000,
         35000,
@@ -3148,6 +3588,26 @@
       "art": null,
       "werte": [
         14621,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 452
+    },
+    {
+      "produkt": "1254101",
+      "pb": "12",
+      "massnahme_id": "541.01-5-002",
+      "massnahme_name": "Baustraßen im Baugebiet Riesenbeck West, II. BA",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
         null,
         210000,
         210000,
@@ -3210,6 +3670,26 @@
         null,
         null,
         290000,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 452
+    },
+    {
+      "produkt": "1254101",
+      "pb": "12",
+      "massnahme_id": "541.01-5-005",
+      "massnahme_name": "Wohnstraßen Baugebiet Riesenbeck West, I. BA",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        null,
+        null,
         165000,
         null,
         null
@@ -3251,10 +3731,50 @@
         550000,
         350000,
         200000,
-        800000,
+        null,
         null
       ],
       "ve": 200000,
+      "pdf_seite": 453
+    },
+    {
+      "produkt": "1254101",
+      "pb": "12",
+      "massnahme_id": "541.01-5-007",
+      "massnahme_name": "Erneuerung Wegenerstr., Riesenbeck",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        null,
+        null,
+        null,
+        800000,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 453
+    },
+    {
+      "produkt": "1254101",
+      "pb": "12",
+      "massnahme_id": "541.01-5-008",
+      "massnahme_name": "Ausbau der Wirtschaftswege Wallheckenweg (Teilabschnitt) und Brachtesendeweg (Teilabschnitt) Riesenbeck",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "auszahlung",
+      "art": null,
+      "werte": [
+        null,
+        550000,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
       "pdf_seite": 453
     },
     {
@@ -3268,7 +3788,7 @@
       "art": null,
       "werte": [
         null,
-        550000,
+        385000,
         385000,
         null,
         null,
@@ -3348,8 +3868,28 @@
       "art": null,
       "werte": [
         8551,
-        45000,
+        null,
         60000,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 485
+    },
+    {
+      "produkt": "1254701",
+      "pb": "12",
+      "massnahme_id": "547.01-001",
+      "massnahme_name": "ÖPNV-Maßnahmen",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        45000,
+        45000,
         null,
         null,
         null
@@ -3424,12 +3964,32 @@
       "massnahme_name": "Naherholungsgebiet Torfmoorsee",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         null,
         null,
         6700,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 494
+    },
+    {
+      "produkt": "1355101",
+      "pb": "13",
+      "massnahme_id": "551.01-002",
+      "massnahme_name": "Naherholungsgebiet Torfmoorsee",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        null,
+        3383,
         null,
         null,
         null
@@ -3450,6 +4010,26 @@
         156657,
         200000,
         58000,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 519
+    },
+    {
+      "produkt": "1456101",
+      "pb": "14",
+      "massnahme_id": "561.01-001",
+      "massnahme_name": "Ausgleichsmaßnahmen für Eingriffe in Natur und Landschaft",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
+        0,
+        0,
         null,
         null,
         null
@@ -3528,6 +4108,26 @@
       "art": null,
       "werte": [
         0,
+        null,
+        242000,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 520
+    },
+    {
+      "produkt": "1456101",
+      "pb": "14",
+      "massnahme_id": "561.01-009",
+      "massnahme_name": "ökologische Verbesserung der Bevergerner Aa",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        null,
         233500,
         360000,
         null,
@@ -3764,10 +4364,30 @@
       "massnahme_name": "Kredit- und Finanzwirtschaft",
       "konto": null,
       "konto_name": null,
-      "richtung": "einzahlung",
+      "richtung": "auszahlung",
       "art": null,
       "werte": [
         9000000,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ve": null,
+      "pdf_seite": 565
+    },
+    {
+      "produkt": "1661201",
+      "pb": "16",
+      "massnahme_id": "612.01/0/001",
+      "massnahme_name": "Kredit- und Finanzwirtschaft",
+      "konto": null,
+      "konto_name": null,
+      "richtung": "einzahlung",
+      "art": null,
+      "werte": [
+        83921,
         null,
         null,
         null,

@@ -32,6 +32,7 @@ function ve(teil: Partial<VeFaelligkeit>): VeFaelligkeit {
     produkt: '000001',
     massnahme_id: 'TEST1',
     konto: '785111',
+    name: null,
     jahr: 2030,
     betrag: 100,
     pdf_seite: 7,
@@ -133,6 +134,40 @@ describe('baueVeFaelligkeiten (INV-02, D-10)', () => {
       /000001.*FEHLT/,
     )
   })
+
+  it('eine VE ohne Maßnahme trägt ihren Namen aus der VE-Übersicht selbst (Hörstel S. 586)', () => {
+    const ergebnis = baueVeFaelligkeiten(
+      [ve({ massnahme_id: null, konto: null, name: 'Neubau', betrag: 500 }), ve({ betrag: 100 })],
+      [massnahme({})],
+    )
+    expect(ergebnis[0]?.massnahmen).toEqual([
+      { produkt: '000001', massnahmeId: null, name: 'Neubau', betrag: 500, pdfSeite: 7 },
+      { produkt: '000001', massnahmeId: 'TEST1', name: 'Testmaßnahme', betrag: 100, pdfSeite: 7 },
+    ])
+    expect(ergebnis[0]?.betrag).toBe(600)
+  })
+
+  it('bündelt zwei Zeilen derselben VE ohne Maßnahme im selben Jahr', () => {
+    const ergebnis = baueVeFaelligkeiten(
+      [
+        ve({ massnahme_id: null, name: 'Neubau', betrag: 500 }),
+        ve({ massnahme_id: null, name: 'Neubau', betrag: 70 }),
+      ],
+      [],
+    )
+    expect(ergebnis[0]?.massnahmen.map((m) => [m.massnahmeId, m.betrag])).toEqual([[null, 570]])
+  })
+
+  it('der Name der Maßnahme hat Vorrang vor dem Namen der VE-Übersicht', () => {
+    const ergebnis = baueVeFaelligkeiten([ve({ name: 'Anders gedruckt' })], [massnahme({})])
+    expect(ergebnis[0]?.massnahmen[0]?.name).toBe('Testmaßnahme')
+  })
+
+  it('wirft, wenn eine VE weder Maßnahme noch Namen hat', () => {
+    expect(() => baueVeFaelligkeiten([ve({ massnahme_id: null })], [massnahme({})])).toThrow(
+      /000001.*null/,
+    )
+  })
 })
 
 describe('veFaelligkeiten und veGesamt (INV-02, D-10, T-06-23)', () => {
@@ -152,21 +187,36 @@ describe('veFaelligkeiten und veGesamt (INV-02, D-10, T-06-23)', () => {
     }
   })
 
-  it('veGesamt = Summe aller Zeilen = Verpflichtungsermächtigung im Gesamtfinanzplan', () => {
+  it('veGesamt = Summe aller Zeilen = Verpflichtungsermächtigung im Gesamtfinanzplan, sofern gedruckt', () => {
     const summe = investitionen.ve_faelligkeiten.reduce((s, zeile) => s + zeile.betrag, 0)
     expect(veGesamt()).toBe(summe)
-    expect(veGesamt()).toBe(finanzplanVe['auszahlungen_investitionen'])
+    const gedruckt = finanzplanVe['auszahlungen_investitionen']
+    if (gedruckt !== undefined) {
+      expect(veGesamt()).toBe(gedruckt)
+    }
   })
 
-  it('jede VE-Zeile findet ihre Maßnahme (Produkt und Kennung) in den Maßnahmen', () => {
+  it('jede VE-Zeile findet ihre Maßnahme (Produkt und Kennung) oder trägt einen eigenen Namen', () => {
     const bekannt = new Set(
       investitionen.massnahmen.map((zeile) => `${zeile.produkt}/${zeile.massnahme_id}`),
     )
     for (const zeile of investitionen.ve_faelligkeiten) {
-      expect(bekannt.has(`${zeile.produkt}/${zeile.massnahme_id}`)).toBe(true)
+      if (zeile.massnahme_id === null) {
+        expect(zeile.name).toBeTruthy()
+      } else {
+        expect(bekannt.has(`${zeile.produkt}/${zeile.massnahme_id}`)).toBe(true)
+      }
     }
     for (const eintrag of veFaelligkeiten()) {
       for (const massnahmeEintrag of eintrag.massnahmen) {
+        if (massnahmeEintrag.massnahmeId === null) {
+          const zeile = investitionen.ve_faelligkeiten.find(
+            (kandidat) =>
+              kandidat.massnahme_id === null && kandidat.produkt === massnahmeEintrag.produkt,
+          )
+          expect(zeile?.name).toBe(massnahmeEintrag.name)
+          continue
+        }
         const treffer = investitionen.massnahmen.find(
           (zeile) =>
             zeile.produkt === massnahmeEintrag.produkt &&
@@ -498,11 +548,32 @@ describe('einzahlungsTabelle (INV-03, D-08)', () => {
 })
 
 describe.runIf(haushalt.haushaltsjahr === 2026)('Jahrgang 2026 (ROADMAP SC 2)', () => {
-  it('Verpflichtungsermächtigungen 11.600.000 €, fällig 2027 und 2028', () => {
-    expect(veGesamt()).toBe(11_600_000)
+  it('Verpflichtungsermächtigungen 18.331.000 € (Satzung § 3, VE-Übersicht S. 586), fällig 2027 bis 2029', () => {
+    expect(veGesamt()).toBe(18_331_000)
     expect(veFaelligkeiten().map((eintrag) => [eintrag.jahr, eintrag.betrag])).toEqual([
-      [2027, 9_400_000],
-      [2028, 2_200_000],
+      [2027, 13_306_000],
+      [2028, 4_700_000],
+      [2029, 325_000],
     ])
+    expect(vePdfSeiten()).toEqual([586])
+  })
+
+  it('der Gesamtfinanzplan druckt keine VE-Spalte', () => {
+    expect(finanzplanVe['auszahlungen_investitionen']).toBeUndefined()
+  })
+
+  it('der Neubau des Verwaltungsgebäudes (5.100 T€) steht nur in der VE-Übersicht, ohne Maßnahme', () => {
+    const neubau = veFaelligkeiten()
+      .find((eintrag) => eintrag.jahr === 2027)
+      ?.massnahmen.find((m) => m.massnahmeId === null)
+    expect(neubau).toEqual({
+      produkt: '0111102',
+      massnahmeId: null,
+      name: 'Neubau eines Verwaltungsgebäudes Hörstel',
+      betrag: 5_100_000,
+      pdfSeite: 586,
+    })
+    // Größte VE des Jahres steht vorn.
+    expect(veFaelligkeiten()[0]?.massnahmen[0]).toEqual(neubau)
   })
 })

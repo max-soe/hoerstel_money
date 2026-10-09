@@ -235,3 +235,12 @@ schwaerzen_nach = []
 # Bestände zu Jahresbeginn, das Jahresergebnis gehört zum Jahr derselben Spalte.
 [layout.eigenkapital]
 stand = "jahresbeginn"
+
+# [layout.bezugsgroessen] (Phase 12, vorher BEZUGSGROESSEN in app/src/lib/produkt.ts): Produkte
+# mit der berechneten Zeile „Zuschussbedarf je Einheit“ (Freigabe 05-03), je Produktcode
+# [Einheit im Zeilennamen, gedruckte Grundzahl-Bezeichnungen, deren Summe der Nenner ist].
+[layout.bezugsgroessen]
+"030101" = ["Schüler/in", "Schüler/innen"]
+"030102" = ["Schüler/in", "Schüler/innen"]
+"040301" = ["Musikschüler/in", "Musikschüler/innen"]
+"060101" = ["betreutem Kind", "Betreute Kinder unter 3 Jahre", "Betreute Kinder von 3 - 6 Jahre"]

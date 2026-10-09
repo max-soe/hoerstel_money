@@ -11,11 +11,11 @@ Markierung mit einem Hinweis. Diese Datei wird bei jedem Lauf neu geschrieben.
 |---|---|---|
 | ep (Ergebnisplanzeilen) | 1681 | 600 |
 | fp (Finanzplanzeilen) | 38 | 1 |
-| vb (Vorberichtsposten) | 70 | 38 |
+| vb (Vorberichtsposten) | 70 | 39 |
 | meta (Meta-Werte) | 9 | 0 |
 | gz (Grundzahlen) | 232 | 62 |
 | pr (Produktseiten) | 69 | 0 |
-| inv (Investitionsmaßnahmen) | 188 | 10 |
+| inv (Investitionsmaßnahmen) | 219 | 12 |
 | ve (VE-Fälligkeiten) | 15 | 15 |
 | sd (Schuldenstand) | 3 | 2 |
 | sp (Stellenplan) | 171 | 171 |
@@ -668,9 +668,10 @@ Markierung mit einem Hinweis. Diese Datei wird bei jedem Lauf neu geschrieben.
 | `vb:sonstige_ertraege:sonstige` | 24 | berechnet |
 | `vb:sonstige_ertraege:uebrige_sonstige_ertraege` | 24 | berechnet |
 | `vb:sonstige_ertraege:veraeusserung_grundstuecke` | 24 | betrag_fehlt |
-| `vb:transferaufwendungen:gewerbesteuerumlage` | 557 | nicht_gefunden |
-| `vb:transferaufwendungen:jugendamtsumlage` | 35 | betrag_fehlt |
-| `vb:transferaufwendungen:kreisumlage` | 35 | betrag_fehlt |
+| `vb:transferaufwendungen:gewerbesteuerumlage` | 33 | berechnet |
+| `vb:transferaufwendungen:jugendamtsumlage` | 34 | betrag_fehlt |
+| `vb:transferaufwendungen:kreisumlage` | 34 | betrag_fehlt |
+| `vb:transferaufwendungen:uebrige_transferaufwendungen` | 27 | berechnet |
 | `vb:zuwendungen:schluesselzuweisung` | 22 | betrag_fehlt |
 | `vb:zuwendungen:sonstige` | 15 | berechnet |
 | `vb:zuwendungen:uebrige_zuwendungen` | 15 | berechnet |
@@ -747,6 +748,7 @@ Markierung mit einem Hinweis. Diese Datei wird bei jedem Lauf neu geschrieben.
 | Schlüssel | PDF-Seite | Grund |
 |---|---|---|
 | `inv:0111102:111.02-003::auszahlung` | 124 | nicht_gefunden |
+| `inv:0111109:111.09-003::auszahlung` | 163 | nicht_gefunden |
 | `inv:0111112:111.12-004::einzahlung` | 181 | nicht_gefunden |
 | `inv:0212601:126.01-004::auszahlung` | 209 | nicht_gefunden |
 | `inv:0321101:211.01-016::auszahlung` | 223 | nicht_gefunden |
@@ -754,6 +756,7 @@ Markierung mit einem Hinweis. Diese Datei wird bei jedem Lauf neu geschrieben.
 | `inv:1153801:538.01-5-002::auszahlung` | 432 | nicht_gefunden |
 | `inv:1254101:541.01-1-006::einzahlung` | 450 | nicht_gefunden |
 | `inv:1254101:541.01-2-012::einzahlung` | 451 | nicht_gefunden |
+| `inv:1254101:541.01-3-008::auszahlung` | 452 | nicht_gefunden |
 | `inv:1254101:541.01-3-008::einzahlung` | 452 | nicht_gefunden |
 | `inv:1254101:541.01-5-006::auszahlung` | 453 | nicht_gefunden |
 

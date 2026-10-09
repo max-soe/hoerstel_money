@@ -518,19 +518,24 @@ def _baue_massnahmen(
     pb_je_produkt: dict[str, str] = {}
 
     gruppen = sorted(
-        investitionen.select("produkt", "massnahme_id", "konto").unique().iter_rows(named=True),
-        key=lambda z: (z["produkt"], z["massnahme_id"], z["konto"] or ""),
+        investitionen.select("produkt", "massnahme_id", "konto", "richtung")
+        .unique()
+        .iter_rows(named=True),
+        key=lambda z: (z["produkt"], z["massnahme_id"], z["konto"] or "", z["richtung"]),
     )
     massnahmen: list[dict[str, object]] = []
     for schluessel in gruppen:
         produkt = schluessel["produkt"]
         massnahme_id = schluessel["massnahme_id"]
         konto = schluessel["konto"]
+        richtung = schluessel["richtung"]
         teil = investitionen.filter(
             (pl.col("produkt") == produkt)
             & (pl.col("massnahme_id") == massnahme_id)
-            # IKVS (Hörstel) druckt kein Sachkonto je Maßnahme: konto ist dort leer.
+            # IKVS (Hörstel) druckt kein Sachkonto je Maßnahme: konto ist dort leer, und nur
+            # die Richtung trennt Ein- und Auszahlungen derselben Maßnahme.
             & pl.col("konto").eq_missing(konto)
+            & (pl.col("richtung") == richtung)
         )
         erste = teil.row(0, named=True)
         if produkt not in pb_je_produkt:
@@ -540,6 +545,10 @@ def _baue_massnahmen(
         werte_nach_jahr = {
             zeile["jahr"]: zeile["betrag"] for zeile in werte_df.iter_rows(named=True)
         }
+        if len(werte_nach_jahr) != werte_df.height:
+            raise AppDatenFehler(
+                f"Maßnahme {produkt}/{massnahme_id} ({richtung}): mehrere Werte für dasselbe Jahr"
+            )
         werte = [werte_nach_jahr.get(jahr) for jahr in jahre]
 
         ve_zeile = teil.filter(pl.col("wertart") == "ve")
@@ -553,7 +562,7 @@ def _baue_massnahmen(
                 "massnahme_name": erste["massnahme_name"],
                 "konto": konto,
                 "konto_name": erste["konto_name"],
-                "richtung": erste["richtung"],
+                "richtung": richtung,
                 "art": erste["art"],
                 "werte": werte,
                 "ve": ve_betrag,
@@ -768,6 +777,31 @@ def schreibe_app_json(daten: Mapping[str, object], pfad: Path, *, praefix: str) 
         temp_pfad.unlink(missing_ok=True)
 
 
+def baue_bezugsgroessen(jahrgang: Jahrgang, *, produkt_codes: set[str]) -> list[dict[str, object]]:
+    """Die Produkte mit „Zuschussbedarf je Einheit“ aus `[layout.bezugsgroessen]` (Freigabe
+    05-03): je Produktcode eine Liste aus Einheit im Zeilennamen und den gedruckten
+    Grundzahl-Bezeichnungen, deren Summe den Nenner bildet. Eine leere Tabelle heißt: kein
+    Produkt (Hörstel druckt „Produktergebnis je …“ selbst als Grundzahl). Unbekannte Produkte
+    und Einträge ohne Bezeichnung brechen ab."""
+    bereich = jahrgang.layout.get("bezugsgroessen")
+    if bereich is None:
+        raise AppDatenFehler(
+            f"Jahrgangsdatei {jahrgang.haushaltsjahr}: [layout.bezugsgroessen] fehlt"
+        )
+    ergebnis: list[dict[str, object]] = []
+    for produkt, eintrag in bereich.items():
+        if produkt not in produkt_codes:
+            raise AppDatenFehler(f"layout.bezugsgroessen: unbekanntes Produkt {produkt!r}")
+        if not isinstance(eintrag, tuple) or len(eintrag) < 2:
+            raise AppDatenFehler(
+                f"layout.bezugsgroessen.{produkt}: erwartet [Einheit, Bezeichnung, ...]"
+            )
+        ergebnis.append(
+            {"produkt": produkt, "einheit_text": eintrag[0], "bezeichnungen": list(eintrag[1:])}
+        )
+    return ergebnis
+
+
 def baue_vorbericht_tabelle(
     df: pl.DataFrame,
     *,
@@ -775,8 +809,13 @@ def baue_vorbericht_tabelle(
     planwerte: Planwerte,
     gep_zeile: str | None,
     sonstige: bool = False,
+    haushaltsjahr: int | None = None,
 ) -> dict[str, object]:
     """Baut die App-JSON-Struktur einer manuellen Vorberichtstabelle (D-02, D-21).
+
+    `quelle` und `anmerkung` eines Postens (und die Quelle der Gesamtzeile) stammen aus der
+    Zeile des Haushaltsjahrs, wenn es sie gibt, sonst aus dem letzten Jahr mit Wert: Hörstel
+    druckt dieselben Posten für einzelne Jahre auf verschiedenen Seiten (S. 34 und S. 35).
 
     `gesamt_plan` ist die eurogenaue GEP-Zeile (D-01), `gesamt_vorbericht` die gedruckte,
     nur in T€ geführte Gesamtzeile × 1000 (als `gerundet` gekennzeichnet). Jeder Posten
@@ -809,6 +848,8 @@ def baue_vorbericht_tabelle(
             continue
         gesamt_werte.append(zeile["betrag_teur"] * 1000)
         gesamt_quelle = zeile["quelle"]
+    if haushaltsjahr in gesamt_nach_jahr:
+        gesamt_quelle = gesamt_nach_jahr[haushaltsjahr]["quelle"]
 
     if gep_zeile is not None:
         planzeile = ZEILEN["gesamtergebnisplan"][gep_zeile].kanonisch
@@ -846,6 +887,9 @@ def baue_vorbericht_tabelle(
             werte.append(zeile["betrag_teur"] * 1000)
             quelle = zeile["quelle"]
             anmerkung = zeile["anmerkung"]
+        if haushaltsjahr in zeilen_nach_jahr:
+            quelle = zeilen_nach_jahr[haushaltsjahr]["quelle"]
+            anmerkung = zeilen_nach_jahr[haushaltsjahr]["anmerkung"]
         # Ein abgeschriebener Rest („berechnet: …“, daten/manuell/README.md) ist in mindestens
         # einem Jahr nicht gedruckt; die App zeigt ihn dann nie als gedruckten Wert.
         berechnet = any(
@@ -1070,6 +1114,7 @@ def erzeuge_app_daten(
             planwerte=planwerte,
             gep_zeile=REGEL5_GEP_ZEILEN.get(tabelle),
             sonstige=(tabelle in TABELLEN_MIT_SONSTIGE),
+            haushaltsjahr=jahrgang.haushaltsjahr,
         )
         for tabelle, df in vorbericht_quellen.items()
     }
@@ -1119,6 +1164,9 @@ def erzeuge_app_daten(
         # damit die App keine Jahrgangswerte im Code braucht. Neue Felder hängen hinten an.
         "eigenkapital_stand": layout_text(jahrgang, "eigenkapital", "stand"),
         "finanzierungsprodukt": weitergabe_produkt,
+        "bezugsgroessen": baue_bezugsgroessen(
+            jahrgang, produkt_codes=set(hierarchie["code"].to_list())
+        ),
     }
     if daten["eigenkapital_stand"] not in EIGENKAPITAL_STAENDE:
         raise AppDatenFehler(

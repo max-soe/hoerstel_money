@@ -176,6 +176,8 @@ export interface Haushalt {
    * aus dem die Weitergabe „KL“ herausgelöst ist), aus `[layout.weitergabe_kreis_land]`.
    */
   finanzierungsprodukt: string
+  /** Produkte mit „Zuschussbedarf je Einheit“ (`[layout.bezugsgroessen]`); leer, wenn keines. */
+  bezugsgroessen: HaushaltBezugsgroesse[]
   /**
    * Gedruckte Zeilennamen je Zeilenschlüssel, in der Reihenfolge von
    * `ergebnisplan.GESAMT.zeilen` bzw. `finanzplan.GESAMT.zeilen`. Einzige Namensquelle der
@@ -448,4 +450,11 @@ export interface Quellen {
   seiten: Record<string, QuellSeite>
   /** Belegschlüssel (Grammatik siehe `lib/quelle.ts`) -> Beleg. */
   belege: Record<string, Beleg>
+}
+
+/** Eine Bezugsgröße aus `[layout.bezugsgroessen]` des Jahrgangs (Freigabe 05-03). */
+export interface HaushaltBezugsgroesse {
+  produkt: string
+  einheit_text: string
+  bezeichnungen: string[]
 }

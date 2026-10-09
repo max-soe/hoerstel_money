@@ -15,8 +15,17 @@ import {
 } from '@/lib/stellen'
 
 // Alle Summen laufen in Hundertstel (RESEARCH Pattern 6, Pitfall 5): Erwartungen stehen als
-// ganze Hundertstel, nie als Fließkommazahl wie 62.91. Die für den Jahrgang festgehaltenen
-// Werte stehen unter `describe.runIf`.
+// ganze Hundertstel, nie als Fließkommazahl wie 125.02. Die für den Jahrgang festgehaltenen
+// Werte (Stellenplan Hörstel 2026, PDF-Seiten 568–574, Abschrift `daten/manuell/stellenplan.csv`)
+// stehen unter `describe.runIf`.
+
+/** Teil-A/B-Zeilen (ohne Produktbereich) mit dem Merkmal „stellen“ des Haushaltsjahrs. */
+function stellenZeilenOhneBereich(): Stellenplan['zeilen'] {
+  return stellenplan.zeilen.filter(
+    (z) =>
+      z.produktbereich === null && z.merkmal === 'stellen' && z.jahr === stellenplan.haushaltsjahr,
+  )
+}
 
 /** Kopie des Stellenplans mit den Zeilen, die `behalte` annimmt. */
 function ohne(behalte: (zeile: Stellenplan['zeilen'][number]) => boolean): Stellenplan {
@@ -57,24 +66,24 @@ describe('TEILE', () => {
 
 describe('alsVzae', () => {
   it('teilt Hundertstel erst zur Anzeige durch 100', () => {
-    expect(alsVzae(6291)).toBe(62.91)
+    expect(alsVzae(12502)).toBe(125.02)
     expect(alsVzae(0)).toBe(0)
   })
 })
 
 describe('differenzText', () => {
   it('setzt ein Vorzeichen und rechnet in Hundertstel', () => {
-    expect(differenzText(6291, 6213)).toBe('+0,78')
-    expect(differenzText(5663, 6291)).toBe('−6,28')
+    expect(differenzText(12502, 12193)).toBe('+3,09')
+    expect(differenzText(11779, 12502)).toBe('−7,23')
   })
 
   it('zeigt eine gleiche Größe ohne Vorzeichen', () => {
-    expect(differenzText(6291, 6291)).toBe('0')
+    expect(differenzText(12502, 12502)).toBe('0')
   })
 
   it('liefert null, wenn ein Wert fehlt (kein erfundenes 0)', () => {
-    expect(differenzText(null, 6213)).toBeNull()
-    expect(differenzText(6291, null)).toBeNull()
+    expect(differenzText(null, 12193)).toBeNull()
+    expect(differenzText(12502, null)).toBeNull()
   })
 })
 
@@ -154,18 +163,19 @@ describe('stellenSummen', () => {
   })
 
   describe.runIf(stellenplan.haushaltsjahr === 2026)('Jahrgang 2026', () => {
-    it('Haushaltsjahr 6291, Vorjahr 6213, besetzt 5663, Stichtag 30.06.2025', () => {
+    it('Haushaltsjahr 12502, Vorjahr 12193, besetzt 11779, Stichtag 30.06.2025 (S. 568/569)', () => {
       const summen = stellenSummen()
-      expect(summen.haushaltsjahr).toBe(6291)
-      expect(summen.vorjahr).toBe(6213)
-      expect(summen.besetzt).toBe(5663)
+      expect(summen.haushaltsjahr).toBe(12502)
+      expect(summen.vorjahr).toBe(12193)
+      expect(summen.besetzt).toBe(11779)
       expect(summen.stichtag).toBe('2025-06-30')
+      expect(summen.pdfSeiten).toEqual([568, 569])
     })
 
-    it('Differenzen 78 und 628 Hundertstel', () => {
+    it('Differenzen 309 und 723 Hundertstel', () => {
       const summen = stellenSummen()
-      expect((summen.haushaltsjahr ?? 0) - (summen.vorjahr ?? 0)).toBe(78)
-      expect((summen.haushaltsjahr ?? 0) - (summen.besetzt ?? 0)).toBe(628)
+      expect((summen.haushaltsjahr ?? 0) - (summen.vorjahr ?? 0)).toBe(309)
+      expect((summen.haushaltsjahr ?? 0) - (summen.besetzt ?? 0)).toBe(723)
     })
   })
 })
@@ -186,18 +196,18 @@ describe('stellenNachTeil', () => {
   })
 
   describe.runIf(stellenplan.haushaltsjahr === 2026)('Jahrgang 2026', () => {
-    it('Beamte haben 800 Hundertstel im Haushaltsjahr (S. 34: 8,0 Stellen)', () => {
+    it('Beamte haben 1981 Hundertstel im Haushaltsjahr (S. 568: 19,81 Stellen)', () => {
       const beamte = stellenNachTeil().find((t) => t.teil === 'beamte')
       expect(beamte).toBeDefined()
-      expect(beamte?.haushaltsjahr).toBe(800)
+      expect(beamte?.haushaltsjahr).toBe(1981)
     })
 
-    it('Tarif und Sozial- und Erziehungsdienst summieren auf 5491 Hundertstel', () => {
+    it('Tarif und Sozial- und Erziehungsdienst summieren auf 10521 Hundertstel', () => {
       const teile = stellenNachTeil()
       const rest = teile
         .filter((t) => t.teil !== 'beamte')
         .reduce((summe, t) => summe + (t.haushaltsjahr ?? 0), 0)
-      expect(rest).toBe(5491)
+      expect(rest).toBe(10521)
     })
   })
 })
@@ -250,11 +260,11 @@ describe('nachwuchs', () => {
   })
 
   describe.runIf(stellenplan.haushaltsjahr === 2026)('Jahrgang 2026', () => {
-    it('Vorjahr 5 Personen, Haushaltsjahr 6 Personen, S. 290', () => {
+    it('Vorjahr 11 Personen, Haushaltsjahr 13 Personen, S. 574', () => {
       const n = nachwuchs()
-      expect(n.vorjahr).toBe(5)
-      expect(n.haushaltsjahr).toBe(6)
-      expect(n.pdfSeiten).toEqual([290])
+      expect(n.vorjahr).toBe(11)
+      expect(n.haushaltsjahr).toBe(13)
+      expect(n.pdfSeiten).toEqual([574])
     })
   })
 })
@@ -270,6 +280,17 @@ const quelltexte = import.meta.glob<string>('/src/lib/stellen.ts', {
 })
 
 const jahrIndex = haushalt.jahre.indexOf(stellenplan.haushaltsjahr)
+
+/** Zeilen der Stellenübersicht (mit Produktbereich), Merkmal „stellen“, Haushaltsjahr. */
+const uebersichtZeilen = stellenplan.zeilen.filter(
+  (z) =>
+    z.produktbereich !== null && z.merkmal === 'stellen' && z.jahr === stellenplan.haushaltsjahr,
+)
+
+/** Hundertstel einer Zeile wie in `lib/stellen.ts`. */
+function alsHundertstel(zeile: Stellenplan['zeilen'][number]): number {
+  return Math.round((zeile.stellen ?? 0) * 100)
+}
 
 /** Kopie des Haushalts, in der der Personalaufwand des Aufgabenbereichs `pb` überschrieben ist. */
 function mitPersonalaufwand(pb: string, werte: number[]): Haushalt {
@@ -312,9 +333,31 @@ describe('stellenNachBereich', () => {
     }
   })
 
-  it('summiert die Stellen zur Gesamtsumme, ohne Zeilen doppelt zu zählen', () => {
+  it('summiert die Stellen zur Summe der Stellenübersicht, ohne Zeilen doppelt zu zählen', () => {
     const gesamt = zeilen.reduce((summe, z) => summe + (z.stellen ?? 0), 0)
-    expect(gesamt).toBe(stellenSummen().haushaltsjahr)
+    expect(gesamt).toBe(uebersichtZeilen.reduce((summe, z) => summe + alsHundertstel(z), 0))
+  })
+
+  it('weicht je Gruppe von Teil A/B höchstens um die Rundung der Zellen ab (Regel 10, befunde.md)', () => {
+    // Die Stellenübersicht druckt je Produkt auf Hundertstel gerundete Zellen, Teil A/B die
+    // ungerundete Spaltensumme. Jede Zelle trägt höchstens ein halbes Hundertstel Rundung bei.
+    const teilAB = new Map(
+      stellenZeilenOhneBereich().map((z) => [`${z.teil}|${z.gruppe}`, alsHundertstel(z)]),
+    )
+    const jeGruppe = new Map<string, { summe: number; zellen: number }>()
+    for (const z of uebersichtZeilen) {
+      const schluessel = `${z.teil}|${z.gruppe}`
+      const bisher = jeGruppe.get(schluessel) ?? { summe: 0, zellen: 0 }
+      jeGruppe.set(schluessel, {
+        summe: bisher.summe + alsHundertstel(z),
+        zellen: bisher.zellen + 1,
+      })
+    }
+    expect([...jeGruppe.keys()].sort()).toEqual([...teilAB.keys()].sort())
+    for (const [schluessel, { summe, zellen }] of jeGruppe) {
+      const abweichung = Math.abs(summe - (teilAB.get(schluessel) ?? Number.NaN))
+      expect(abweichung, schluessel).toBeLessThanOrEqual(zellen / 2)
+    }
   })
 
   it('summiert den Personalaufwand zur Zeile personalaufwendungen des Gesamtplans', () => {
@@ -370,15 +413,20 @@ describe('stellenNachBereich', () => {
   })
 
   describe.runIf(stellenplan.haushaltsjahr === 2026)('Jahrgang 2026', () => {
-    it('Σ Stellen 6291 Hundertstel, Σ Personalaufwand 5.204.054 €', () => {
-      expect(zeilen.reduce((summe, z) => summe + (z.stellen ?? 0), 0)).toBe(6291)
-      expect(zeilen.reduce((summe, z) => summe + (z.personalaufwand ?? 0), 0)).toBe(5204054)
+    it('Σ Stellen 12514 Hundertstel (12 über Teil A/B, Regel 10), Σ Personalaufwand 10.365.712 €', () => {
+      expect(zeilen.reduce((summe, z) => summe + (z.stellen ?? 0), 0)).toBe(12514)
+      expect(zeilen.reduce((summe, z) => summe + (z.stellen ?? 0), 0)).toBe(
+        (stellenSummen().haushaltsjahr ?? 0) + 12,
+      )
+      expect(zeilen.reduce((summe, z) => summe + (z.personalaufwand ?? 0), 0)).toBe(10365712)
     })
 
-    it('15 Aufgabenbereiche, Innere Verwaltung (01) mit 2187 Hundertstel vorn', () => {
-      expect(zeilen).toHaveLength(15)
+    it('14 Aufgabenbereiche (ohne 07 und 16), Innere Verwaltung (01) mit 5273 Hundertstel vorn', () => {
+      expect(zeilen).toHaveLength(14)
+      expect(zeilen.map((z) => z.pb)).not.toContain('07')
+      expect(zeilen.map((z) => z.pb)).not.toContain('16')
       expect(zeilen[0]?.pb).toBe('01')
-      expect(zeilen[0]?.stellen).toBe(2187)
+      expect(zeilen[0]?.stellen).toBe(5273)
     })
   })
 })
@@ -459,7 +507,9 @@ describe('stellenNachGruppe', () => {
     )
     const ueberBereiche = stellenNachBereich().reduce((gesamt, z) => gesamt + (z.stellen ?? 0), 0)
     expect(ueberGruppen).toBe(stellenSummen().haushaltsjahr)
-    expect(ueberBereiche).toBe(ueberGruppen)
+    // Die Summe je Bereich weicht nur um die Rundung der Stellenübersicht ab (Regel 10): höchstens
+    // ein halbes Hundertstel je Zelle.
+    expect(Math.abs(ueberBereiche - ueberGruppen)).toBeLessThanOrEqual(uebersichtZeilen.length / 2)
   })
 
   it('zählt keine Zeilen mit Produktbereich, kein Vorjahr und kein besetzt', () => {
@@ -499,52 +549,58 @@ describe('stellenNachGruppe', () => {
   it('zeigt einen Teil mit einer einzigen Gruppe als eine Zeile (UI-SPEC E10 zero-one-many)', () => {
     const eine = stellenNachGruppe(
       'sozial_erziehungsdienst',
-      ohne((z) => z.teil !== 'sozial_erziehungsdienst' || z.gruppe === 'S 12'),
+      ohne((z) => z.teil !== 'sozial_erziehungsdienst' || z.gruppe === 'S12'),
     )
-    expect(eine.map((z) => z.gruppe)).toEqual(['S 12'])
+    expect(eine.map((z) => z.gruppe)).toEqual(['S12'])
   })
 
   describe.runIf(stellenplan.haushaltsjahr === 2026)('Jahrgang 2026', () => {
-    it('Beamte A 8 → B 3', () => {
+    it('Beamte A8 → B4 (S. 568)', () => {
       expect(stellenNachGruppe('beamte').map((z) => z.gruppe)).toEqual([
-        'A 8',
-        'A 10',
-        'A 12',
-        'A 13',
-        'A 14',
-        'B 3',
+        'A8',
+        'A9Z',
+        'A10',
+        'A11',
+        'A12',
+        'A13 LG 2.1',
+        'A14',
+        'B4',
       ])
+      expect(new Set(stellenNachGruppe('beamte').map((z) => z.pdfSeite))).toEqual(new Set([568]))
     })
 
-    it('Tarif 1 → 14 mit 9a, 9b, 9c in dieser Reihenfolge', () => {
+    it('Tarif 02 → 14 mit 09a, 09b, 09c in dieser Reihenfolge (S. 569)', () => {
       expect(stellenNachGruppe('tarif').map((z) => z.gruppe)).toEqual([
-        '1',
-        '5',
-        '6',
-        '7',
-        '8',
-        '9a',
-        '9b',
-        '9c',
+        '02',
+        '03',
+        '05',
+        '06',
+        '07',
+        '08',
+        '09a',
+        '09b',
+        '09c',
+        '10',
         '11',
         '12',
         '14',
       ])
+      expect(new Set(stellenNachGruppe('tarif').map((z) => z.pdfSeite))).toEqual(new Set([569]))
     })
 
-    it('Sozial- und Erziehungsdienst S 11 → S 12', () => {
+    it('Sozial- und Erziehungsdienst S11b → S12 (S. 569)', () => {
       expect(stellenNachGruppe('sozial_erziehungsdienst').map((z) => z.gruppe)).toEqual([
-        'S 11',
-        'S 12',
+        'S11b',
+        'S12',
       ])
     })
 
-    it('Einzelwerte: A 8 mit 200, Tarif 6 mit 1895, S 12 mit 214 Hundertstel', () => {
+    it('Einzelwerte: A8 mit 73, Tarif 06 mit 3312, S12 mit 100 Hundertstel', () => {
       const wert = (teil: string, gruppe: string): number | undefined =>
         stellenNachGruppe(teil).find((z) => z.gruppe === gruppe)?.stellen
-      expect(wert('beamte', 'A 8')).toBe(200)
-      expect(wert('tarif', '6')).toBe(1895)
-      expect(wert('sozial_erziehungsdienst', 'S 12')).toBe(214)
+      expect(wert('beamte', 'A8')).toBe(73)
+      expect(wert('tarif', '06')).toBe(3312)
+      expect(wert('sozial_erziehungsdienst', 'S12')).toBe(100)
     })
   })
 })

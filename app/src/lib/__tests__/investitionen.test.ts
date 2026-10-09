@@ -42,6 +42,16 @@ const GFP_JE_ART: ReadonlyMap<Art, readonly string[]> = new Map<Art, readonly st
   ],
 ])
 
+/**
+ * Dokumentierte Abweichung der Investitionsübersichten vom Gesamtfinanzplan je Planjahr
+ * (`daten/pruefberichte/befunde.md`, Regel 6): Hörstel Produkt 0212201 (S. 196) druckt in der
+ * Investitionsübersicht 3.125 € je Planjahr weniger als Zeile 30 des Teilfinanzplans.
+ */
+const BEFUND_AUSZAHLUNGEN = haushalt.haushaltsjahr === 2026 ? 3125 : 0
+
+/** Ob die Daten eine Art je Maßnahmenkonto führen (ProFIS+ ja, IKVS/Hörstel nein). */
+const HAT_ARTEN = investitionen.massnahmen.some((m) => m.art !== null)
+
 /** Summe einer GFP-Zeile im Planjahr mit dem Index `i` (0 = Haushaltsjahr). */
 function gfp(schluessel: string, i: number): number {
   return finanzplan[schluessel]?.[planAb + i] ?? Number.NaN
@@ -173,25 +183,51 @@ describe('baueVorhaben ohne Filter (INV-01, D-07, D-08)', () => {
     expect(new Set(alle.map((e) => e.schluessel)).size).toBe(alle.length)
   })
 
-  it('summiert über alle Maßnahmen auf die GFP-Zeile auszahlungen_investitionen', () => {
+  it('summiert über alle Maßnahmen auf die GFP-Zeile auszahlungen_investitionen (abzüglich Befund)', () => {
     const jahre = planjahre()
-    jahre.forEach((_jahr, i) => {
+    jahre.forEach((jahr, i) => {
       const summe = alle.reduce((s, e) => s + (e.jahre[i] ?? 0), 0)
-      expect(summe).toBe(gfp('auszahlungen_investitionen', i))
+      expect(summe, String(jahr)).toBe(gfp('auszahlungen_investitionen', i) - BEFUND_AUSZAHLUNGEN)
     })
     const gesamt = alle.reduce((s, e) => s + e.summe, 0)
-    expect(gesamt).toBe(jahre.reduce((s, _j, i) => s + gfp('auszahlungen_investitionen', i), 0))
+    expect(gesamt).toBe(
+      jahre.reduce((s, _j, i) => s + gfp('auszahlungen_investitionen', i) - BEFUND_AUSZAHLUNGEN, 0),
+    )
   })
 
-  it.each(ARTEN.map((a) => a.art))('trifft je Planjahr die GFP-Zeilen der Art %s (D-06)', (art) => {
-    const eintraege = baueVorhaben({ pb: null, art })
-    const zeilen = GFP_JE_ART.get(art) ?? []
-    expect(zeilen.length).toBeGreaterThan(0)
-    planjahre().forEach((_jahr, i) => {
-      const summe = eintraege.reduce((s, e) => s + (e.jahre[i] ?? 0), 0)
-      const erwartet = zeilen.reduce((s, zeile) => s + gfp(zeile, i), 0)
-      expect(summe).toBe(erwartet)
-    })
+  it.each(ARTEN.map((a) => a.art))(
+    'Art %s: je Planjahr die Summe ihrer Kontozeilen, mit Art in den Daten die GFP-Zeilen der Art (D-06)',
+    (art) => {
+      const eintraege = baueVorhaben({ pb: null, art })
+      const zeilen = GFP_JE_ART.get(art) ?? []
+      expect(zeilen.length).toBeGreaterThan(0)
+      const auszahlungen = investitionen.massnahmen.filter(
+        (m) => m.richtung === 'auszahlung' && filterArt(m.art) === art,
+      )
+      planjahre().forEach((jahr, i) => {
+        const summe = eintraege.reduce((s, e) => s + (e.jahre[i] ?? 0), 0)
+        const ausZeilen = auszahlungen.reduce((s, m) => s + (m.werte[planAb + i] ?? 0), 0)
+        expect(summe, String(jahr)).toBe(ausZeilen)
+        if (HAT_ARTEN) {
+          const erwartet = zeilen.reduce((s, zeile) => s + gfp(zeile, i), 0)
+          expect(summe, String(jahr)).toBe(erwartet)
+        }
+      })
+    },
+  )
+
+  it('ohne Art in den Daten (IKVS) fällt jede Maßnahme unter „Sonstige“', () => {
+    const ohneArt = [
+      massnahme({ massnahme_id: 'A', konto: null, art: null, werte: [5, 5] }),
+      massnahme({ massnahme_id: 'B', konto: null, art: null, werte: [7, 7] }),
+    ]
+    expect(buendeln(ohneArt, 0).map((e) => e.arten)).toEqual([['sonstige'], ['sonstige']])
+    if (!HAT_ARTEN) {
+      expect(baueVorhaben({ pb: null, art: 'sonstige' })).toEqual(alle)
+      for (const art of ['bau', 'grundstuecke', 'ausstattung'] as const) {
+        expect(baueVorhaben({ pb: null, art })).toEqual([])
+      }
+    }
   })
 
   it('übernimmt keinen Wert aus Einzahlungs-Zeilen (D-08)', () => {
@@ -288,7 +324,11 @@ describe('baueMassnahmenTabelle', () => {
       const schluessel = `${m.produkt}/${m.massnahme_id}`
       kontenJe.set(schluessel, (kontenJe.get(schluessel) ?? 0) + 1)
     }
-    expect([...kontenJe.values()].some((n) => n > 1)).toBe(true)
+    // Hörstel (IKVS) druckt kein Konto je Maßnahme: dort hat jede Maßnahme genau eine Zeile; die
+    // Herleitung bei mehreren Konten deckt der synthetische Test darunter ab.
+    if (haushalt.haushaltsjahr === 2026) {
+      expect([...kontenJe.values()].every((n) => n === 1)).toBe(true)
+    }
     for (const zeile of tabelle.zeilen) {
       const n = kontenJe.get(String(zeile['schluessel'])) ?? 0
       expect(n, String(zeile['schluessel'])).toBeGreaterThan(0)
@@ -385,9 +425,9 @@ describe('ergebnisText (WR-02, INV-01)', () => {
   describe.runIf(haushalt.haushaltsjahr === 2026)('Jahrgang 2026', () => {
     it.each([
       [{ pb: '04', art: null }],
+      [{ pb: '09', art: null }],
       [{ pb: '15', art: null }],
-      [{ pb: '13', art: 'grundstuecke' }],
-      [{ pb: '06', art: 'bau' }],
+      [{ pb: '13', art: 'sonstige' }],
     ] as const)('liest bei genau einer Maßnahme „1 Maßnahme“ (%j)', (auswahl) => {
       const vorhaben = baueVorhaben({ pb: auswahl.pb, art: auswahl.art })
       expect(vorhaben).toHaveLength(1)
@@ -410,20 +450,31 @@ describe('klickIndex', () => {
 describe.runIf(haushalt.haushaltsjahr === 2026)(
   'Jahrgang 2026 (RESEARCH Pattern 1, Pitfall 2)',
   () => {
-    it('bündelt 89 Auszahlungs-Gruppen, davon 59 mit Summe ungleich 0', () => {
-      expect(baueGruppen({ pb: null, art: null })).toHaveLength(89)
-      expect(baueVorhaben({ pb: null, art: null })).toHaveLength(59)
+    it('bündelt 157 Auszahlungs-Gruppen, davon 98 mit Summe ungleich 0', () => {
+      expect(baueGruppen({ pb: null, art: null })).toHaveLength(157)
+      expect(baueVorhaben({ pb: null, art: null })).toHaveLength(98)
     })
 
-    it('summiert die Planjahre auf 36.361.784 €', () => {
+    it('summiert die Planjahre auf 76.972.571 € (GFP Z. 30 2026–2029 = 76.985.071 € abzüglich 4 × 3.125 €)', () => {
       const gesamt = baueVorhaben({ pb: null, art: null }).reduce((s, e) => s + e.summe, 0)
-      expect(gesamt).toBe(36361784)
+      expect(gesamt).toBe(76_972_571)
     })
 
-    it('trennt KLIMA1 in mehrere Maßnahmen je Produkt', () => {
-      const klima = baueVorhaben({ pb: null, art: null }).filter((e) => e.massnahmeId === 'KLIMA1')
-      expect(klima.length).toBeGreaterThan(1)
-      expect(new Set(klima.map((e) => e.produkt)).size).toBe(klima.length)
+    it('Einzahlung und Auszahlung derselben Maßnahme bleiben getrennt (111.09-001, S. 162)', () => {
+      const zeilen = investitionen.massnahmen.filter(
+        (m) => m.produkt === '0111109' && m.massnahme_id === '111.09-001',
+      )
+      const auszahlung = zeilen.find((m) => m.richtung === 'auszahlung')
+      const einzahlung = zeilen.find((m) => m.richtung === 'einzahlung')
+      expect(auszahlung?.werte).toEqual([985026, 600000, 600000, 800000, 300000, 300000])
+      expect(einzahlung?.werte).toEqual([300, 450000, 1986000, 1440000, 1650000, 460000])
+    })
+
+    it('jede Maßnahmenkennung gehört zu genau einem Produkt (keine Kennung wie KLIMA1 mehrfach)', () => {
+      const vorhaben = baueVorhaben({ pb: null, art: null })
+      const kennungen = vorhaben.map((e) => e.massnahmeId)
+      expect(new Set(kennungen).size).toBe(kennungen.length)
+      expect(vorhaben.every((e) => /^\d{7}$/.test(e.produkt))).toBe(true)
     })
   },
 )
@@ -453,8 +504,21 @@ describe('MASSNAHMEN_AUFGABENBEREICHE (D-06, Pitfall 8)', () => {
   })
 
   describe.runIf(haushalt.haushaltsjahr === 2026)('Jahrgang 2026', () => {
-    it('hat elf Aufgabenbereiche', () => {
-      expect(codes).toEqual(['01', '02', '03', '04', '06', '08', '09', '10', '12', '13', '15'])
+    it('hat zwölf Aufgabenbereiche', () => {
+      expect(codes).toEqual([
+        '01',
+        '02',
+        '03',
+        '04',
+        '06',
+        '08',
+        '09',
+        '11',
+        '12',
+        '13',
+        '14',
+        '15',
+      ])
     })
   })
 })

@@ -23,6 +23,26 @@ import { findeText, rendereAbsatz } from '@/lib/texte'
 const JAHRE = haushalt.jahre.map((j, i) => [j, i] as const)
 const MIT_KINDERN = haushalt.knoten.filter((k) => haushalt.knoten.some((c) => c.eltern === k.code))
 
+/**
+ * Dokumentierte Differenz Gesamtplan − Summe der Teilpläne im Aufwand (befunde.md, Regel 3,
+ * Gesamtergebnisplan S. 79): Hörstel 2026 enthält der Gesamtplan bei den Transferaufwendungen
+ * 5.800 € mehr als die 16 Teilpläne, 2027 4.400 €. Die Ebene unter GESAMT summiert die Teilpläne
+ * und erreicht den Gesamtplan deshalb in diesen Jahren nicht; alle anderen Jahre gehen auf.
+ */
+const BEFUND_GESAMT_TEILPLAENE: ReadonlyMap<number, number> = new Map(
+  haushalt.haushaltsjahr === 2026
+    ? [
+        [2026, 5800],
+        [2027, 4400],
+      ]
+    : [],
+)
+
+/** Erwartete Differenz Eltern − Σ Kinder im Aufwand (0 außer beim dokumentierten Befund). */
+function befund(code: string, jahr: number): number {
+  return code === 'GESAMT' ? (BEFUND_GESAMT_TEILPLAENE.get(jahr) ?? 0) : 0
+}
+
 function aufwand(code: string, i: number): number {
   const wert = haushalt.ergebnisplan[code]?.berechnet.aufwand[i]
   if (wert === undefined) {
@@ -42,7 +62,7 @@ function zuschuss(code: string, i: number): number {
 describe('baueEbene: oberste Ebene (AUSG-01)', () => {
   it.each(JAHRE)(
     'Jahr %i: ein Eintrag je Kind von GESAMT, absteigend, Summe = Gesamtaufwand',
-    (_j, i) => {
+    (j, i) => {
       const ebene = baueEbene('GESAMT', i, 'aufwand')
       const erwartet = haushalt.knoten.filter((k) => k.eltern === 'GESAMT')
       expect(ebene).toHaveLength(erwartet.length)
@@ -51,26 +71,59 @@ describe('baueEbene: oberste Ebene (AUSG-01)', () => {
         expect(ebene[n - 1]?.wert ?? 0).toBeGreaterThanOrEqual(ebene[n]?.wert ?? 0)
       }
       const summe = ebene.reduce((s, e) => s + e.wert, 0)
-      expect(Math.abs(summe - aufwand('GESAMT', i))).toBeLessThanOrEqual(2)
+      expect(
+        Math.abs(aufwand('GESAMT', i) - summe - befund('GESAMT', j)),
+        `Gesamtaufwand ${String(j)}`,
+      ).toBeLessThanOrEqual(2)
     },
   )
 
-  it('enthält die 15 Aufgabenbereiche und die Weitergabe an Kreis und Land', () => {
+  it('enthält die Aufgabenbereiche und die Weitergabe an Kreis und Land', () => {
     const ebene = baueEbene('GESAMT', 0, 'aufwand')
     expect(ebene.filter((e) => e.istKl)).toHaveLength(1)
     expect(ebene.filter((e) => !e.istKl).length).toBe(ebene.length - 1)
   })
+
+  it.runIf(haushalt.haushaltsjahr === 2026)(
+    'Hörstel 2026: 16 Aufgabenbereiche (01–16) und KL',
+    () => {
+      const codes = baueEbene('GESAMT', 0, 'aufwand').map((e) => e.code)
+      const bereiche = Array.from({ length: 16 }, (_, n) => String(n + 1).padStart(2, '0'))
+      expect([...codes].sort()).toEqual([...bereiche, 'KL'].sort())
+    },
+  )
 })
 
 describe('baueEbene: Kinder summieren sich zum Elternknoten', () => {
-  it.each(JAHRE)('Jahr %i: Σ Kinder = Eltern (±2 €, KL ±3.000 €)', (_j, i) => {
-    for (const eltern of MIT_KINDERN) {
-      const ebene = baueEbene(eltern.code, i, 'aufwand')
-      const summe = ebene.reduce((s, e) => s + e.wert, 0)
-      const toleranz = eltern.code === 'KL' ? 3000 : 2
-      expect(Math.abs(summe - aufwand(eltern.code, i)), eltern.code).toBeLessThanOrEqual(toleranz)
-    }
-  })
+  it.each(JAHRE)(
+    'Jahr %i: Σ Kinder = Eltern (±2 €, KL ±3.000 €, GESAMT mit dokumentiertem Befund)',
+    (j, i) => {
+      for (const eltern of MIT_KINDERN) {
+        const ebene = baueEbene(eltern.code, i, 'aufwand')
+        const summe = ebene.reduce((s, e) => s + e.wert, 0)
+        // KL-Posten sind im Vorbericht auf T€ gerundet gedruckt (Hörstel S. 34/35).
+        const toleranz = eltern.code === 'KL' ? 3000 : 2
+        expect(
+          Math.abs(aufwand(eltern.code, i) - summe - befund(eltern.code, j)),
+          eltern.code,
+        ).toBeLessThanOrEqual(toleranz)
+      }
+    },
+  )
+
+  it.runIf(haushalt.haushaltsjahr === 2026)(
+    'Hörstel 2026: GESAMT liegt 2026 um 5.800 € und 2027 um 4.400 € über Σ Teilpläne (befunde.md)',
+    () => {
+      for (const [jahr, differenz] of [
+        [2026, 5800],
+        [2027, 4400],
+      ] as const) {
+        const i = haushalt.jahre.indexOf(jahr)
+        const summe = baueEbene('GESAMT', i, 'aufwand').reduce((s, e) => s + e.wert, 0)
+        expect(aufwand('GESAMT', i) - summe).toBe(differenz)
+      }
+    },
+  )
 
   it('lässt Einträge mit Wert 0 weg', () => {
     for (const [, i] of JAHRE) {
@@ -323,7 +376,7 @@ describe('eintragTooltip (T-05-27)', () => {
       {
         code: 'KL.x',
         name: 'Kreisumlage',
-        wert: 10147000,
+        wert: 12465000,
         anteil: 0.9,
         gerundet: true,
         ueberschuss: false,
@@ -356,11 +409,13 @@ describe('ueberschussTextSchluessel (AUSG-03)', () => {
   it('nimmt den Text des Aufgabenbereichs, wenn es ihn gibt, sonst den allgemeinen', () => {
     expect(ueberschussTextSchluessel('11')).toBe('ueberschuss_pb_11')
     expect(ueberschussTextSchluessel('16')).toBe('ueberschuss_pb_16')
-    // Produktgruppen und Produkte erben den Text ihres Aufgabenbereichs.
-    expect(ueberschussTextSchluessel('1101')).toBe('ueberschuss_pb_11')
-    expect(ueberschussTextSchluessel('110101')).toBe('ueberschuss_pb_11')
-    // Aufgabenbereich 01 hat keinen eigenen Text.
-    expect(ueberschussTextSchluessel('0112')).toBe('ueberschuss_allgemein')
+    // Produktgruppen und Produkte erben den Text ihres Aufgabenbereichs (Hörstel: PG 11538 und
+    // Produkt 1153801 Öffentliche Abwasserbeseitigung).
+    expect(ueberschussTextSchluessel('11538')).toBe('ueberschuss_pb_11')
+    expect(ueberschussTextSchluessel('1153801')).toBe('ueberschuss_pb_11')
+    // Aufgabenbereich 01 hat keinen eigenen Text (Hörstel: Liegenschaftsverwaltung 0111109).
+    expect(ueberschussTextSchluessel('01111')).toBe('ueberschuss_allgemein')
+    expect(ueberschussTextSchluessel('0111109')).toBe('ueberschuss_allgemein')
     expect(ueberschussTextSchluessel('KL')).toBe('ueberschuss_allgemein')
   })
 
