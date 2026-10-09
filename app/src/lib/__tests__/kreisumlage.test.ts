@@ -47,9 +47,17 @@ describe('baueKreisumlage', () => {
 })
 
 describe.runIf(haushalt.haushaltsjahr === 2026)('Kreisumlage Haushalt 2026', () => {
-  it('beträgt 11.001.181 € und ist der größte oberste Knoten nach Aufwand', () => {
+  // Kreisumlage 12.465 T€ + Jugendamtsumlage 10.202 T€ (S. 35) + Gewerbesteuerumlage
+  // 1.327 T€ (S. 557)
+  it('beträgt 23.994.000 € und ist der größte oberste Knoten nach Aufwand', () => {
     const i = haushalt.jahre.indexOf(2026)
-    expect(baueKreisumlage(i).gesamt).toBe(11001181)
+    const kreisumlage = baueKreisumlage(i)
+    expect(kreisumlage.gesamt).toBe(23994000)
+    expect(kreisumlage.unterposten.map((u) => [u.name, u.wert, u.pdfSeite])).toEqual([
+      ['Kreisumlage', 12465000, 35],
+      ['Jugendamtsumlage', 10202000, 35],
+      ['Gewerbesteuerumlage', 1327000, 557],
+    ])
 
     const oberste = haushalt.knoten.filter((k) => k.eltern === 'GESAMT')
     const aufwand = (code: string) => haushalt.ergebnisplan[code]?.berechnet.aufwand[i] ?? 0

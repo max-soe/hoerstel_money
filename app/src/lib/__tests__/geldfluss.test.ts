@@ -33,6 +33,22 @@ function summe(fluss: Geldfluss, seite: 'links' | 'rechts'): number {
   return fluss.knoten.filter((k) => k.seite === seite).reduce((s, k) => s + k.wert, 0)
 }
 
+/**
+ * Gesamtergebnisplan Z. 17 minus Summe der Z. 17 aller obersten Knoten (16 PB und KL).
+ * Die linke Seite folgt dem Gesamtplan, die rechte den Teilplänen; wo das PDF beide
+ * verschieden druckt (befunde.md, Regel 3), unterscheiden sich die Seiten um genau
+ * diesen Betrag.
+ */
+function teilplanDifferenz(index: number): number {
+  const teilplaene = haushalt.knoten
+    .filter((k) => k.eltern === 'GESAMT')
+    .reduce(
+      (s, k) => s + (haushalt.ergebnisplan[k.code]?.zeilen.ordentliche_aufwendungen?.[index] ?? 0),
+      0,
+    )
+  return zeile('ordentliche_aufwendungen', index) - teilplaene
+}
+
 describe('baueGeldfluss: Bilanz in jedem Jahr (D-11, D-19, FLUSS-02)', () => {
   it.each(ALLE_JAHRE)(
     'Jahr %i: linke und rechte Summe sind gleich (±2 €), kein Knoten mit Wert ≤ 0',
@@ -330,19 +346,39 @@ describe('geldfluss.ts: Verbote (T-05-32)', () => {
 })
 
 describe.runIf(haushalt.haushaltsjahr === 2026)('Geldfluss Haushalt 2026 (D-11, D-19)', () => {
-  it('2026: Defizit 2.353.506 €, Minderaufwand 600.000 €, Summe 30.455.569 €', () => {
+  // Gesamtergebnisplan S. 79: Jahresergebnis -2.740.330 € (= Inanspruchnahme der
+  // Ausgleichsrücklage, Satzung § 4, S. 8), kein globaler Minderaufwand, Aufwand
+  // 62.038.766 €. Die Teilpläne enthalten 5.800 € weniger Transferaufwendungen als der
+  // Gesamtplan (befunde.md, Regel 3), deshalb ist die rechte Seite um 5.800 € kleiner.
+  it('2026: Defizit 2.740.330 €, kein Minderaufwand, Summe links 62.038.766 €', () => {
     const fluss = baueGeldfluss(haushalt.jahre.indexOf(2026))
-    expect(fluss.knoten.find((k) => k.art === 'defizit')?.wert).toBe(2353506)
-    expect(fluss.knoten.find((k) => k.art === 'minderaufwand')?.wert).toBe(600000)
+    expect(fluss.knoten.find((k) => k.art === 'defizit')?.wert).toBe(2740330)
+    expect(fluss.knoten.find((k) => k.art === 'minderaufwand')).toBeUndefined()
     expect(fluss.knoten.find((k) => k.art === 'ueberschuss')).toBeUndefined()
-    expect(summe(fluss, 'links')).toBe(30455569)
-    expect(summe(fluss, 'rechts')).toBe(30455569)
+    expect(summe(fluss, 'links')).toBe(62038766)
+    expect(summe(fluss, 'rechts')).toBe(62038766)
+    const differenz = fluss.knoten.find((k) => k.art === 'differenz')
+    expect(differenz?.wert).toBe(5800)
+    expect(differenz?.berechnet).toBe(true)
+    expect(differenz?.seite).toBe('rechts')
   })
 
-  it('2024: Überschuss 191.990 € rechts, kein Minderaufwand', () => {
+  it('die Teilplan-Differenz entspricht den Befunden (5.800 € 2026, 4.400 € 2027, sonst ±2 €)', () => {
+    const dokumentiert: Record<number, number> = { 2026: 5800, 2027: 4400 }
+    for (const [jahr, index] of ALLE_JAHRE) {
+      const erwartet = dokumentiert[jahr] ?? 0
+      expect(Math.abs(teilplanDifferenz(index) - erwartet), String(jahr)).toBeLessThanOrEqual(2)
+      // Die Differenz steht rechts als eigener Knoten, nur wenn sie über die Rundung hinausgeht.
+      const knoten = baueGeldfluss(index).knoten.find((k) => k.art === 'differenz')
+      expect(knoten?.wert ?? 0, String(jahr)).toBe(erwartet === 0 ? 0 : teilplanDifferenz(index))
+    }
+  })
+
+  // Ist-Ergebnis 2024 (S. 79): Jahresergebnis 409.507 €
+  it('2024: Überschuss 409.507 € rechts, kein Minderaufwand', () => {
     const fluss = baueGeldfluss(haushalt.jahre.indexOf(2024))
     const ueberschuss = fluss.knoten.find((k) => k.art === 'ueberschuss')
-    expect(ueberschuss?.wert).toBe(191990)
+    expect(ueberschuss?.wert).toBe(409507)
     expect(ueberschuss?.seite).toBe('rechts')
     expect(fluss.knoten.find((k) => k.art === 'minderaufwand')).toBeUndefined()
     expect(fluss.knoten.find((k) => k.art === 'defizit')).toBeUndefined()
@@ -351,7 +387,7 @@ describe.runIf(haushalt.haushaltsjahr === 2026)('Geldfluss Haushalt 2026 (D-11, 
 
 describe('baueGeldflussBalken: Mobil-Alternative (D-12, D-19, FLUSS-04)', () => {
   it.each(ALLE_JAHRE)(
-    'Jahr %i: beide Balken haben dieselbe Summe (±2 €), Segmente in den Knotenfarben',
+    'Jahr %i: beide Balken haben bis auf die Teilplan-Differenz dieselbe Summe (±2 €), Segmente in den Knotenfarben',
     (_jahr, index) => {
       const fluss = baueGeldfluss(index)
       const balken = baueGeldflussBalken(fluss)
@@ -455,11 +491,40 @@ describe('welcheLesetexte: jahrpassende Erklärtexte (D-11, Pitfall 6, T-05-34)'
       expect(schluessel.includes('defizit_ruecklagen')).toBe(
         hatDefizit && jahr === texte.haushaltsjahr,
       )
-      expect(schluessel.includes('ueberschuss_ruecklage')).toBe(hatUeberschuss)
+      // Jahrgebundene Texte (mit Platzhaltern) erscheinen nur im Haushaltsjahr (Pitfall 6).
+      // Der Hörsteler Überschuss-Text nennt das Jahresergebnis 2024 als Platzhalter und
+      // ist deshalb jahrgebunden.
+      expect(schluessel.includes('ueberschuss_ruecklage')).toBe(
+        hatUeberschuss && textFuerJahr('ueberschuss_ruecklage', jahr) !== null,
+      )
       for (const eintrag of schluessel) {
         expect(findeText(eintrag), eintrag).toBeDefined()
         expect(textFuerJahr(eintrag, jahr), eintrag).not.toBeNull()
       }
     },
   )
+
+  it('im Haushaltsjahr erscheint bei einem Überschuss der Überschuss-Text, bei einem Defizit der Defizit-Text', () => {
+    const fluss = baueGeldfluss(haushalt.jahre.indexOf(texte.haushaltsjahr))
+    const ohneAusgleich = fluss.knoten.filter((k) => k.art !== 'defizit' && k.art !== 'ueberschuss')
+    const mitUeberschuss: Geldfluss = {
+      ...fluss,
+      knoten: [
+        ...ohneAusgleich,
+        { ...fluss.knoten[0]!, id: 'ausgleich:ueberschuss', art: 'ueberschuss', seite: 'rechts' },
+      ],
+    }
+    const mitDefizit: Geldfluss = {
+      ...fluss,
+      knoten: [...ohneAusgleich, { ...fluss.knoten[0]!, id: 'ausgleich:defizit', art: 'defizit' }],
+    }
+    expect(welcheLesetexte(texte.haushaltsjahr, mitUeberschuss)).toEqual([
+      'geldfluss_lesehilfe',
+      'ueberschuss_ruecklage',
+    ])
+    expect(welcheLesetexte(texte.haushaltsjahr, mitDefizit)).toEqual([
+      'geldfluss_lesehilfe',
+      'defizit_ruecklagen',
+    ])
+  })
 })

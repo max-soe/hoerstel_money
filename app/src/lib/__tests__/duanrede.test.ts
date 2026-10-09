@@ -51,13 +51,27 @@ const AUSNAHMEN: readonly Ausnahme[] = [
     grund: '3. Person',
   },
   {
+    // „Die Gewerbesteuer … Sie hängt von der wirtschaftlichen Lage … ab“
     quelle: 'texte.json',
-    anfang: 'Ihre Höhe richtet sich nach einem Hebesa',
+    anfang: 'Sie hängt von der wirtschaftlichen Lage ',
+    grund: '3. Person',
+  },
+  {
+    // „Im Haushalt tauchen sie [die Beteiligungen] nur dort auf … Ihre Wirtschaftspläne …“
+    quelle: 'texte.json',
+    anfang: 'Ihre Wirtschaftspläne zeigt diese App ni',
     grund: 'Possessiv',
   },
   {
+    // „Die Anteile an der Einkommensteuer und an der Umsatzsteuer … Ihre Höhe richtet sich …“
     quelle: 'texte.json',
-    anfang: 'Sie wird zusätzlich zur allgemeinen Krei',
+    anfang: 'Ihre Höhe richtet sich nach Schlüsselzah',
+    grund: 'Possessiv',
+  },
+  {
+    // Glossar „Kreisumlage“: „Die Kreisumlage ist … Sie ist nicht an einen bestimmten Zweck …“
+    quelle: 'texte.json',
+    anfang: 'Sie ist nicht an einen bestimmten Zweck ',
     grund: '3. Person',
   },
   {

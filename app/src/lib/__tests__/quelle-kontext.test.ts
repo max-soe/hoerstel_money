@@ -6,6 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 
+import { haushalt } from '@/data/daten'
 import { baueMassnahmenTabelle, baueVorhaben } from '@/lib/investitionen'
 import { findeBeleg } from '@/lib/quelle'
 import { stellenNachGruppe, TEILE } from '@/lib/stellen'
@@ -58,9 +59,20 @@ describe('Prüfmuster Seitenspalte als Text', () => {
 })
 
 describe('/rat-entscheidet: Einzelzuschüsse', () => {
-  const kita = kitaZuschuesse().posten
+  // Kita-Tabelle und Einzelposten der Zuschüsse für laufende Zwecke druckt nicht jeder Jahrgang
+  // (Hörstel hat beide nicht); dann bleiben sie leer und nur die Transfer-Zuschüsse zählen.
+  const kita = kitaZuschuesse()?.posten ?? []
   const weitere = weitereZuschuesse()
-  const alle = [...kita, ...weitere.transfer.posten, ...weitere.lfdZwecke.posten]
+  const lfdZwecke = weitere.lfdZwecke?.posten ?? []
+  const alle = [...kita, ...weitere.transfer.posten, ...lfdZwecke]
+
+  it('fehlt eine Vorberichtstabelle, bleibt ihre Gruppe null statt zu werfen', () => {
+    expect(kitaZuschuesse() === null).toBe(haushalt.vorbericht['kita_zuschuesse'] === undefined)
+    expect(weitere.lfdZwecke === null).toBe(
+      haushalt.vorbericht['zuschuesse_lfd_zwecke'] === undefined,
+    )
+    expect(weitere.transfer.posten.length).toBeGreaterThan(0)
+  })
 
   it('jeder Zuschuss mit Seite trägt einen auflösbaren Vorberichtsschlüssel', () => {
     expect(alle.length).toBeGreaterThan(0)
@@ -80,7 +92,7 @@ describe('/rat-entscheidet: Einzelzuschüsse', () => {
     for (const z of weitere.transfer.posten) {
       expect(z.beleg).toBe(`vb:transferaufwendungen:${z.schluessel}`)
     }
-    for (const z of weitere.lfdZwecke.posten) {
+    for (const z of lfdZwecke) {
       expect(z.beleg).toBe(`vb:zuschuesse_lfd_zwecke:${z.schluessel}`)
     }
   })
@@ -114,9 +126,13 @@ describe('/rat-entscheidet: Was der Rat nicht beeinflussen kann', () => {
   })
 
   it('die Sozialleistungen nutzen ihren Vorberichtsschlüssel', () => {
-    const sozial = posten.find((p) => p.schluessel === 'sozialleistungen')
-    if (sozial !== undefined) {
-      expect(sozial.beleg).toBe('vb:transferaufwendungen:sozialleistungen')
+    // Ostbevern nennt den Posten `sozialleistungen`, Hörstel `sozialtransferaufwendungen`.
+    const sozial = posten.filter((p) =>
+      ['sozialleistungen', 'sozialtransferaufwendungen'].includes(p.schluessel),
+    )
+    expect(sozial).toHaveLength(1)
+    for (const p of sozial) {
+      expect(p.beleg).toBe(`vb:transferaufwendungen:${p.schluessel}`)
     }
   })
 

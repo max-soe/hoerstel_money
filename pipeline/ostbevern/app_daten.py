@@ -96,6 +96,9 @@ KL_NAME = "Weitergabe an Kreis und Land"
 # zum 31.12. vor Ergebnisverrechnung (Hörstel S. 588, Fußnote 1).
 EIGENKAPITAL_STAENDE: tuple[str, ...] = ("jahresbeginn", "jahresende_vor_verrechnung")
 
+# Anmerkung, mit der eine manuelle Abschrift einen hergeleiteten Rest kennzeichnet.
+BERECHNET_PRAEFIX = "berechnet"
+
 # Vorbericht-Tabellen mit einem berechneten Posten "Sonstige" (Spez. 3.8): dort, wo die
 # gedruckte Gesamtzeile um mehr als REGEL5_TOLERANZ_GEP_EURO von der GEP-Zeile abweicht,
 # schließt "Sonstige" die Lücke, sodass Σ Posten exakt die (maßgebliche) GEP-Zeile ergibt.
@@ -843,6 +846,12 @@ def baue_vorbericht_tabelle(
             werte.append(zeile["betrag_teur"] * 1000)
             quelle = zeile["quelle"]
             anmerkung = zeile["anmerkung"]
+        # Ein abgeschriebener Rest („berechnet: …“, daten/manuell/README.md) ist in mindestens
+        # einem Jahr nicht gedruckt; die App zeigt ihn dann nie als gedruckten Wert.
+        berechnet = any(
+            (zeile["anmerkung"] or "").startswith(BERECHNET_PRAEFIX)
+            for zeile in zeilen_nach_jahr.values()
+        )
 
         posten_liste.append(
             {
@@ -850,7 +859,7 @@ def baue_vorbericht_tabelle(
                 "name": name,
                 "werte": werte,
                 "gerundet": True,
-                "berechnet": False,
+                "berechnet": berechnet,
                 "quelle": quelle,
                 "anmerkung": anmerkung,
             }

@@ -38,6 +38,19 @@ const massnahmenTitel = computed(() => {
 // `schuldenKacheln()`; „berechnet“ steht nur, wenn das Datenfeld des Vorjahrs es sagt (WR-03).
 const schuldenstand = baueSchuldenstand()
 const veWertart = wertartName(wertartFuerJahr(haushalt.haushaltsjahr))
+/**
+ * Beleg der VE-Summe: die VE-Spalte der Summenzeile „Auszahlungen aus Investitionstätigkeit“ des
+ * Gesamtfinanzplans (Ostbevern). Druckt der Gesamtfinanzplan keine VE-Spalte (Hörstel), steht die
+ * Summe nur in der VE-Übersicht; dann belegt deren erste Seite sie.
+ */
+function veBeleg(): string | undefined {
+  if (haushalt.finanzplan['GESAMT']?.ve['auszahlungen_investitionen'] !== undefined) {
+    return belegSchluessel.fp('GESAMT', 'auszahlungen_investitionen')
+  }
+  const seite = vePdfSeiten()[0]
+  return seite === undefined ? undefined : belegSchluessel.seite(seite)
+}
+
 const kacheln = [
   ...schuldenKacheln(),
   {
@@ -46,9 +59,7 @@ const kacheln = [
     wert: euroKurz(veGesamt()),
     zeile: quellenZeile(veWertart, haushalt.haushaltsjahr, vePdfSeiten()),
     berechnet: false,
-    // Die VE-Summe steht in der VE-Spalte der gedruckten Summenzeile „Auszahlungen aus
-    // Investitionstätigkeit“ des Gesamtfinanzplans; dieselbe Zeile belegt sie, ohne Herleitung.
-    quelle: belegSchluessel.fp('GESAMT', 'auszahlungen_investitionen'),
+    quelle: veBeleg(),
     herleitung: null as string | null,
     wertart: `${veWertart} ${formatiereJahr(haushalt.haushaltsjahr)}`,
   },

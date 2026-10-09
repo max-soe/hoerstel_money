@@ -7,7 +7,7 @@
 
 import { haushalt, investitionen } from '@/data/daten'
 import type { VorberichtPosten, VorberichtTabelle } from '@/data/typen'
-import { belegSchluessel } from '@/lib/quelle'
+import { belegSchluessel, findeBeleg } from '@/lib/quelle'
 import { zeilenName } from '@/lib/zeilen'
 
 /** Ein Posten einer Aufschlüsselung (Vorbericht-Tabelle), bereits für ein Jahr gelesen. */
@@ -257,9 +257,15 @@ export function baueSonstigeErtraege(jahrIndex: number): SonstigeErtragZeile[] {
   return zeilen
 }
 
-/** Seite des Gesamtfinanzplans, auf dem die Finanzplan-Zeilen stehen. */
-function finanzplanSeite(): number {
-  return investitionen.finanzierung.quelle
+/**
+ * Seite der Finanzplan-Zeile: die Seite ihres Belegs, denn der Gesamtfinanzplan kann über zwei
+ * Seiten gehen (Hörstel S. 80/81); ohne Beleg die erste Seite des Gesamtfinanzplans.
+ */
+function finanzplanSeite(schluessel: string): number {
+  return (
+    findeBeleg(belegSchluessel.fp(FINANZPLAN_KNOTEN, schluessel))?.pdfSeite ??
+    investitionen.finanzierung.quelle
+  )
 }
 
 function finanzplanWert(schluessel: string, jahrIndex: number): number {
@@ -281,7 +287,7 @@ function investiveFinanzplanZeile(
     wert: finanzplanWert(schluessel, jahrIndex),
     gerundet: false,
     berechnet: false,
-    quelle: finanzplanSeite(),
+    quelle: finanzplanSeite(schluessel),
     beleg: belegSchluessel.fp(FINANZPLAN_KNOTEN, schluessel),
     herleitung: null,
     gruppe: 'finanzplan',
@@ -328,7 +334,7 @@ export function baueInvestiveEinnahmen(jahrIndex: number): InvestiveZeile[] {
     wert: finanzplanWert(INVESTITIONSZUWENDUNGEN, jahrIndex) - summeGezeigt,
     gerundet: gezeigt.some((zeile) => zeile.gerundet),
     berechnet: true,
-    quelle: finanzplanSeite(),
+    quelle: finanzplanSeite(INVESTITIONSZUWENDUNGEN),
     beleg: belegSchluessel.fp(FINANZPLAN_KNOTEN, INVESTITIONSZUWENDUNGEN),
     herleitung: herleitungSonstigeInvestiv(),
     gruppe: 'sonstige',

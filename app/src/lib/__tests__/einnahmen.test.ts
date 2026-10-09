@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { haushalt } from '@/data/daten'
+import type { Haushalt, VorberichtPosten } from '@/data/typen'
 import {
   AUFSCHLUESSELUNG_FUER_ERTRAGSART,
   GEZEIGTE_PAUSCHALEN,
@@ -34,6 +35,35 @@ function postenSchluessel(name: string): string[] {
 
 function summe(werte: readonly (number | null)[]): number {
   return werte.reduce<number>((s, w) => s + (w ?? 0), 0)
+}
+
+/**
+ * Lädt `lib/einnahmen` mit einer veränderten Kopie von `haushalt` neu. So lässt sich die Logik
+ * für Strukturen prüfen, die der aktuelle Jahrgang (Hörstel) nicht druckt, etwa
+ * Sonderposten-Auflösungen oder Konzessionsabgaben nach Sparte.
+ */
+async function ladeEinnahmenMit(aendere: (kopie: Haushalt) => void) {
+  vi.resetModules()
+  vi.doMock('@/data/daten', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@/data/daten')>()
+    const kopie = structuredClone(original.haushalt)
+    aendere(kopie)
+    return { ...original, haushalt: kopie }
+  })
+  return import('@/lib/einnahmen')
+}
+
+/** Ein synthetischer Vorbericht-Posten mit demselben Wert in jedem Jahr. */
+function testPosten(posten: string, wert: number): VorberichtPosten {
+  return {
+    posten,
+    name: posten,
+    werte: haushalt.jahre.map(() => wert),
+    gerundet: true,
+    berechnet: false,
+    quelle: 1,
+    anmerkung: null,
+  }
 }
 
 /** Sucht rekursiv nach `undefined`: Builder liefern `null` für fehlende Werte (Pitfall 7). */
@@ -77,13 +107,13 @@ describe('fachliche Konstanten (Spez. 6.4)', () => {
   })
 
   it.each([...SONDERPOSTEN_POSTEN])(
-    'Sonderposten %s steht in einer Vorberichtstabelle',
+    'Sonderposten %s steht höchstens einmal in den Aufschlüsselungen',
     (posten) => {
       const vorhanden = [
         ...postenSchluessel('zuwendungen'),
         ...postenSchluessel('sonstige_ertraege'),
       ]
-      expect(vorhanden).toContain(posten)
+      expect(vorhanden.filter((p) => p === posten).length).toBeLessThanOrEqual(1)
     },
   )
 
@@ -144,39 +174,46 @@ describe.each(JAHRE)('Aufschlüsselung Jahr %i', (_jahr, index) => {
   })
 
   it('baueZuwendungen: nur Sonderposten tragen „kein Geldfluss“ (EINN-03)', () => {
-    const zeilen = baueZuwendungen(index)
-    const sonderposten = zeilen.find((z) => z.posten === 'aufloesung_sonderposten')
-    expect(sonderposten?.keinGeldfluss).toBe(true)
-    for (const zeile of zeilen.filter((z) => z.posten !== 'aufloesung_sonderposten')) {
-      expect(zeile.keinGeldfluss, zeile.posten).toBe(false)
+    for (const zeile of baueZuwendungen(index)) {
+      expect(zeile.keinGeldfluss, zeile.posten).toBe(SONDERPOSTEN_POSTEN.includes(zeile.posten))
     }
   })
 
-  it('baueZuwendungen: ein berechneter Rest „Sonstige“ erscheint nur mit Wert', () => {
+  // Berechnet sind der Rest „Sonstige“ der Pipeline und die abgeschriebenen Reste `uebrige_*`
+  // („berechnet: …“ in daten/manuell, Hörstel S. 15/22).
+  it('baueZuwendungen: ein berechneter Rest erscheint nur mit Wert', () => {
     for (const zeile of baueZuwendungen(index).filter((z) => z.berechnet)) {
-      expect(zeile.posten).toBe('sonstige')
+      expect(zeile.posten === 'sonstige' || zeile.posten.startsWith('uebrige_')).toBe(true)
       expect(zeile.wert).not.toBeNull()
       expect(zeile.quelle).not.toBeNull()
     }
   })
 
+  // Der Hörsteler Vorbericht (S. 24) druckt die sonstigen Erträge nur für 2025 und 2026; in
+  // den übrigen Jahren sind alle Posten null und der Rest „Sonstige“ entfällt.
   it('baueSonstigeErtraege: Summe der Hauptposten weicht um höchstens drei T€ vom Gesamtergebnisplan ab (EINN-04)', () => {
     const plan = GEP?.['sonstige_ordentliche_ertraege']?.[index]
     expect(plan).toBeDefined()
     const hauptposten = baueSonstigeErtraege(index).filter((z) => z.teilVon === null)
     expect(hauptposten.length).toBeGreaterThan(0)
-    expect(Math.abs(summe(hauptposten.map((z) => z.wert)) - (plan ?? 0))).toBeLessThanOrEqual(3000)
+    const gedruckt = tabelle('sonstige_ertraege').gesamt_vorbericht?.werte[index] ?? null
+    if (gedruckt === null) {
+      expect(hauptposten.every((z) => z.wert === null && !z.berechnet)).toBe(true)
+    } else {
+      expect(Math.abs(summe(hauptposten.map((z) => z.wert)) - (plan ?? 0))).toBeLessThanOrEqual(
+        3000,
+      )
+    }
   })
 
-  it('baueSonstigeErtraege: die Konzessionsabgaben stehen unter den 2.1.7-Posten', () => {
+  it('baueSonstigeErtraege: die Konzessionsabgaben stehen unter den Posten des Vorberichts', () => {
     expect(baueSonstigeErtraege(index).map((z) => z.posten)).toContain('konzessionsabgaben')
   })
 
-  it('baueSonstigeErtraege: Sonderposten-Auflösung trägt „kein Geldfluss“', () => {
-    const zeile = baueSonstigeErtraege(index).find(
-      (z) => z.posten === 'aufloesung_sonstiger_sonderposten',
-    )
-    expect(zeile?.keinGeldfluss).toBe(true)
+  it('baueSonstigeErtraege: nur Sonderposten-Auflösungen tragen „kein Geldfluss“', () => {
+    for (const zeile of baueSonstigeErtraege(index)) {
+      expect(zeile.keinGeldfluss, zeile.posten).toBe(SONDERPOSTEN_POSTEN.includes(zeile.posten))
+    }
   })
 
   it('kein Builder liefert undefined (fehlende Werte sind null)', () => {
@@ -188,41 +225,109 @@ describe.each(JAHRE)('Aufschlüsselung Jahr %i', (_jahr, index) => {
   })
 })
 
+const SPARTEN = ['konzessionsabgabe_strom', 'konzessionsabgabe_gas', 'konzessionsabgabe_wasser']
+
 describe('Konzessionsabgaben nach Sparte', () => {
-  it('Unterzeilen erscheinen nur im Haushaltsjahr', () => {
+  afterEach(() => {
+    vi.doUnmock('@/data/daten')
+    vi.resetModules()
+  })
+
+  it('ohne Sparten in meta.vorbericht_werte gibt es in keinem Jahr Unterzeilen (Hörstel)', () => {
+    const vorhanden = SPARTEN.filter((s) => haushalt.meta.vorbericht_werte[s] !== undefined)
+    expect(vorhanden).toEqual([])
     for (const [jahr, index] of JAHRE) {
-      const unterzeilen = baueSonstigeErtraege(index).filter(
-        (z) => z.teilVon === 'konzessionsabgaben',
-      )
+      const unterzeilen = baueSonstigeErtraege(index).filter((z) => z.teilVon !== null)
+      expect(unterzeilen, String(jahr)).toEqual([])
+    }
+  })
+
+  /** Konzessionsabgaben des Haushaltsjahrs, synthetisch auf Strom, Gas und Wasser verteilt. */
+  async function ladeMitSparten(sparten: readonly string[]) {
+    const index = haushalt.jahre.indexOf(haushalt.haushaltsjahr)
+    const posten = tabelle('sonstige_ertraege').posten.find(
+      (p) => p.posten === 'konzessionsabgaben',
+    )
+    const gesamt = posten?.werte[index] ?? 0
+    expect(gesamt).toBeGreaterThan(0)
+    const anteile = [gesamt - 2000, 1000, 1000]
+    const modul = await ladeEinnahmenMit((kopie) => {
+      sparten.forEach((schluessel) => {
+        kopie.meta.vorbericht_werte[schluessel] = {
+          wert: anteile[SPARTEN.indexOf(schluessel)] ?? 0,
+          einheit: 'euro',
+          quelle: 24,
+          gerundet: true,
+        }
+      })
+    })
+    return { modul, index, gesamt }
+  }
+
+  it('Unterzeilen erscheinen nur im Haushaltsjahr (synthetische Sparten)', async () => {
+    const { modul } = await ladeMitSparten(SPARTEN)
+    for (const [jahr, index] of JAHRE) {
+      const unterzeilen = modul
+        .baueSonstigeErtraege(index)
+        .filter((z) => z.teilVon === 'konzessionsabgaben')
       expect(unterzeilen.length > 0, String(jahr)).toBe(jahr === haushalt.haushaltsjahr)
     }
   })
 
-  it('Strom, Gas und Wasser ergeben im Haushaltsjahr den Posten Konzessionsabgaben', () => {
-    const index = haushalt.jahre.indexOf(haushalt.haushaltsjahr)
-    const zeilen = baueSonstigeErtraege(index)
-    const gesamt = zeilen.find((z) => z.posten === 'konzessionsabgaben')?.wert
+  it('Strom, Gas und Wasser ergeben im Haushaltsjahr den Posten Konzessionsabgaben (synthetische Sparten)', async () => {
+    const { modul, index, gesamt } = await ladeMitSparten(SPARTEN)
+    const zeilen = modul.baueSonstigeErtraege(index)
+    expect(zeilen.find((z) => z.posten === 'konzessionsabgaben')?.wert).toBe(gesamt)
     const teile = zeilen.filter((z) => z.teilVon === 'konzessionsabgaben')
-    expect(teile.map((z) => z.posten).sort()).toEqual([
-      'konzessionsabgabe_gas',
-      'konzessionsabgabe_strom',
-      'konzessionsabgabe_wasser',
-    ])
-    expect(gesamt).toBeDefined()
+    expect(teile.map((z) => z.posten).sort()).toEqual([...SPARTEN].sort())
     expect(summe(teile.map((z) => z.wert))).toBe(gesamt)
     for (const teil of teile) {
       expect(teil.gerundet, teil.posten).toBe(true)
-      expect(teil.quelle, teil.posten).not.toBeNull()
+      expect(teil.quelle, teil.posten).toBe(24)
+      expect(teil.beleg, teil.posten).toBe(`meta:vorbericht_werte.${teil.posten}`)
+      expect(teil.keinGeldfluss, teil.posten).toBe(false)
     }
   })
 
-  it('die Unterzeilen stehen direkt hinter den Konzessionsabgaben', () => {
-    const index = haushalt.jahre.indexOf(haushalt.haushaltsjahr)
-    const posten = baueSonstigeErtraege(index).map((z) => z.posten)
+  it('die Unterzeilen stehen direkt hinter den Konzessionsabgaben (synthetische Sparten)', async () => {
+    const { modul, index } = await ladeMitSparten(SPARTEN)
+    const posten = modul.baueSonstigeErtraege(index).map((z) => z.posten)
     const start = posten.indexOf('konzessionsabgaben')
+    expect(start).toBeGreaterThanOrEqual(0)
+    expect(posten.slice(start + 1, start + 4)).toEqual(SPARTEN)
+  })
+
+  it('nur ein Teil der Sparten ist ein Datenfehler', async () => {
+    const { modul, index } = await ladeMitSparten(['konzessionsabgabe_strom'])
+    expect(() => modul.baueSonstigeErtraege(index)).toThrow(/konzessionsabgabe_gas/)
+  })
+})
+
+describe('Sonderposten-Auflösung (EINN-03, synthetische Posten)', () => {
+  afterEach(() => {
+    vi.doUnmock('@/data/daten')
+    vi.resetModules()
+  })
+
+  it('trägt in Zuwendungen und sonstigen Erträgen „kein Geldfluss“, die übrigen Posten nicht', async () => {
+    const modul = await ladeEinnahmenMit((kopie) => {
+      kopie.vorbericht['zuwendungen']?.posten.push(testPosten('aufloesung_sonderposten', 1000))
+      kopie.vorbericht['sonstige_ertraege']?.posten.push(
+        testPosten('aufloesung_sonstiger_sonderposten', 1000),
+      )
+    })
+    const index = haushalt.jahre.indexOf(haushalt.haushaltsjahr)
+    const zuwendungen = modul.baueZuwendungen(index)
+    const sonstige = modul.baueSonstigeErtraege(index)
+    expect(zuwendungen.find((z) => z.posten === 'aufloesung_sonderposten')?.keinGeldfluss).toBe(
+      true,
+    )
     expect(
-      posten.slice(start + 1, start + 4).every((p) => p.startsWith('konzessionsabgabe_')),
+      sonstige.find((z) => z.posten === 'aufloesung_sonstiger_sonderposten')?.keinGeldfluss,
     ).toBe(true)
+    for (const zeile of [...zuwendungen, ...sonstige]) {
+      expect(zeile.keinGeldfluss, zeile.posten).toBe(SONDERPOSTEN_POSTEN.includes(zeile.posten))
+    }
   })
 })
 
@@ -397,43 +502,60 @@ describe('hatInvestiveWerte', () => {
 })
 
 describe.runIf(haushalt.haushaltsjahr === 2026)(
-  'Haushalt 2026: Werte aus dem PDF (S. 27, 28, 33, 52)',
+  'Haushalt 2026: Werte aus dem PDF (S. 8, 16, 22, 61, 80)',
   () => {
     const index = haushalt.jahre.indexOf(2026)
 
-    it('Steuerarten: Gewerbesteuer 7.800.000 €, Hebesatz 418', () => {
+    it('Steuerarten: Gewerbesteuer 15.734.000 € (S. 16), Hebesatz 421 (S. 8)', () => {
       const gewerbe = baueSteuern(index).find((z) => z.posten === 'gewerbesteuer')
-      expect(gewerbe?.wert).toBe(7_800_000)
+      expect(gewerbe?.wert).toBe(15_734_000)
       expect(gewerbe?.gerundet).toBe(true)
-      expect(gewerbe?.hebesatz).toBe(418)
+      expect(gewerbe?.quelle).toBe(16)
+      expect(gewerbe?.hebesatz).toBe(421)
+      expect(gewerbe?.hebesatzQuelle).toBe(8)
     })
 
-    it('Zuwendungen: Schlüsselzuweisung 890.000 €, Sonstige 5.200 € berechnet', () => {
+    it('Zuwendungen: Schlüsselzuweisung 4.478.000 € (S. 22), kein Rest „Sonstige“', () => {
       const zeilen = baueZuwendungen(index)
-      expect(zeilen.find((z) => z.posten === 'schluesselzuweisung')?.wert).toBe(890_000)
-      const rest = zeilen.find((z) => z.posten === 'sonstige')
-      expect(rest?.wert).toBe(5200)
-      expect(rest?.berechnet).toBe(true)
+      const schluessel = zeilen.find((z) => z.posten === 'schluesselzuweisung')
+      expect(schluessel?.wert).toBe(4_478_000)
+      expect(schluessel?.quelle).toBe(22)
+      // Schlüsselzuweisung und übrige Zuwendungen (5.745 T€, S. 15) ergeben die gedruckte
+      // Summe 10.223 T€; ein Rest bleibt nicht.
+      expect(zeilen.find((z) => z.posten === 'uebrige_zuwendungen')?.wert).toBe(5_745_000)
+      expect(zeilen.find((z) => z.posten === 'sonstige')).toBeUndefined()
     })
 
-    it('Investive Einnahmen: Pauschalen 1.525.000 / 406.000 / 60.000 €, Sonstige (berechnet) 1.751.000 €', () => {
+    it('Hörstel druckt keine Sonderposten-Auflösung in Zuwendungen und sonstigen Erträgen', () => {
+      const vorhanden = [
+        ...postenSchluessel('zuwendungen'),
+        ...postenSchluessel('sonstige_ertraege'),
+      ]
+      for (const posten of SONDERPOSTEN_POSTEN) {
+        expect(vorhanden).not.toContain(posten)
+      }
+    })
+
+    it('Investive Einnahmen: Pauschalen 2.137.000 / 738.000 / 83.000 € (S. 61), Sonstige (berechnet) 1.453.383 €', () => {
       const zeilen = baueInvestiveEinnahmen(index)
       const wert = (schluessel: string) => zeilen.find((z) => z.schluessel === schluessel)?.wert
-      expect(wert('investitionspauschale')).toBe(1_525_000)
-      expect(wert('schulpauschale')).toBe(406_000)
-      expect(wert('sportpauschale')).toBe(60_000)
-      expect(wert('sonstige_berechnet')).toBe(1_751_000)
+      expect(wert('investitionspauschale')).toBe(2_137_000)
+      expect(wert('schulpauschale')).toBe(738_000)
+      expect(wert('sportpauschale')).toBe(83_000)
+      // Gesamtfinanzplan S. 80, Zeile 18: 4.411.383 € minus 2.958.000 € Pauschalen
+      expect(wert('sonstige_berechnet')).toBe(1_453_383)
     })
 
-    it('„Sonstige (berechnet)“ entspricht der Summe der übrigen gedruckten Posten von S. 52', () => {
+    it('„Sonstige (berechnet)“ entspricht bis auf die T€-Rundung den übrigen Posten von S. 80', () => {
       const uebrige = tabelle('investitionszuwendungen').posten.filter(
         (p) => !GEZEIGTE_PAUSCHALEN.includes(p.posten),
       )
       const erwartet = summe(uebrige.map((p) => p.werte[index] ?? null))
+      expect(erwartet).toBe(1_453_000)
       const sonstige = baueInvestiveEinnahmen(index).find(
         (z) => z.schluessel === 'sonstige_berechnet',
       )
-      expect(sonstige?.wert).toBe(erwartet)
+      expect(Math.abs((sonstige?.wert ?? 0) - erwartet)).toBeLessThan(500)
     })
   },
 )

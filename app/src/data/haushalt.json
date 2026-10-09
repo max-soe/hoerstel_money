@@ -38568,7 +38568,7 @@
             6188000
           ],
           "gerundet": true,
-          "berechnet": false,
+          "berechnet": true,
           "quelle": 15,
           "anmerkung": "berechnet: gedruckte Summe abzüglich der einzeln gedruckten Posten (nicht einzeln ausgewiesen)"
         },
@@ -38707,7 +38707,7 @@
             1528000
           ],
           "gerundet": true,
-          "berechnet": false,
+          "berechnet": true,
           "quelle": 557,
           "anmerkung": "berechnet: Teilergebnisplan 1661101 Z. 15 abzüglich Kreis- und Jugendamtsumlage (S. 557)"
         },
@@ -38723,7 +38723,7 @@
             5345000
           ],
           "gerundet": true,
-          "berechnet": false,
+          "berechnet": true,
           "quelle": 27,
           "anmerkung": "berechnet: Summe Transferaufwendungen (S. 27) abzüglich der Umlagen; die Aufteilung ist nur für 2025/2026 gedruckt (S. 33)"
         }
@@ -38807,7 +38807,7 @@
             null
           ],
           "gerundet": true,
-          "berechnet": false,
+          "berechnet": true,
           "quelle": 80,
           "anmerkung": "berechnet: gedruckte Summe abzüglich der einzeln gedruckten Posten (nicht einzeln ausgewiesen)"
         }
@@ -38973,7 +38973,7 @@
             null
           ],
           "gerundet": true,
-          "berechnet": false,
+          "berechnet": true,
           "quelle": 24,
           "anmerkung": "berechnet: gedruckte Summe abzüglich der einzeln gedruckten Posten (nicht einzeln ausgewiesen)"
         }
@@ -39128,7 +39128,7 @@
             null
           ],
           "gerundet": true,
-          "berechnet": false,
+          "berechnet": true,
           "quelle": 28,
           "anmerkung": "berechnet: gedruckte Summe abzüglich der einzeln gedruckten Posten (nicht einzeln ausgewiesen)"
         }
@@ -39465,7 +39465,7 @@
             null
           ],
           "gerundet": true,
-          "berechnet": false,
+          "berechnet": true,
           "quelle": 24,
           "anmerkung": "berechnet: gedruckte Summe abzüglich der einzeln gedruckten Posten (nicht einzeln ausgewiesen)"
         },

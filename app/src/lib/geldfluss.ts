@@ -42,6 +42,7 @@ export type KnotenArt =
   | 'pb'
   | 'zinsen'
   | 'ueberschuss'
+  | 'differenz'
 
 export interface GeldflussKnoten {
   /** Eindeutiger Bezeichner (ECharts identifiziert Knoten über ihren Namen). */
@@ -77,6 +78,9 @@ export interface Geldfluss {
 }
 
 const GEMEINDE_ID = 'mitte:gemeinde'
+
+/** Rundungsdifferenz in Euro zwischen Gesamtplan und Teilplänen, die keinen Knoten bekommt. */
+const DIFFERENZ_TOLERANZ = 2
 
 /** Gruppen der Steuern (Vorbericht-Posten); der Rest bis zur Plan-Zeile ist „Übrige Steuern“. */
 const STEUER_GRUPPEN: readonly { id: string; name: string; posten: readonly string[] }[] = [
@@ -350,6 +354,31 @@ export function baueGeldfluss(jahrIndex: number): Geldfluss {
       gerundet: false,
       berechnet: false,
     })
+  }
+
+  // Gesamtplan und Summe der Teilpläne können im PDF auseinanderfallen (Hörstel,
+  // Befund Regel 3 in befunde.md): links zählt der Gesamtplan, rechts die Aufgabenbereiche. Die
+  // Differenz steht als eigener, berechneter Knoten rechts, damit beide Seiten gleich groß sind
+  // und nichts verschwiegen wird. Cent-Rundungen bis 2 € bleiben unberücksichtigt.
+  const rechts = knoten.filter((k) => k.seite === 'rechts').reduce((s, k) => s + k.wert, 0)
+  const differenz = summeLinks - rechts
+  if (differenz > DIFFERENZ_TOLERANZ) {
+    knoten.push({
+      id: 'ziel:differenz',
+      name: 'Nicht in den Teilplänen (Differenz zum Gesamtplan)',
+      wert: differenz,
+      seite: 'rechts',
+      art: 'differenz',
+      code: null,
+      farbe: ZINSEN_FARBE,
+      decal: PUNKT_DECAL,
+      gerundet: false,
+      berechnet: true,
+    })
+  } else if (differenz < -DIFFERENZ_TOLERANZ) {
+    throw new Error(
+      `Geldfluss ${String(haushalt.jahre[jahrIndex])}: die Teilpläne übersteigen den Gesamtplan um ${String(-differenz)} €`,
+    )
   }
 
   // ---- Kanten ----------------------------------------------------------------------------

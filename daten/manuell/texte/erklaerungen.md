@@ -106,7 +106,7 @@ Quelle: S. 64, S. 588
 
 Schließt ein Jahr mit einem Überschuss ab, ist mehr Ertrag übrig geblieben, als Aufwand angefallen ist. Dieser Betrag wird der Ausgleichsrücklage zugeführt, und das Eigenkapital der Stadt steigt.
 
-So hat Hörstel im Jahr 2024 mit einem Überschuss von {{eigenkapital.jahresergebnis.2024|euro}} abgeschlossen. Das ist kein Geld, das schon ausgegeben wurde, sondern ein Polster, das später ein Defizit auffangen kann.
+Ein solcher Überschuss ist kein Geld, das schon ausgegeben wurde, sondern ein Polster, das später ein Defizit auffangen kann.
 
 ## geldfluss_lesehilfe
 Titel: So liest du das Geldfluss-Diagramm
