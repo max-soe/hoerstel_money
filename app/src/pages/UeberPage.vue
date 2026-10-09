@@ -68,6 +68,18 @@ const haushaltsjahr = jahr(haushalt.haushaltsjahr)
           ><span class="om-visually-hidden"> (öffnet in neuem Tab)</span></a
         >
       </p>
+      <p>
+        {{ SEITENNAME }} beruht auf der Codebasis von {{ URSPRUNGSPROJEKT_NAME }}. Herzlichen Dank
+        an das Projekt, das seinen Code offen bereitgestellt und damit diese App möglich gemacht
+        hat.
+      </p>
+      <p>
+        <a :href="URSPRUNGSPROJEKT_URL" target="_blank" rel="noopener noreferrer"
+          >{{ URSPRUNGSPROJEKT_NAME
+          }}<wa-icon name="arrow-up-right-from-square" class="om-extern-icon"></wa-icon
+          ><span class="om-visually-hidden"> (öffnet in neuem Tab)</span></a
+        >
+      </p>
     </section>
 
     <section aria-labelledby="om-ueber-impressum" class="om-ueber__abschnitt">
@@ -92,18 +104,7 @@ const haushaltsjahr = jahr(haushalt.haushaltsjahr)
           </dd>
         </div>
       </dl>
-      <p class="om-ueber__ursprung">
-        {{ SEITENNAME }} beruht auf der Codebasis von {{ URSPRUNGSPROJEKT_NAME }}. Herzlichen Dank
-        an das Projekt, das seinen Code offen bereitgestellt und damit diese App möglich gemacht
-        hat.
-      </p>
-      <p>
-        <a :href="URSPRUNGSPROJEKT_URL" target="_blank" rel="noopener noreferrer"
-          >{{ URSPRUNGSPROJEKT_NAME
-          }}<wa-icon name="arrow-up-right-from-square" class="om-extern-icon"></wa-icon
-          ><span class="om-visually-hidden"> (öffnet in neuem Tab)</span></a
-        >
-      </p>
+      
     </section>
 
     <section aria-labelledby="om-ueber-datenschutz" class="om-ueber__abschnitt">
