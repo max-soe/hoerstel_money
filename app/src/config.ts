@@ -19,7 +19,8 @@ export const KONTAKT_EMAIL = 'max.soest9@gmail.com'
  * Der Wert ist festgelegt. `istPlatzhalter(ORIGINAL_PDF_URL)` bleibt als Wächter für den
  * Smoke-Test bestehen (D-07).
  */
-export const ORIGINAL_PDF_URL = 'https://haushaltsplan-hoerstel.invalid/haushalt-2026.pdf'
+export const ORIGINAL_PDF_URL =
+  'https://www.hoerstel.de/downloads/datei/OWFiYjU3NGJlYWVjODMyN1dXQUFQeEJ2Zjd3VEVSdjVwcnlpOEJ0Uk5CSHYvelU3dGN1ODhIdnhiNzBmRmUrMXJTZTlJVnZ2NDhVS1NRN3JUYlh2eVBQSEdaRzNVYWhPcVQyT2tCbTc2ZXRMczhWYUJHczUzcEgwUk4ySTlyMkpnZ1haeGtpR1I1OE5Wc1h5'
 
 /**
  * Name der verantwortlichen Person im Impressum (D-08).
