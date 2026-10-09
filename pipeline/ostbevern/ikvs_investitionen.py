@@ -31,7 +31,7 @@ from ostbevern.ikvs import (
 )
 from ostbevern.konfiguration import Jahrgang, layout_liste, layout_text
 from ostbevern.pdf import PdfDokument, Textzeile
-from ostbevern.schema import INVESTITIONEN_SPALTEN, zerlege_spaltenkopf
+from ostbevern.schema import INVESTITIONEN_SPALTEN, VE_FAELLIGKEITEN_SPALTEN, zerlege_spaltenkopf
 
 _RICHTUNGEN = {"Einzahlung": "einzahlung", "Auszahlung": "auszahlung"}
 _LEERWERT = "--"
@@ -326,3 +326,62 @@ def investitionen_datensaetze(
                     }
                 )
     return pl.DataFrame(datensaetze, schema=INVESTITIONEN_SPALTEN)
+
+
+class IkvsVeFehler(ValueError):
+    """Die VE-Übersicht passt nicht zu den Investitionsübersichten."""
+
+
+def ve_faelligkeiten_aus_uebersicht(
+    ve_uebersicht: pl.DataFrame, investitionen: pl.DataFrame
+) -> pl.DataFrame:
+    """VE-Fälligkeiten (VE_FAELLIGKEITEN_SPALTEN) aus der abgeschriebenen VE-Übersicht.
+
+    Das IKVS-Layout druckt die Fälligkeiten nur in der Übersicht (Hörstel S. 586), nicht je
+    Maßnahme. Jede Zeile der Übersicht nennt ihr Produkt; die Maßnahme ist die Maßnahme
+    dieses Produkts, deren VE in der Investitionsübersicht genau der Summe der Fälligkeiten
+    entspricht. Gibt es keine solche Maßnahme (Hörstel: Neubau eines Verwaltungsgebäudes,
+    5.100 T€, nur in der VE-Übersicht und der Satzung), bleibt `massnahme_id` leer; zwei
+    passende Maßnahmen brechen ab. Beträge in Euro (Übersicht in T€ × 1000), `konto` leer.
+    """
+    einzel = ve_uebersicht.filter(~pl.col("ist_gesamt"))
+    for zeile in ve_uebersicht.filter(
+        pl.col("ist_gesamt") & pl.col("faellig_jahr").is_not_null()
+    ).iter_rows(named=True):
+        summe = einzel.filter(pl.col("faellig_jahr") == zeile["faellig_jahr"])["betrag_teur"].sum()
+        if summe != zeile["betrag_teur"]:
+            raise IkvsVeFehler(
+                f"VE-Übersicht fällig {zeile['faellig_jahr']}: Einzelzeilen {summe} T€, "
+                f"Summenzeile {zeile['betrag_teur']} T€"
+            )
+    ve_je_massnahme = investitionen.filter(pl.col("wertart") == "ve")
+    zeilen: list[dict[str, object]] = []
+    for position in sorted(einzel["position"].unique().to_list()):
+        teil = einzel.filter(pl.col("position") == position)
+        produkt = teil["produkt"][0]
+        gesamt_euro = int(teil["betrag_teur"].sum()) * 1000
+        kandidaten = (
+            ve_je_massnahme.filter(
+                (pl.col("produkt") == produkt) & (pl.col("betrag") == gesamt_euro)
+            )["massnahme_id"]
+            .unique()
+            .to_list()
+        )
+        if len(kandidaten) > 1:
+            raise IkvsVeFehler(
+                f"VE-Übersicht Position {position} ({produkt}, {gesamt_euro} €): mehrere "
+                f"Maßnahmen mit gleicher VE {sorted(kandidaten)}"
+            )
+        massnahme_id = kandidaten[0] if kandidaten else None
+        for z in teil.iter_rows(named=True):
+            zeilen.append(
+                {
+                    "produkt": produkt,
+                    "massnahme_id": massnahme_id,
+                    "konto": None,
+                    "jahr": z["faellig_jahr"],
+                    "betrag": z["betrag_teur"] * 1000,
+                    "pdf_seite": z["quelle"],
+                }
+            )
+    return pl.DataFrame(zeilen, schema=VE_FAELLIGKEITEN_SPALTEN)

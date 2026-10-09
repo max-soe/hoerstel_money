@@ -71,7 +71,17 @@ Hebesatztabelle (S. 12), Satzungsbeschluss und Ausfertigung 04.02.2026 (S. 7/8).
 keine Kreisumlage-Hebesätze und keine Aufteilung der Konzessionsabgaben; der Block
 `kreisumlage` fehlt deshalb.
 
-### `texte/`
+### `texte/erklaerungen.md` und `texte/glossar.md`
 
-Die Erklärtexte und das Glossar werden in Plan 11-04 für Hörstel neu geschrieben; bis dahin
-stehen hier noch die Ostbevern-Texte.
+Die Erklärtexte und Glossarbegriffe der App, für Hörstel neu geschrieben (Plan 11-04). Format
+und Regeln wie bisher (`ostbevern.texte`): Kopfzeile `# Erklärtexte` bzw. `# Glossar`, je
+Abschnitt `## schluessel`, `Titel:` und `Quelle:` mit PDF-Seiten, Du-Anrede, kein HTML. Jede
+Zahl steht als Platzhalter `{{schluessel|format}}` im Text und wird in Schritt 07 aus den
+Daten aufgelöst; erlaubt sind außerdem nur Jahreszahlen, Paragrafen und Seitenverweise. Die
+Schlüssel sind die, die die App anfragt (Erklärtexte) bzw. `GLOSSAR_SCHLUESSEL` in
+`app/src/lib/glossar.ts`.
+
+Für die Eigenkapitalübersicht mit Ständen zum 31.12. vor Ergebnisverrechnung (S. 588) gibt
+es eigene Formeln `ausgleichsruecklage_aufgebraucht_jahr_vor_verrechnung` und
+`allgemeine_ruecklage_ende_letztes_jahr_vor_verrechnung`; die Ostbevern-Formeln rechnen mit
+Ständen zu Beginn des Jahres.

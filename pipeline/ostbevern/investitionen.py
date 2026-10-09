@@ -29,8 +29,10 @@ import polars as pl
 from ostbevern.freitext import ersetze_eurozeichen, verbinde_zeilen
 from ostbevern.ikvs_investitionen import (
     IkvsInvestitionenFehler,
+    IkvsVeFehler,
     investitionen_datensaetze,
     lies_ikvs_investitionen,
+    ve_faelligkeiten_aus_uebersicht,
 )
 from ostbevern.konfiguration import Jahrgang, layout_text
 from ostbevern.pdf import PdfDokument, Textzeile, Wort
@@ -42,9 +44,10 @@ from ostbevern.schema import (
     INVESTITIONEN_PB_SPALTEN,
     SEITEN_CSV,
     VE_FAELLIGKEITEN_CSV,
-    VE_FAELLIGKEITEN_SPALTEN,
+    VE_UEBERSICHT_CSV,
     lies_plan_csv,
     lies_seiten_csv,
+    lies_ve_uebersicht_csv,
     schreibe_investitionen_csv,
     schreibe_investitionen_pb_csv,
     schreibe_ve_faelligkeiten_csv,
@@ -979,17 +982,20 @@ def _extrahiere_ikvs(
     """IKVS-Layout: Investitionsübersichten B über `ostbevern.ikvs_investitionen`.
 
     Das IKVS-Layout druckt weder VE-Fälligkeiten je Maßnahme noch PB-Investitionslisten;
-    `ve_faelligkeiten.csv` und `investitionen_pb.csv` bleiben deshalb leer (die
-    VE-Fälligkeiten stehen nur in der Übersicht S. 586, manuelle Daten).
+    `investitionen_pb.csv` bleibt leer, `ve_faelligkeiten.csv` entsteht aus der
+    abgeschriebenen VE-Übersicht (`daten_wurzel/manuell`, Hörstel S. 586), den Maßnahmen
+    über ihre VE zugeordnet (Phase 11).
     """
     try:
         with PdfDokument.oeffne(jahrgang.pdf_pfad) as dokument:
             massnahmen = lies_ikvs_investitionen(dokument, jahrgang)
         investitionen_df = investitionen_datensaetze(massnahmen, jahrgang)
-    except IkvsInvestitionenFehler as fehler:
+        faelligkeiten_df = ve_faelligkeiten_aus_uebersicht(
+            lies_ve_uebersicht_csv(daten_wurzel / VE_UEBERSICHT_CSV), investitionen_df
+        )
+    except (IkvsInvestitionenFehler, IkvsVeFehler) as fehler:
         raise InvestitionenFehler(str(fehler)) from fehler
 
-    faelligkeiten_df = pl.DataFrame(schema=VE_FAELLIGKEITEN_SPALTEN)
     investitionen_pb_df = pl.DataFrame(schema=INVESTITIONEN_PB_SPALTEN)
     investitionen_pfad = daten_wurzel / INVESTITIONEN_CSV
     faelligkeiten_pfad = daten_wurzel / VE_FAELLIGKEITEN_CSV
@@ -999,6 +1005,6 @@ def _extrahiere_ikvs(
     schreibe_investitionen_pb_csv(investitionen_pb_df, investitionen_pb_pfad)
     return (
         ExtraktionsErgebnis(zeilen_geschrieben=investitionen_df.height, pfad=investitionen_pfad),
-        ExtraktionsErgebnis(zeilen_geschrieben=0, pfad=faelligkeiten_pfad),
+        ExtraktionsErgebnis(zeilen_geschrieben=faelligkeiten_df.height, pfad=faelligkeiten_pfad),
         ExtraktionsErgebnis(zeilen_geschrieben=0, pfad=investitionen_pb_pfad),
     )

@@ -11,6 +11,7 @@ from __future__ import annotations
 import polars as pl
 import pytest
 
+from ostbevern.ikvs_investitionen import IkvsVeFehler, ve_faelligkeiten_aus_uebersicht
 from ostbevern.konfiguration import (
     PROJEKT_WURZEL,
     STANDARD_JAHR,
@@ -32,6 +33,7 @@ from ostbevern.pruefung import (
 from ostbevern.schema import (
     EIGENKAPITAL_CSV,
     FRAKTIONSZUWENDUNGEN_CSV,
+    INVESTITIONEN_SPALTEN,
     META_JSON,
     VE_UEBERSICHT_CSV,
     VERBINDLICHKEITEN_CSV,
@@ -187,3 +189,52 @@ def test_schuldenstand_nur_investitionskredite(jahrgang: Jahrgang) -> None:
     posten = layout_liste(jahrgang, "schulden", "posten")
     verbindlichkeiten = lies_vorbericht_csv(_DATEN / VERBINDLICHKEITEN_CSV)
     assert schuldenstand_euro(verbindlichkeiten, 2025, posten) == 28345000
+
+
+def _ve_investitionen(*zeilen: tuple[str, str, int]) -> pl.DataFrame:
+    return pl.DataFrame(
+        [
+            {
+                "produkt": produkt,
+                "massnahme_id": massnahme_id,
+                "massnahme_name": massnahme_id,
+                "konto": None,
+                "konto_name": None,
+                "richtung": "auszahlung",
+                "art": None,
+                "jahr": 2026,
+                "wertart": "ve",
+                "betrag": betrag,
+                "pdf_seite": 1,
+            }
+            for produkt, massnahme_id, betrag in zeilen
+        ],
+        schema=INVESTITIONEN_SPALTEN,
+    )
+
+
+def test_ve_faelligkeiten_aus_uebersicht() -> None:
+    """Die VE-Fälligkeiten (S. 586) werden der Maßnahme mit gleicher VE zugeordnet; der
+    Neubau des Verwaltungsgebäudes (5.100 T€) hat keine Maßnahme mit dieser VE."""
+    ve = lies_ve_uebersicht_csv(_DATEN / VE_UEBERSICHT_CSV)
+    investitionen = _ve_investitionen(
+        ("0111102", "111.02-004", 250000), ("0212601", "126.01-005", 650000)
+    )
+    faellig = ve_faelligkeiten_aus_uebersicht(ve, investitionen)
+    assert faellig["betrag"].sum() == 18331000
+    feuerwehr = faellig.filter(pl.col("produkt") == "0212601")
+    assert feuerwehr.select("massnahme_id", "jahr", "betrag").rows() == [
+        ("126.01-005", 2027, 325000),
+        ("126.01-005", 2029, 325000),
+    ]
+    neubau = faellig.filter(pl.col("betrag") == 5100000)
+    assert neubau["massnahme_id"].to_list() == [None]
+
+
+def test_ve_faelligkeiten_mehrdeutig_bricht_ab() -> None:
+    ve = lies_ve_uebersicht_csv(_DATEN / VE_UEBERSICHT_CSV)
+    investitionen = _ve_investitionen(
+        ("0212601", "126.01-005", 650000), ("0212601", "126.01-099", 650000)
+    )
+    with pytest.raises(IkvsVeFehler, match="mehrere Maßnahmen"):
+        ve_faelligkeiten_aus_uebersicht(ve, investitionen)

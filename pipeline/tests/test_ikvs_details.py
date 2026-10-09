@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 from pathlib import Path
 
 import polars as pl
@@ -21,6 +22,7 @@ from ostbevern.ikvs import normalisiere, verbinde_teile
 from ostbevern.ikvs_produkte import _ansatz_haushaltsjahr, _teilergebnisplan_zeilen
 from ostbevern.investitionen import extrahiere_investitionen
 from ostbevern.konfiguration import (
+    PROJEKT_WURZEL,
     STANDARD_JAHR,
     STANDARD_JAHRGAENGE_VERZEICHNIS,
     Jahrgang,
@@ -136,6 +138,8 @@ def daten(jahrgang: Jahrgang, tmp_path_factory: pytest.TempPathFactory) -> Path:
     wurzel = tmp_path_factory.mktemp("daten")
     for unter in ("zwischen", "aufbereitet"):
         (wurzel / unter).mkdir()
+    # Schritt 04 liest im IKVS-Layout die abgeschriebene VE-Übersicht (Phase 11).
+    shutil.copytree(PROJEKT_WURZEL / "daten" / "manuell", wurzel / "manuell")
     klassifiziere_seiten(jahrgang, daten_wurzel=wurzel)
     extrahiere_plaene(jahrgang, daten_wurzel=wurzel)
     extrahiere_produkte(jahrgang, daten_wurzel=wurzel)
@@ -189,7 +193,9 @@ def test_investitionen_regel6_nur_belegte_abweichungen(
     daten: Path, jahrgang: Jahrgang, planwerte: dict[str, Planwerte]
 ) -> None:
     investitionen = lies_investitionen_csv(daten / INVESTITIONEN_CSV)
-    assert lies_ve_faelligkeiten_csv(daten / VE_FAELLIGKEITEN_CSV).height == 0
+    # VE-Fälligkeiten stammen im IKVS-Layout aus der VE-Übersicht S. 586 (Phase 11).
+    faelligkeiten = lies_ve_faelligkeiten_csv(daten / VE_FAELLIGKEITEN_CSV)
+    assert (faelligkeiten.height, faelligkeiten["betrag"].sum()) == (21, 18331000)
     assert lies_investitionen_pb_csv(daten / INVESTITIONEN_PB_CSV).height == 0
     ergebnis = _pruefe_regel6(
         investitionen=investitionen,

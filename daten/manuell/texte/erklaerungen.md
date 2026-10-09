@@ -1,151 +1,149 @@
 # Erklärtexte
 
 ## schluesselzuweisung
-Titel: Die Schlüsselzuweisung bricht ein
-Quelle: S. 28
+Titel: Die Schlüsselzuweisung steigt deutlich
+Quelle: S. 22
 
-Die Schlüsselzuweisung ist Geld vom Land NRW für Gemeinden, deren eigene Steuerkraft im Vergleich gering ist. Schau dir die Entwicklung an: Im Jahr 2025 flossen noch {{vorbericht.zuwendungen.schluesselzuweisung.2025|mio}} nach Ostbevern, für {{jahr.haushaltsjahr|jahr}} rechnet die Gemeinde nur noch mit {{vorbericht.zuwendungen.schluesselzuweisung.2026|mio}}. Das ist ein Rückgang um {{abgeleitet.schluesselzuweisung_rueckgang_haushaltsjahr|mio}}. Laut Vorbericht liegt das daran, dass die eigene Steuerkraft Ostbeverns im Vergleich zum Land gestiegen ist – du bekommst also weniger Ausgleich, weil es der Gemeinde (relativ) besser geht.
+Die Schlüsselzuweisung ist Geld vom Land NRW für Städte und Gemeinden, deren eigene Steuerkraft im Vergleich zu ihrem Finanzbedarf gering ist. Für {{jahr.haushaltsjahr|jahr}} rechnet Hörstel mit {{vorbericht.zuwendungen.schluesselzuweisung.2026|mio}}, im Vorjahr waren es {{vorbericht.zuwendungen.schluesselzuweisung.2025|mio}}. Das ist ein Plus von {{abgeleitet.schluesselzuweisung_anstieg_haushaltsjahr|mio}}. Der Ansatz stammt laut Vorbericht aus der Modellrechnung des Landes und der kommunalen Spitzenverbände zum Finanzausgleich {{jahr.haushaltsjahr|jahr}}. Für die Folgejahre plant die Stadt zunächst mit {{vorbericht.zuwendungen.schluesselzuweisung.2027|mio}} im Jahr 2027, danach wieder mit weniger: {{vorbericht.zuwendungen.schluesselzuweisung.2029|mio}} im Jahr 2029.
 
 ## gewerbesteuer
-Titel: Gewerbesteuer – eine schwankende Einnahme
-Quelle: S. 27
+Titel: Gewerbesteuer – die wichtigste und unsicherste Einnahme
+Quelle: S. 16, S. 18
 
-Die Gewerbesteuer gehört zu den unsichersten Einnahmen im Haushalt, weil sie von der wirtschaftlichen Lage der Betriebe vor Ort abhängt. Du siehst das deutlich an den tatsächlichen Einnahmen der letzten Jahre: 2022 kamen {{grundzahlen.160101.1.2022|mio}} herein, 2023 brachen sie auf {{grundzahlen.160101.1.2023|mio}} ein und 2024 lagen sie laut Vorbericht bei {{vorbericht.steuerarten.gewerbesteuer.2024|mio}} (vorläufiges Ergebnis). Für {{jahr.haushaltsjahr|jahr}} plant Ostbevern mit {{vorbericht.steuerarten.gewerbesteuer.2026|mio}} bei einem Hebesatz von {{meta.hebesaetze.gewerbesteuer|prozent}}. Weil niemand die Zukunft einzelner Betriebe sicher kennt, bleibt dieser Ansatz eine vorsichtige Schätzung.
+Die Gewerbesteuer ist die größte einzelne Einnahme der Stadt. Sie hängt von der wirtschaftlichen Lage der Betriebe vor Ort ab und schwankt deshalb stark. Im Jahr 2024 kamen tatsächlich {{vorbericht.steuerarten.gewerbesteuer.2024|mio}} herein. Für {{jahr.haushaltsjahr|jahr}} plant Hörstel mit {{vorbericht.steuerarten.gewerbesteuer.2026|mio}}, bei einem Hebesatz von {{meta.hebesaetze.gewerbesteuer|prozent}}. Der Rat hat den Hebesatz ab {{jahr.haushaltsjahr|jahr}} auf den fiktiven Hebesatz angehoben, den das Land für den Finanzausgleich ansetzt. Der Vorbericht nennt den Ansatz ausdrücklich mit erheblichen Risiken verbunden, weil die wirtschaftliche Lage unsicher ist.
 
 ## kreisumlage
-Titel: Die Kreisumlage – der größte Ausgabenposten
-Quelle: S. 46, S. 47
+Titel: Die Umlagen an den Kreis – der größte Ausgabenblock
+Quelle: S. 33, S. 34, S. 35
 
-Die Kreisumlage ist der Betrag, den Ostbevern an den Kreis Warendorf abgibt – sie ist der größte einzelne Ausgabenposten im Haushalt. Netto zahlt Ostbevern über diesen Posten {{vorbericht.transferaufwendungen.kreisumlage.2026|mio}} (Hebesatz {{meta.kreisumlage.hebesatz_kreisumlage|promille}}, im Vorjahr noch {{meta.kreisumlage.hebesatz_kreisumlage.vorjahr|promille}}). Dazu kommt die Jugendamtsumlage mit einem Hebesatz von {{meta.kreisumlage.hebesatz_jugendamtsumlage|promille}}. Weil Ostbevern {{jahr.haushaltsjahr|jahr}} eine Rückstellung aus dem Jahresabschluss 2024 in Höhe von {{meta.kreisumlage.rueckstellungsaufloesung|mio}} auflöst, liegt die tatsächliche Belastung brutto bei rund {{meta.kreisumlage.brutto|mio}} – diese Entlastung wirkt nur einmalig.
+Hörstel gehört zum Kreis Steinfurt und finanziert dessen Aufgaben über Umlagen mit. Die allgemeine Kreisumlage beträgt {{jahr.haushaltsjahr|jahr}} {{vorbericht.transferaufwendungen.kreisumlage.2026|mio}}, im Vorjahr waren es {{vorbericht.transferaufwendungen.kreisumlage.2025|mio}}. Dazu kommt die Jugendamtsumlage, eine zusätzliche Kreisumlage für die Mehrbelastung durch das Jugendamt des Kreises: {{vorbericht.transferaufwendungen.jugendamtsumlage.2026|mio}}. Zusammen sind das die größten Ausgaben im Haushalt, deutlich mehr als zum Beispiel die Personalkosten der Stadt. Die Höhe legt der Kreis fest, die Stadt kann sie nicht selbst beeinflussen.
 
 ## grundsteuer_hebesaetze
 Titel: Die Hebesätze der Grundsteuer und Gewerbesteuer
-Quelle: S. 9
+Quelle: S. 8, S. 12, S. 17
 
-Der Rat legt mit der Haushaltssatzung jedes Jahr die Hebesätze fest, mit denen die Steuerbeträge berechnet werden (§ 6 der Satzung). Für {{jahr.haushaltsjahr|jahr}} gelten {{meta.hebesaetze.grundsteuer_a|prozent}} für die Grundsteuer A (land- und forstwirtschaftliche Flächen), {{meta.hebesaetze.grundsteuer_b|prozent}} für die Grundsteuer B (alle anderen Grundstücke) und {{meta.hebesaetze.gewerbesteuer|prozent}} für die Gewerbesteuer. Je höher der Hebesatz, desto mehr zahlst du bei gleichem Messbetrag.
+Der Rat legt mit der Haushaltssatzung jedes Jahr die Hebesätze fest, mit denen die Steuerbeträge berechnet werden (§ 6 der Satzung). Für {{jahr.haushaltsjahr|jahr}} hat er sie deutlich erhöht: die Grundsteuer A (land- und forstwirtschaftliche Flächen) von {{meta.hebesaetze.grundsteuer_a.vorjahr|prozent}} auf {{meta.hebesaetze.grundsteuer_a|prozent}}, die Grundsteuer B (alle anderen Grundstücke) von {{meta.hebesaetze.grundsteuer_b.vorjahr|prozent}} auf {{meta.hebesaetze.grundsteuer_b|prozent}} und die Gewerbesteuer von {{meta.hebesaetze.gewerbesteuer.vorjahr|prozent}} auf {{meta.hebesaetze.gewerbesteuer|prozent}}. Je höher der Hebesatz, desto mehr zahlst du bei gleichem Messbetrag.
 
 ## sonderposten
 Titel: Sonderposten und Abschreibungen – kein Geldfluss
-Quelle: S. 28, S. 29
+Quelle: S. 24, S. 75
 
-Nicht jede Zahl im Ergebnisplan bedeutet, dass tatsächlich Geld fließt. Die Auflösung von Sonderposten ({{vorbericht.zuwendungen.aufloesung_sonderposten.2026|mio}} im Jahr {{jahr.haushaltsjahr|jahr}}) gleicht buchhalterisch die Abschreibungen auf Anlagen aus, die einst mit Zuschüssen bezahlt wurden – dafür fließt kein Euro. Umgekehrt sind auch die bilanziellen Abschreibungen ({{gep.abschreibungen.2026|mio}}) reiner Werteverzehr, kein Zahlungsvorgang. Beide Posten verändern also nur das Ergebnis auf dem Papier, nicht den Kontostand der Gemeinde.
+Nicht jede Zahl im Ergebnisplan bedeutet, dass tatsächlich Geld fließt. Die bilanziellen Abschreibungen ({{gep.abschreibungen.2026|mio}} im Jahr {{jahr.haushaltsjahr|jahr}}) bilden ab, dass Gebäude, Straßen und Fahrzeuge an Wert verlieren – dafür wird nichts bezahlt. Auf der anderen Seite stehen Erträge aus der Auflösung von Sonderposten: Zuschüsse und Beiträge, die die Stadt früher für Investitionen erhalten hat, werden über die Nutzungsdauer verteilt als Ertrag gebucht, zum Beispiel {{vorbericht.leistungsentgelte.aufloesung_sonderposten_beitraege.2026|mio}} aus Beiträgen. Beide Posten verändern das Ergebnis auf dem Papier, nicht den Kontostand der Stadt.
 
 ## globaler_minderaufwand
 Titel: Der globale Minderaufwand
-Quelle: S. 51, S. 8
+Quelle: S. 76, S. 79
 
-Der globale Minderaufwand ist ein pauschaler Kürzungsbetrag, den der Rat auf die geplanten Ausgaben ansetzt, weil erfahrungsgemäß nicht jeder geplante Euro tatsächlich ausgegeben wird. Für {{jahr.haushaltsjahr|jahr}} sind das {{abgeleitet.globaler_minderaufwand_betrag_haushaltsjahr|mio}}. Ohne diesen Abzug stünde ein Jahresergebnis von {{gep.jahresergebnis.2026|euro}} in den Büchern; danach bleibt ein Jahresergebnis von {{gep.ergebnis_nach_minderaufwand.2026|euro}}.
+Der globale Minderaufwand ist ein pauschaler Kürzungsbetrag, den eine Gemeinde auf die geplanten Aufwendungen ansetzen darf, wenn sie den Haushalt sonst nicht ausgleichen kann. Erlaubt sind bis zu zwei Prozent der ordentlichen Aufwendungen. Hörstel setzt für {{jahr.haushaltsjahr|jahr}} keinen globalen Minderaufwand an: Das Jahresergebnis vor und nach diesem Abzug ist gleich, nämlich {{gep.ergebnis_nach_minderaufwand.2026|euro}}.
 
 ## defizit_ruecklagen
-Titel: Das Defizit und seine Deckung aus den Rücklagen
-Quelle: S. 24, S. 9, S. 311
+Titel: Das Defizit und seine Deckung aus der Ausgleichsrücklage
+Quelle: S. 8, S. 40, S. 588
 
-Ostbevern plant für {{jahr.haushaltsjahr|jahr}} mit einem Defizit von {{abgeleitet.jahresergebnis_defizit_haushaltsjahr|euro}} (§ 4 der Satzung). Gedeckt wird dieses Minus aus den Rücklagen der Gemeinde: Die Ausgleichsrücklage sinkt um {{abgeleitet.ausgleichsruecklage_minderung_haushaltsjahr|euro}}, die allgemeine Rücklage um {{meta.vorbericht_werte.satzung_verringerung_allgemeine_ruecklage|euro}}. Danach ist die Ausgleichsrücklage aufgebraucht – weitere Defizite müssten künftig aus der allgemeinen Rücklage gedeckt werden.
+Hörstel plant für {{jahr.haushaltsjahr|jahr}} mit einem Defizit von {{abgeleitet.jahresergebnis_defizit_haushaltsjahr|euro}}. Gedeckt wird dieses Minus aus der Ausgleichsrücklage, einem Teil des Eigenkapitals: Die Haushaltssatzung setzt ihre Inanspruchnahme auf {{meta.vorbericht_werte.satzung_inanspruchnahme_ausgleichsruecklage|euro}} fest (§ 4). Laut Vorbericht beläuft sich die Ausgleichsrücklage zu Beginn des Jahres auf rund {{eigenkapital.ausgleichsruecklage.2025|mio}}. Damit gilt der Haushalt als ausgeglichen, obwohl die Ausgaben höher sind als die Einnahmen.
 
 ## schulden
 Titel: Der Schuldenstand steigt deutlich
-Quelle: S. 24, S. 25, S. 310
+Quelle: S. 62, S. 587
 
-Zum Schuldenstand zählt der Vorbericht die Investitionskredite plus die Mittel, die Ostbevern über ein Förderprogramm der NRW.Bank für Flüchtlingsunterkünfte aufgenommen hat. Ende 2025 waren das zusammen {{schulden.gesamt.2025|mio}}, pro Kopf rund {{schulden.pro_kopf.2025|euro}}. Für Ende {{jahr.haushaltsjahr|jahr}} rechnet die Gemeinde mit {{schulden.investitionskredite.2026|mio}} Investitionskrediten plus {{schulden.nrw_bank.2026|mio}} NRW.Bank-Mitteln, zusammen {{schulden.gesamt.2026|mio}} oder {{schulden.pro_kopf.2026|euro}} pro Kopf. Die geplanten Investitionen der kommenden Jahre lassen diesen Wert weiter steigen.
+Zu den Schulden zählt diese App die Kredite, die Hörstel für Investitionen aufgenommen hat. Zu Beginn des Jahres {{jahr.haushaltsjahr|jahr}} waren das laut Übersicht über die Verbindlichkeiten {{schulden.gesamt.2025|mio}}, pro Kopf rund {{schulden.pro_kopf.2025|euro}}. Für Ende {{jahr.haushaltsjahr|jahr}} rechnet die Stadt mit {{schulden.gesamt.2026|mio}} oder {{schulden.pro_kopf.2026|euro}} pro Kopf. Allein {{jahr.haushaltsjahr|jahr}} sollen neue Investitionskredite über {{gfp.kreditaufnahme.2026|mio}} aufgenommen werden.
 
 ## verpflichtungsermaechtigungen
 Titel: Verpflichtungsermächtigungen – Geld für später
-Quelle: S. 25, S. 309
+Quelle: S. 7, S. 586
 
-Eine Verpflichtungsermächtigung erlaubt es Ostbevern, schon heute einen Vertrag für eine Investition abzuschließen, auch wenn das Geld erst in einem späteren Haushaltsjahr fließt. Der Rat hat dafür insgesamt {{ve.gesamt|mio}} genehmigt. Davon werden {{ve.faellig.2027|mio}} im Jahr 2027 und {{ve.faellig.2028|mio}} im Jahr 2028 fällig – diese Beträge belasten dann die Haushalte dieser Jahre, nicht den von {{jahr.haushaltsjahr|jahr}}.
+Eine Verpflichtungsermächtigung erlaubt es Hörstel, schon heute einen Vertrag für eine Investition abzuschließen, auch wenn das Geld erst in einem späteren Haushaltsjahr fließt. Der Rat hat dafür insgesamt {{ve.gesamt|mio}} genehmigt (§ 3 der Satzung). Davon werden {{ve.faellig.2027|mio}} im Jahr 2027, {{ve.faellig.2028|mio}} im Jahr 2028 und {{ve.faellig.2029|mio}} im Jahr 2029 fällig. Der größte Einzelposten ist der Neubau eines Verwaltungsgebäudes. Diese Beträge belasten die Haushalte der späteren Jahre, nicht den von {{jahr.haushaltsjahr|jahr}}.
 
 ## nicht_im_haushalt
-Titel: Was nicht im Haushalt steht – BBO und TEO
-Quelle: S. 14, S. 33, S. 46, S. 48
+Titel: Was nicht im Haushalt steht – die Beteiligungen der Stadt
+Quelle: S. 25, S. 590, S. 591
 
-Zwei größere Einrichtungen tauchen im Kernhaushalt nur am Rand auf, weil sie eigene Wirtschaftspläne führen: die Bäder- und Beteiligungsgesellschaft Ostbevern mbH (BBO, u. a. das Hallenbad) und der Technische Eigenbetrieb Ostbevern AöR (TEO, u. a. Abwasser). Für den BBO-Verlustausgleich plant der eigene Wirtschaftsplan {{meta.vorbericht_werte.bbo_verlustausgleich_wirtschaftsplan|euro}}, wovon {{vorbericht.transferaufwendungen.verlustuebernahme_bbo.2026|euro}} als Verlustübernahme im Kernhaushalt {{jahr.haushaltsjahr|jahr}} erscheinen. Der TEO verzinst sein Eigenkapital gegenüber der Gemeinde eigenständig; beide Betriebe werden in dieser App nur mit diesem Hinweis erwähnt, nicht im Detail dargestellt.
+Einige Aufgaben erledigt Hörstel über eigene Gesellschaften, die eigene Bücher führen und deshalb nicht im Kernhaushalt stehen. Dazu gehören die Hörsteler Energie GmbH, die Photovoltaikanlagen im Stadtgebiet betreibt, und die Stadtmarketing Hörstel UG. Im Haushalt tauchen sie nur dort auf, wo Geld zwischen Stadt und Gesellschaft fließt, zum Beispiel als Zuschuss oder als Zinsen auf Darlehen der Stadt. Ihre Wirtschaftspläne zeigt diese App nicht.
 
 ## steuern_selbst_festgelegt
-Titel: Welche Steuern die Gemeinde selbst festlegt
-Quelle: S. 9, S. 27, S. 28
+Titel: Welche Steuern die Stadt selbst festlegt
+Quelle: S. 8, S. 19, S. 20
 
-Nicht jede Steuer, die in Ostbevern ankommt, bestimmt die Gemeinde selbst. Über die Hebesätze der Grundsteuer und der Gewerbesteuer entscheidet der Rat mit der Haushaltssatzung. Auch die Hundesteuer und die Vergnügungssteuer sind örtliche Steuern, die die Gemeinde selbst erhebt.
+Nicht jede Steuer, die in Hörstel ankommt, bestimmt die Stadt selbst. Über die Hebesätze der Grundsteuer und der Gewerbesteuer entscheidet der Rat mit der Haushaltssatzung. Auch die Hundesteuer und die Vergnügungssteuer sind örtliche Steuern, die die Stadt selbst erhebt.
 
-Die Anteile an der Einkommensteuer und an der Umsatzsteuer sind dagegen Anteile an Steuern von Bund und Land. Die Gemeinde kann ihre Höhe nicht beeinflussen: Der Vorbericht stützt die Ansätze auf die Orientierungsdaten des Landes NRW. Die Kompensationszahlungen gleichen Mindererträge aus, die durch geänderte steuerliche Regelungen des Bundes zugunsten von Familien entstanden sind.
+Die Anteile an der Einkommensteuer und an der Umsatzsteuer sind dagegen Anteile an Steuern von Bund und Land. Ihre Höhe richtet sich nach Schlüsselzahlen und nach der Steuerschätzung, die Stadt kann sie nicht beeinflussen. Die Ausgleichsleistungen gleichen Mindererträge aus, die durch den Familienleistungsausgleich bei der Einkommensteuer entstehen; das Land verteilt sie über das Gemeindefinanzierungsgesetz.
 
 ## zuwendungen_laufende_zwecke
 Titel: Zuweisungen für laufende Zwecke
-Quelle: S. 28, S. 29
+Quelle: S. 22, S. 73
 
-Zuweisungen für laufende Zwecke sind Gelder von Land, Bund und Kreis, die ein laufendes Angebot der Gemeinde mitfinanzieren. Anders als die Schlüsselzuweisung sind sie an einen bestimmten Zweck gebunden.
+Zuweisungen für laufende Zwecke sind Gelder von Bund, Land, Kreis und anderen Gemeinden, die ein laufendes Angebot der Stadt mitfinanzieren. Anders als die Schlüsselzuweisung sind sie an einen bestimmten Zweck gebunden.
 
-Laut Vorbericht gehören dazu zum Beispiel Mittel von Land und Kreis für die Offene Ganztagsgrundschule und die Schulsozialarbeit, die Aufwands- und Unterhaltungspauschale des Landes für die kommunale Infrastruktur sowie die Schulpauschale, soweit sie für Unterhaltungsmaßnahmen an den Schulen eingesetzt wird.
+Im Ergebnisplan stehen sie zusammen mit der Schlüsselzuweisung und den Erträgen aus aufgelösten Sonderposten für Zuschüsse unter „Zuwendungen und allgemeine Umlagen“. Der Vorbericht nennt die Zuweisungen vom Bund, vom Land und von anderen Gemeinden und Gemeindeverbänden getrennt.
 
 ## ueberschuss_pb_16
 Titel: Warum die Allgemeine Finanzwirtschaft einen Überschuss hat
-Quelle: S. 18, S. 22
+Quelle: S. 556, S. 559, S. 560
 
 In der Allgemeinen Finanzwirtschaft liegen die Einnahmen, die keinem einzelnen Angebot zugeordnet sind, vor allem die Steuern und die Schlüsselzuweisung. Deshalb steht hier kein Zuschussbedarf, sondern ein Überschuss.
 
-Dieser Überschuss ist kein Gewinn der Gemeinde. Er deckt den Zuschussbedarf der übrigen Aufgabenbereiche. Der Vorbericht beschreibt den Saldo der Allgemeinen Finanzen im Wesentlichen als Steuern plus Schlüsselzuweisungen minus Kreisumlage.
+Dieser Überschuss ist kein Gewinn der Stadt. Er deckt den Zuschussbedarf der übrigen Aufgabenbereiche. Von den Steuern gehen hier zuerst die Kreisumlage, die Jugendamtsumlage und die Gewerbesteuerumlage ab; in dieser App stehen diese Umlagen als eigener Block „Weitergabe an Kreis und Land“.
 
 ## ueberschuss_pb_11
 Titel: Warum die Ver- und Entsorgung einen Überschuss hat
-Quelle: S. 30, S. 44
+Quelle: S. 412, S. 416, S. 434
 
-In der Ver- und Entsorgung, zum Beispiel bei der Abfallbeseitigung, bezahlen die Bürgerinnen und Bürger über Gebühren für die Leistung. Ein Überschuss entsteht, wenn die Gebühren in einem Jahr mehr einbringen, als die Leistung kostet.
+In der Ver- und Entsorgung stammt der Überschuss vor allem aus der Abwasserbeseitigung. Die Abwassergebühren werden nach dem Kommunalabgabengesetz kalkuliert, der Haushalt wird nach dem Haushaltsrecht des Landes aufgestellt, und beide rechnen unterschiedlich: Die Gebührenkalkulation setzt zum Beispiel Abschreibungen nach Wiederbeschaffungswerten und kalkulatorische Zinsen an, und Erträge aus aufgelösten Zuschüssen und Beiträgen senken die Gebühren nicht. Im Haushalt entsteht deshalb ein positives Ergebnis.
 
-Dieser Überschuss ist kein Gewinn zugunsten des übrigen Haushalts. Laut Vorbericht wird er bei der Gebührenberechnung gebührenmindernd berücksichtigt: Ein Jahresüberschuss der Abfallbeseitigung aus dem Jahr 2023 ist im Jahr 2025 in die Gebühren eingeflossen.
+Dazu kommen die Konzessionsabgaben für Strom und Gas: Die Netzbetreiber zahlen der Stadt dafür, dass ihre Leitungen in städtischen Straßen liegen.
 
 ## ueberschuss_allgemein
 Titel: Warum ein Aufgabenbereich einen Überschuss haben kann
-Quelle: S. 22, S. 30
+Quelle: S. 412, S. 434
 
-Manche Aufgabenbereiche nehmen mehr ein, als sie kosten. Das kann an Gebühren, Erstattungen von Dritten, Fördermitteln oder Erträgen aus Grundstücksverkäufen liegen, die höher sind als die Aufwendungen dieses Bereichs.
+Manche Aufgabenbereiche nehmen mehr ein, als sie kosten. Das kann an Gebühren, Konzessionsabgaben, Erstattungen von Dritten, Fördermitteln oder Erträgen aus Grundstücksverkäufen liegen, die höher sind als die Aufwendungen dieses Bereichs.
 
 Ein solcher Überschuss ist kein Gewinn im Sinne eines Unternehmens. Er senkt den Betrag, der für die übrigen Aufgaben aus Steuern und allgemeinen Zuweisungen aufgebracht werden muss.
 
 ## ueberschuss_ruecklage
 Titel: Was bei einem Überschuss im Jahresergebnis passiert
-Quelle: S. 20, S. 24
+Quelle: S. 64, S. 588
 
-Schließt ein Jahr mit einem Überschuss ab, ist mehr Ertrag übrig geblieben, als Aufwand angefallen ist. Dieser Betrag wird den Rücklagen zugeführt, und das Eigenkapital der Gemeinde steigt.
+Schließt ein Jahr mit einem Überschuss ab, ist mehr Ertrag übrig geblieben, als Aufwand angefallen ist. Dieser Betrag wird der Ausgleichsrücklage zugeführt, und das Eigenkapital der Stadt steigt.
 
-Der Vorbericht zeigt das an der Ausgleichsrücklage, die sich über die Jahresergebnisse der Jahre 2020 bis 2024 wieder aufgebaut hat. Das ist kein Geld, das schon ausgegeben wurde, sondern ein Polster, das später ein Defizit auffangen kann.
+So hat Hörstel im Jahr 2024 mit einem Überschuss von {{eigenkapital.jahresergebnis.2024|euro}} abgeschlossen. Das ist kein Geld, das schon ausgegeben wurde, sondern ein Polster, das später ein Defizit auffangen kann.
 
 ## geldfluss_lesehilfe
 Titel: So liest du das Geldfluss-Diagramm
-Quelle: S. 26, S. 51
+Quelle: S. 13, S. 26
 
-Links siehst du, woher das Geld kommt: die Erträge der Gemeinde, bei einem Defizit eine Entnahme aus den Rücklagen und der globale Minderaufwand. Rechts siehst du, wofür es verwendet wird: die Aufgabenbereiche, die Weitergabe an Kreis und Land und die Zinsen. Beide Seiten sind gleich groß.
+Links siehst du, woher das Geld kommt: die Erträge der Stadt und bei einem Defizit eine Entnahme aus den Rücklagen. Rechts siehst du, wofür es verwendet wird: die Aufgabenbereiche, die Weitergabe an Kreis und Land und die Zinsen. Beide Seiten sind gleich groß.
 
-Der globale Minderaufwand steht links neben dem Defizit, weil er die geplanten Aufwendungen rechnerisch senkt, ohne dass dafür ein Ertrag eingeht. Der Rat plant damit eine pauschale Einsparung, weil erfahrungsgemäß nicht jeder angesetzte Euro ausgegeben wird. Schließt ein Jahr mit einem Überschuss ab, steht rechts stattdessen die Zuführung zur Rücklage.
+Würde der Rat einen globalen Minderaufwand ansetzen, stünde er links neben dem Defizit, weil er die geplanten Aufwendungen rechnerisch senkt, ohne dass dafür ein Ertrag eingeht. Schließt ein Jahr mit einem Überschuss ab, steht rechts stattdessen die Zuführung zur Rücklage.
 
 ## bindungsgrad_selbstauskunft
-Titel: Der Bindungsgrad ist eine Selbstauskunft
+Titel: Pflicht oder freiwillig?
 Quelle: S. 72, S. 116
 
-Die Verwaltung hat jedem Produkt selbst einen Bindungsgrad zugeordnet: pflichtig, teils pflichtig oder freiwillig. Du findest die Angabe in der Produktbeschreibung jedes Produkts. Es ist die eigene Einordnung der Verwaltung und keine rechtliche Feststellung.
+Die Produktinformationen im Hörsteler Haushaltsplan nennen zu jedem Produkt eine Auftragsgrundlage, zum Beispiel ein Gesetz oder einen Ratsbeschluss. Ob eine Aufgabe pflichtig oder freiwillig ist, ordnet der Plan dagegen nicht ausdrücklich zu.
 
-Auch in pflichtigen Produkten gibt es Spielraum bei der Höhe der Ausgaben, zum Beispiel beim Umfang und beim Standard der Leistung. Dass ein Produkt als pflichtig gilt, heißt deshalb nicht, dass jeder Euro darin festgelegt ist.
+Der Vorbericht verlangt, freiwillige Leistungen auf ihre Notwendigkeit und ihren Umfang zu überprüfen und neue freiwillige Leistungen nur mit Gegenfinanzierung aufzunehmen. Auch bei Pflichtaufgaben gibt es Spielraum, zum Beispiel beim Umfang und beim Standard der Leistung.
 
 ## ueberschuss_produkte
 Titel: Produkte, die mehr einbringen, als sie kosten
-Quelle: S. 117, S. 121, S. 233
+Quelle: S. 412, S. 434
 
 Diese Produkte nehmen mehr ein, als sie kosten. Sie brauchen keinen Zuschuss aus Steuern und allgemeinen Zuweisungen und stehen deshalb nicht im Balken.
 
-Der Überschuss ist kein Gewinn der Gemeinde. Er senkt den Betrag, der für die übrigen Aufgaben aufgebracht werden muss.
+Der Überschuss ist kein Gewinn der Stadt. Er senkt den Betrag, der für die übrigen Aufgaben aufgebracht werden muss.
 
 ## polster
 Titel: Wie lange reicht das Polster?
-Quelle: S. 23, S. 24, S. 311
+Quelle: S. 40, S. 72, S. 588
 
-Die Ausgleichsrücklage fängt Defizite als Erstes auf. Nach dem Haushaltsplan ist sie am Ende des Jahres {{abgeleitet.ausgleichsruecklage_aufgebraucht_jahr|jahr}} aufgebraucht. Die allgemeine Rücklage sinkt bis Ende {{jahr.letztes_jahr|jahr}} auf {{abgeleitet.allgemeine_ruecklage_ende_letztes_jahr|mio}}. Das sind {{abgeleitet.allgemeine_ruecklage_rueckgang_bis_letztes_jahr|prozent}} weniger als zu Beginn des Jahres {{jahr.haushaltsjahr|jahr}}.
+Die Ausgleichsrücklage fängt Defizite als Erstes auf. Nach dem Haushaltsplan ist sie im Jahr {{abgeleitet.ausgleichsruecklage_aufgebraucht_jahr_vor_verrechnung|jahr}} aufgebraucht. Danach muss die allgemeine Rücklage einspringen; sie sinkt bis Ende {{jahr.letztes_jahr|jahr}} auf {{abgeleitet.allgemeine_ruecklage_ende_letztes_jahr_vor_verrechnung|mio}}.
 
-Als Bezug nennt der Vorbericht die Schwellen der Haushaltssicherung aus § 76 der Gemeindeordnung NRW: einen Rückgang der allgemeinen Rücklage um mehr als {{meta.vorbericht_werte.hsk_schwelle_ein_jahr|prozent}} in einem Jahr oder um mehr als {{meta.vorbericht_werte.hsk_schwelle_zwei_jahre|prozent}} in zwei aufeinanderfolgenden Jahren. Laut Vorbericht ergibt sich für den Haushalt {{jahr.haushaltsjahr|jahr}} keine Verpflichtung zur Aufstellung eines Haushaltssicherungskonzepts. Laut Vorbericht wird das jedoch nur durch die Erträge aus Grundstücksverkäufen erreicht.
-
-Eine eigene Bewertung nimmt diese App nicht vor. Sie zeigt auch nichts über die Zeit nach {{jahr.letztes_jahr|jahr}}.
+Der Vorbericht nennt den Haushalt {{jahr.haushaltsjahr|jahr}} formal ausgeglichen, aber nicht strukturell ausgeglichen, und hält das Risiko, in den nächsten Jahren ein Haushaltssicherungskonzept aufstellen zu müssen, für extrem hoch. Eine eigene Bewertung nimmt diese App nicht vor. Sie zeigt auch nichts über die Zeit nach {{jahr.letztes_jahr|jahr}}.
 
 ## schulden_anstieg
 Titel: Warum der Schuldenstand steigt
-Quelle: S. 63, S. 310
+Quelle: S. 62, S. 63, S. 587
 
-Der Schuldenstand steigt von {{abgeleitet.schulden_gesamt_vorjahr|mio}} Ende {{jahr.vorjahr|jahr}} auf {{abgeleitet.schulden_gesamt_letztes_jahr|mio}} Ende {{jahr.letztes_jahr|jahr}}. Das liegt vor allem daran, dass die Gemeinde von {{jahr.haushaltsjahr|jahr}} bis {{jahr.letztes_jahr|jahr}} Kredite über {{abgeleitet.kreditaufnahme_ab_haushaltsjahr|mio}} aufnimmt, aber nur {{abgeleitet.tilgung_ab_haushaltsjahr|mio}} zurückzahlt.
+Der Schuldenstand steigt von {{abgeleitet.schulden_gesamt_vorjahr|mio}} Ende {{jahr.vorjahr|jahr}} auf {{abgeleitet.schulden_gesamt_letztes_jahr|mio}} Ende {{jahr.letztes_jahr|jahr}}. Das liegt vor allem daran, dass die Stadt von {{jahr.haushaltsjahr|jahr}} bis {{jahr.letztes_jahr|jahr}} Kredite über {{abgeleitet.kreditaufnahme_ab_haushaltsjahr|mio}} aufnimmt, aber nur {{abgeleitet.tilgung_ab_haushaltsjahr|mio}} zurückzahlt. Laut Vorbericht reicht der Saldo der laufenden Verwaltungstätigkeit in keinem Jahr, um die Tilgung zu bezahlen.
 
 Gedruckt ist der Schuldenstand nur bis Ende {{jahr.haushaltsjahr|jahr}}. Die späteren Jahre sind aus der Kreditaufnahme und der Tilgung des Gesamtfinanzplans fortgeschrieben und damit berechnet.

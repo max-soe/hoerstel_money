@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: Hörstel
 status: In progress
-stopped_at: Phase 11 Plan 03 complete (von Hand gepflegt, ohne GSD-Befehle)
+stopped_at: Phase 11 Plan 04 complete (von Hand gepflegt, ohne GSD-Befehle)
 last_updated: "2026-10-08T00:00:00.000Z"
 last_activity: 2026-10-08
-last_activity_desc: Phase 11, Pläne 01-03 (Ostbevern-Referenz, Stellenplan, Vorberichtsdaten Hörstel)
+last_activity_desc: Phase 11, Pläne 01-04 (Ostbevern-Referenz, Stellenplan, Vorberichtsdaten, Texte Hörstel)
 progress:
   total_phases: 5
   completed_phases: 3
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-08)
 ## Current Position
 
 Milestone: v2.0 Hörstel (Phases 8-12)
-Phase: 11 of 8-12 (Manuelle Daten und App-Daten Hörstel) — 3 of 5 plans
+Phase: 11 of 8-12 (Manuelle Daten und App-Daten Hörstel) — 4 of 5 plans
 Plan: 10-01 complete
-Status: In progress (Plan 11-04: Erklärtexte und Glossar)
-Last activity: 2026-10-09 — Plan 11-03 abgeschlossen
+Status: In progress (Plan 11-05: befunde.md, Prüfbericht, App-Daten, Quellen, alle.py, CI)
+Last activity: 2026-10-09 — Plan 11-04 abgeschlossen
 
 Hinweis: Dieser Meilenstein wird in einer Cloud-Session ohne GSD-Befehle bearbeitet. ROADMAP, REQUIREMENTS, STATE und die Phasen-Summaries unter `.planning/phases/` werden von Hand nachgeführt; PLAN-, VERIFICATION- und UAT-Dateien gibt es für diese Phasen nicht.
 
@@ -107,9 +107,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-10-08
-Stopped at: Phase 11 Plan 03 complete
-Resume file: .planning/phases/11-manuelle-daten-und-app-daten-hoerstel/11-03-SUMMARY.md
+Stopped at: Phase 11 Plan 04 complete
+Resume file: .planning/phases/11-manuelle-daten-und-app-daten-hoerstel/11-04-SUMMARY.md
 
 ## Operator Next Steps
 
-- Plan 11-04 (Erklärtexte und Glossar für Hörstel); Planliste in ROADMAP.md
+- Plan 11-05 (befunde.md, pruefe_alles, App-Daten, Quellenbelege mit Schwärzliste, alle.py, CI auf Hörstel); Planliste in ROADMAP.md

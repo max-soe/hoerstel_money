@@ -510,7 +510,7 @@ def _baue_massnahmen(
 
     gruppen = sorted(
         investitionen.select("produkt", "massnahme_id", "konto").unique().iter_rows(named=True),
-        key=lambda z: (z["produkt"], z["massnahme_id"], z["konto"]),
+        key=lambda z: (z["produkt"], z["massnahme_id"], z["konto"] or ""),
     )
     massnahmen: list[dict[str, object]] = []
     for schluessel in gruppen:
@@ -520,7 +520,8 @@ def _baue_massnahmen(
         teil = investitionen.filter(
             (pl.col("produkt") == produkt)
             & (pl.col("massnahme_id") == massnahme_id)
-            & (pl.col("konto") == konto)
+            # IKVS (Hörstel) druckt kein Sachkonto je Maßnahme: konto ist dort leer.
+            & pl.col("konto").eq_missing(konto)
         )
         erste = teil.row(0, named=True)
         if produkt not in pb_je_produkt:

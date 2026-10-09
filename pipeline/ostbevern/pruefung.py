@@ -2525,7 +2525,11 @@ def _pruefe_regel6(
     # (d) VE-Fälligkeiten
     ve_investitionen = investitionen.filter(pl.col("wertart") == "ve")
     if ikvs:
+        # IKVS: Die Fälligkeiten stammen aus der VE-Übersicht und sind den Maßnahmen über
+        # ihre VE zugeordnet (ikvs_investitionen.ve_faelligkeiten_aus_uebersicht); ein
+        # Vergleich je Maßnahme wäre zirkulär. Den VE-Gesamtbetrag prüft Regel 4 (§ 3).
         ve_investitionen = ve_investitionen.clear()
+        ve_faelligkeiten = ve_faelligkeiten.clear()
     ve_schluessel = set(
         ve_investitionen.select(["produkt", "massnahme_id", "konto"]).unique().iter_rows()
     ) | set(ve_faelligkeiten.select(["produkt", "massnahme_id", "konto"]).unique().iter_rows())

@@ -330,6 +330,47 @@ def _allgemeine_ruecklage_rueckgang_bis_letztes_jahr(w: dict[str, int | float]) 
     return (anfang - ende) / anfang * 100
 
 
+def _ausgleichsruecklage_aufgebraucht_jahr_vor_verrechnung(
+    w: dict[str, int | float],
+) -> int | float:
+    # Eigenkapitalübersichten mit Ständen zum 31.12. vor Ergebnisverrechnung (Hörstel S. 588,
+    # Fußnote 1): die Rücklage des Jahres plus das (negative) Jahresergebnis desselben Jahres
+    # ist der Stand nach Verrechnung. Aufgebraucht ist sie im ersten Planjahr, in dem dieser
+    # Stand nicht mehr positiv ist (Vorbericht S. 72: „in 2029 aufgebraucht“).
+    for jahr in _planjahre(w):
+        nach_verrechnung = (
+            w[f"eigenkapital.ausgleichsruecklage.{jahr}"] + w[f"eigenkapital.jahresergebnis.{jahr}"]
+        )
+        if nach_verrechnung <= 0:
+            return jahr
+    raise TexteFehler(
+        "Formel 'ausgleichsruecklage_aufgebraucht_jahr_vor_verrechnung': die Ausgleichs-"
+        "rücklage reicht bis zum letzten Planjahr – der Polster-Text muss überarbeitet werden"
+    )
+
+
+def _allgemeine_ruecklage_ende_letztes_jahr_vor_verrechnung(
+    w: dict[str, int | float],
+) -> int | float:
+    # Stände zum 31.12. vor Ergebnisverrechnung: den Fehlbetrag des letzten Planjahrs, den
+    # die Ausgleichsrücklage nicht mehr deckt, trägt die allgemeine Rücklage (Hörstel S. 588,
+    # nachrichtlich „Veränderung der Allgemeinen Rücklage … bei sofortiger Verrechnung“).
+    letztes = int(w["jahr.letztes_jahr"])
+    rest = (
+        w[f"eigenkapital.ausgleichsruecklage.{letztes}"]
+        + w[f"eigenkapital.jahresergebnis.{letztes}"]
+    )
+    return w[f"eigenkapital.allgemeine_ruecklage.{letztes}"] + min(0, rest)
+
+
+def _schluesselzuweisung_anstieg_haushaltsjahr(w: dict[str, int | float]) -> int | float:
+    hh = int(w["jahr.haushaltsjahr"])
+    return (
+        w[f"vorbericht.zuwendungen.schluesselzuweisung.{hh}"]
+        - w[f"vorbericht.zuwendungen.schluesselzuweisung.{hh - 1}"]
+    )
+
+
 def _schulden_gesamt_vorjahr(w: dict[str, int | float]) -> int | float:
     return w[f"schulden.gesamt.{int(w['jahr.vorjahr'])}"]
 
@@ -369,6 +410,16 @@ _ABGELEITET_ROH: dict[str, Callable[[dict[str, int | float]], int | float]] = {
     "allgemeine_ruecklage_rueckgang_bis_letztes_jahr": (
         _allgemeine_ruecklage_rueckgang_bis_letztes_jahr
     ),
+    # Phase 11 (Hörstel): Eigenkapitalübersicht mit Ständen zum 31.12. vor
+    # Ergebnisverrechnung statt Ständen zu Beginn des Jahres.
+    "ausgleichsruecklage_aufgebraucht_jahr_vor_verrechnung": (
+        _ausgleichsruecklage_aufgebraucht_jahr_vor_verrechnung
+    ),
+    "allgemeine_ruecklage_ende_letztes_jahr_vor_verrechnung": (
+        _allgemeine_ruecklage_ende_letztes_jahr_vor_verrechnung
+    ),
+    # Phase 11: Anstieg der Schlüsselzuweisung Vorjahr -> Haushaltsjahr (Hörstel S. 22).
+    "schluesselzuweisung_anstieg_haushaltsjahr": _schluesselzuweisung_anstieg_haushaltsjahr,
     # Phase 6 (Plan 06-04, D-09): Schuldenanstieg von Ende Vorjahr bis Ende letztes Planjahr.
     "schulden_gesamt_vorjahr": _schulden_gesamt_vorjahr,
     "schulden_gesamt_letztes_jahr": _schulden_gesamt_letztes_jahr,
@@ -468,7 +519,8 @@ def textwerte(
     _meta_eintragen(werte, "meta.flaeche", meta["flaeche"])
     for schluessel, blatt in meta["hebesaetze"].items():
         _meta_eintragen(werte, f"meta.hebesaetze.{schluessel}", blatt)
-    for schluessel, blatt in meta["kreisumlage"].items():
+    # Der Kreisumlage-Block ist optional (Phase 11: Hörstel druckt keine Hebesätze).
+    for schluessel, blatt in meta.get("kreisumlage", {}).items():
         _meta_eintragen(werte, f"meta.kreisumlage.{schluessel}", blatt)
     for schluessel, blatt in meta["vorbericht_werte"].items():
         _meta_eintragen(werte, f"meta.vorbericht_werte.{schluessel}", blatt)
