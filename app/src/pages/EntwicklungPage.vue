@@ -17,6 +17,7 @@ import { ENTWICKLUNG_POSTEN, baueErgebnisReihen, bauePostenReihe } from '@/lib/e
 import { wertartName } from '@/lib/jahr'
 import {
   baueRuecklagen,
+  bestandText,
   hskSchwellen,
   rueckgangFormelText,
   rueckgangPlanjahre,
@@ -58,15 +59,19 @@ const hatRuecklagen = baueRuecklagen().some(
 // Mit nur einem Planjahr gibt es keinen Verlauf: die Rückgang-Karte entfällt, die Tabelle bleibt.
 const zeigeRueckgang = hatRuecklagen && rueckgangPlanjahre().length >= 2
 
+// Nennt der Vorbericht keine Schwellen der Haushaltssicherung (Hörstel), entfällt der Satz.
 const schwellen = hskSchwellen()
-const SCHWELLEN_TEXT = `Laut Vorbericht (PDF-Seite ${String(schwellen.pdfSeite)}) ist die Schwelle ein Rückgang der allgemeinen Rücklage um mehr als ${prozent(schwellen.einJahr)} in einem Jahr oder um mehr als ${prozent(schwellen.zweiJahre)} in zwei aufeinanderfolgenden Jahren.`
-const RUECKGANG_ERKLAERUNG =
-  'Um diesen Anteil sinkt die allgemeine Rücklage im jeweiligen Jahr, bezogen auf ihren Bestand zu Jahresbeginn.'
+const SCHWELLEN_TEXT =
+  schwellen === null
+    ? null
+    : `Laut Vorbericht (PDF-Seite ${String(schwellen.pdfSeite)}) ist die Schwelle ein Rückgang der allgemeinen Rücklage um mehr als ${prozent(schwellen.einJahr)} in einem Jahr oder um mehr als ${prozent(schwellen.zweiJahre)} in zwei aufeinanderfolgenden Jahren.`
+const RUECKGANG_ERKLAERUNG = `Um diesen Anteil sinkt die allgemeine Rücklage im jeweiligen Jahr, bezogen auf den Wert „${bestandText()}“.`
+const BESTAND = bestandText()
 
 const TABELLEN_SPALTEN: DatenSpalte[] = [
   { schluessel: 'jahr', titel: 'Jahr', art: 'text' },
-  { schluessel: 'allgemeine', titel: 'Allgemeine Rücklage (Bestand zu Jahresbeginn)', art: 'euro' },
-  { schluessel: 'ausgleich', titel: 'Ausgleichsrücklage (Bestand zu Jahresbeginn)', art: 'euro' },
+  { schluessel: 'allgemeine', titel: `Allgemeine Rücklage (${BESTAND})`, art: 'euro' },
+  { schluessel: 'ausgleich', titel: `Ausgleichsrücklage (${BESTAND})`, art: 'euro' },
   { schluessel: 'rueckgang', titel: 'Rückgang im Jahr (berechnet)', art: 'prozent' },
 ]
 const tabellenZeilen: DatenZeile[] = ruecklagenTabelle().map((zeile) => ({
@@ -79,7 +84,9 @@ const tabellenFussnote =
   (eigenkapitalSeite === null
     ? ''
     : `Quelle: Eigenkapitalübersicht, PDF-Seite ${String(eigenkapitalSeite)}. `) +
-  `Der Rückgang im Jahr ist berechnet wie im Vorbericht (PDF-Seite ${String(schwellen.pdfSeite)}): ` +
+  (schwellen === null
+    ? 'Der Rückgang im Jahr ist berechnet: '
+    : `Der Rückgang im Jahr ist berechnet wie im Vorbericht (PDF-Seite ${String(schwellen.pdfSeite)}): `) +
   rueckgangFormelText()
 </script>
 
@@ -143,7 +150,9 @@ const tabellenFussnote =
           {{ RUECKGANG_ERKLAERUNG }}
         </p>
         <RueckgangBalken />
-        <p class="om-entwicklung__unterschrift">{{ SCHWELLEN_TEXT }}</p>
+        <p v-if="SCHWELLEN_TEXT !== null" class="om-entwicklung__unterschrift">
+          {{ SCHWELLEN_TEXT }}
+        </p>
       </ChartCard>
 
       <template v-if="hatRuecklagen">

@@ -89,9 +89,10 @@ export const POL_FARBEN = {
 }
 
 /**
- * Aufgabenbereich-Palette (D-08): eine feste Farbe je PB-Code (15 Produktbereiche
+ * Aufgabenbereich-Palette (D-08): eine feste Farbe je PB-Code (16 Produktbereiche
  * plus KL), identisch in Treemap, Balken, Sankey und Mobil-Balken. Nur die Töne
- * 30/40/50 der WA-Hues; kein Gold (Akzent), kein Rot/Grün (Datensemantik).
+ * 30/40/50 der WA-Hues; kein Gold (Akzent), kein Rot/Grün (Datensemantik). PB 07
+ * (Gesundheitsdienste, nur in Hörstel) trägt das dunkle Orange 30.
  * Jede Farbe erreicht gegen Weiß mindestens 4,5:1 (siehe farben.test.ts).
  */
 export const PB_FARBEN: Readonly<Record<string, string>> = {
@@ -110,6 +111,7 @@ export const PB_FARBEN: Readonly<Record<string, string>> = {
   '13': token('--wa-color-purple-30', '#612692'),
   '14': token('--wa-color-purple-40', '#7936b3'),
   '15': token('--wa-color-purple-50', '#9951db'),
+  '07': token('--wa-color-orange-30', '#802700'),
   KL: token('--wa-color-pink-40', '#9e2a6c'),
 }
 
@@ -242,6 +244,8 @@ export const BINDUNG_FARBEN = {
   pflichtig: token('--wa-color-gray-30', '#424554'),
   teils: token('--wa-color-gray-50', '#717584'),
   freiwillig: token('--wa-color-gray-60', '#9194a2'),
+  // Produkte ohne Bindungsgrad im Plan (Hörstel); nie im Bindungsgrad-Balken, nur Listen.
+  ohne: token('--wa-color-gray-40', '#545868'),
 }
 
 /** Schuldenstand-Stapel (INV-04): wie die Bindungsgrad-Reihe, 2-px-Weißtrenner im Diagramm. */

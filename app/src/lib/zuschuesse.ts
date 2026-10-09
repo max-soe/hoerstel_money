@@ -37,11 +37,19 @@ const KITA_TABELLE = 'kita_zuschuesse'
 const LFD_ZWECKE_TABELLE = 'zuschuesse_lfd_zwecke'
 const TRANSFER_TABELLE = 'transferaufwendungen'
 
-/** Die zwei eigenen Zuschüsse unter den Transferaufwendungen (Kinder- und Jugendwerk, OGS). */
-const TRANSFER_ZUSCHUESSE = ['zuschuss_kinder_jugendwerk', 'zuschuss_ogs'] as const
+/**
+ * Die eigenen Zuschüsse unter den Transferaufwendungen: Kinder- und Jugendwerk und OGS
+ * (Ostbevern) bzw. die Zuweisungen und Zuschüsse für laufende Zwecke (Hörstel). Es zählen die
+ * Posten, die der Jahrgang druckt; Kita-Tabelle und Einzelzuschüsse fehlen in Hörstel ganz.
+ */
+const TRANSFER_ZUSCHUESSE = [
+  'zuschuss_kinder_jugendwerk',
+  'zuschuss_ogs',
+  'zuweisungen_zuschuesse_laufende_zwecke',
+] as const
 
-/** Schlüssel der Sozialleistungen unter den Transferaufwendungen (D-02). */
-const SOZIALLEISTUNGEN_SCHLUESSEL = 'sozialleistungen'
+/** Schlüssel der Sozialleistungen unter den Transferaufwendungen (D-02), je Jahrgang einer. */
+const SOZIALLEISTUNGEN_SCHLUESSEL = ['sozialleistungen', 'sozialtransferaufwendungen'] as const
 
 /** Name der Kachel; der Vorbericht nennt den Posten nur „Sozialleistungen“. */
 export const SOZIALLEISTUNGEN_BEZEICHNUNG = 'Gesetzliche Sozialleistungen'
@@ -61,6 +69,11 @@ export function vorberichtTabelle(name: string): VorberichtTabelle {
     throw new Error(`Die Vorberichtstabelle „${name}“ fehlt in haushalt.json`)
   }
   return tabelle
+}
+
+/** Eine Vorberichtstabelle, die nicht jeder Jahrgang druckt; ohne sie `null`. */
+export function optionaleVorberichtTabelle(name: string): VorberichtTabelle | null {
+  return haushalt.vorbericht[name] ?? null
 }
 
 /** Ein Posten einer Vorberichtstabelle; ein fehlender Posten ist ein Datenfehler und wirft. */
@@ -101,8 +114,11 @@ function seitenVon(posten: readonly Zuschuss[], weitere: readonly (number | null
   return Array.from(seiten).sort((a, b) => a - b)
 }
 
-function gruppeAusTabelle(name: string, index: number): ZuschussGruppe {
-  const tabelle = vorberichtTabelle(name)
+function gruppeAusTabelle(name: string, index: number): ZuschussGruppe | null {
+  const tabelle = optionaleVorberichtTabelle(name)
+  if (tabelle === null) {
+    return null
+  }
   const posten = tabelle.posten.map((p) => alsZuschuss(name, p, index))
   return {
     posten,
@@ -111,8 +127,11 @@ function gruppeAusTabelle(name: string, index: number): ZuschussGruppe {
   }
 }
 
-/** Die Kindertageseinrichtungen einzeln, mit der gedruckten Gesamtzeile (S. 46). */
-export function kitaZuschuesse(): ZuschussGruppe {
+/**
+ * Die Kindertageseinrichtungen einzeln, mit der gedruckten Gesamtzeile (S. 46); `null`, wenn der
+ * Jahrgang die Tabelle nicht druckt.
+ */
+export function kitaZuschuesse(): ZuschussGruppe | null {
   return gruppeAusTabelle(KITA_TABELLE, jahrIndex())
 }
 
@@ -120,11 +139,16 @@ export function kitaZuschuesse(): ZuschussGruppe {
  * Die weiteren Zuschüsse in zwei Quellgruppen: die eigenen Zuschüsse der Transferaufwendungen
  * (`transfer`) und die Einzelposten der Zuschüsse für laufende Zwecke (`lfdZwecke`).
  */
-export function weitereZuschuesse(): { transfer: ZuschussGruppe; lfdZwecke: ZuschussGruppe } {
+export function weitereZuschuesse(): {
+  transfer: ZuschussGruppe
+  lfdZwecke: ZuschussGruppe | null
+} {
   const index = jahrIndex()
-  const posten = TRANSFER_ZUSCHUESSE.map((schluessel) =>
-    alsZuschuss(TRANSFER_TABELLE, vorberichtPosten(TRANSFER_TABELLE, schluessel), index),
-  )
+  const vorhanden = vorberichtTabelle(TRANSFER_TABELLE).posten
+  const posten = TRANSFER_ZUSCHUESSE.flatMap((schluessel) => {
+    const eintrag = vorhanden.find((p) => p.posten === schluessel)
+    return eintrag === undefined ? [] : [alsZuschuss(TRANSFER_TABELLE, eintrag, index)]
+  })
   return {
     transfer: { posten, gesamt: null, pdfSeiten: seitenVon(posten, []) },
     lfdZwecke: gruppeAusTabelle(LFD_ZWECKE_TABELLE, index),
@@ -185,12 +209,16 @@ export function nichtBeeinflussbar(): NichtBeeinflussbar {
     pdfSeite: u.pdfSeite,
     beleg: klBeleg(u.code, u.pdfSeite),
   }))
+  const sozialPosten = vorberichtTabelle(TRANSFER_TABELLE).posten.filter((p) =>
+    (SOZIALLEISTUNGEN_SCHLUESSEL as readonly string[]).includes(p.posten),
+  )
+  if (sozialPosten.length !== 1) {
+    throw new Error(
+      `Unter den Transferaufwendungen muss genau einer der Posten ${SOZIALLEISTUNGEN_SCHLUESSEL.join(', ')} stehen`,
+    )
+  }
   const sozialleistungen: Zuschuss = {
-    ...alsZuschuss(
-      TRANSFER_TABELLE,
-      vorberichtPosten(TRANSFER_TABELLE, SOZIALLEISTUNGEN_SCHLUESSEL),
-      index,
-    ),
+    ...alsZuschuss(TRANSFER_TABELLE, sozialPosten[0]!, index),
     name: SOZIALLEISTUNGEN_BEZEICHNUNG,
   }
   return {

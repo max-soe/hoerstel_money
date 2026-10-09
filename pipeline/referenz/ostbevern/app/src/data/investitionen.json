@@ -2763,6 +2763,7 @@
       "produkt": "020701",
       "massnahme_id": "AIBH012",
       "konto": "785111",
+      "name": null,
       "jahr": 2027,
       "betrag": 2000000,
       "pdf_seite": 143
@@ -2771,6 +2772,7 @@
       "produkt": "020701",
       "massnahme_id": "AIBH012",
       "konto": "785111",
+      "name": null,
       "jahr": 2028,
       "betrag": 1200000,
       "pdf_seite": 143
@@ -2779,6 +2781,7 @@
       "produkt": "030101",
       "massnahme_id": "AIB00001",
       "konto": "785111",
+      "name": null,
       "jahr": 2027,
       "betrag": 2000000,
       "pdf_seite": 153
@@ -2787,6 +2790,7 @@
       "produkt": "030102",
       "massnahme_id": "AIBH003",
       "konto": "785111",
+      "name": null,
       "jahr": 2027,
       "betrag": 1700000,
       "pdf_seite": 157
@@ -2795,6 +2799,7 @@
       "produkt": "030103",
       "massnahme_id": "AIBH005",
       "konto": "785111",
+      "name": null,
       "jahr": 2027,
       "betrag": 1000000,
       "pdf_seite": 160
@@ -2803,6 +2808,7 @@
       "produkt": "030103",
       "massnahme_id": "AIBH005",
       "konto": "785111",
+      "name": null,
       "jahr": 2028,
       "betrag": 1000000,
       "pdf_seite": 160
@@ -2811,6 +2817,7 @@
       "produkt": "120101",
       "massnahme_id": "STRAß024",
       "konto": "785311",
+      "name": null,
       "jahr": 2027,
       "betrag": 1000000,
       "pdf_seite": 245
@@ -2819,6 +2826,7 @@
       "produkt": "120101",
       "massnahme_id": "STRAß028",
       "konto": "785311",
+      "name": null,
       "jahr": 2027,
       "betrag": 1700000,
       "pdf_seite": 245

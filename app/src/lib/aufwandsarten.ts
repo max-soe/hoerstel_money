@@ -83,6 +83,9 @@ export interface TransferPosten {
 /** Der Posten der Kita-Zuschüsse, unter dem die einzelnen Einrichtungen stehen (MANU-04). */
 const KITA_ZEILE = 'zuschuesse_kindertageseinrichtungen'
 
+/** Vorberichtstabelle mit den einzelnen Einrichtungen; nicht jeder Jahrgang druckt sie. */
+const KITA_TABELLE = 'kita_zuschuesse'
+
 function pruefeJahrIndex(jahrIndex: number): void {
   if (haushalt.jahre[jahrIndex] === undefined) {
     throw new Error(`Jahresindex ${String(jahrIndex)} liegt außerhalb der Jahre`)
@@ -136,7 +139,11 @@ function absteigend(posten: TransferPosten[]): TransferPosten[] {
  */
 export function baueTransferaufwendungen(jahrIndex: number): TransferPosten[] {
   pruefeJahrIndex(jahrIndex)
-  const kinder = absteigend(postenMitWert('kita_zuschuesse', jahrIndex))
+  // Hörstel druckt keine Kita-Einzeltabelle; dann gibt es keine Kinder.
+  const kinder =
+    haushalt.vorbericht[KITA_TABELLE] === undefined
+      ? []
+      : absteigend(postenMitWert(KITA_TABELLE, jahrIndex))
   return absteigend(
     postenMitWert('transferaufwendungen', jahrIndex).map((p) =>
       p.posten === KITA_ZEILE && kinder.length > 0 ? { ...p, kinder } : p,

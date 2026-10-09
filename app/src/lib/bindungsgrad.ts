@@ -2,7 +2,8 @@
 // `ergebnisplan[code].berechnet.zuschussbedarf` gelesen und nie aus Aufwand und Erträgen neu
 // gerechnet (Phase 5 D-05). Der Balken summiert nur Produkte mit Zuschussbedarf > 0; Produkte mit
 // negativem Zuschussbedarf (Überschuss) stehen in einer eigenen Liste. Das Finanzierungsprodukt
-// ist der einzige benannte Ausschluss und fehlt in beiden.
+// ist der einzige benannte Ausschluss und fehlt in beiden. Produkte, denen der Plan keinen
+// Bindungsgrad zuordnet (Hörstel), stehen im Segment „Ohne Angabe“ außerhalb des Balkens.
 
 import { anzahlText, euroKurz } from '@/charts/format'
 import { haushalt, produkte } from '@/data/daten'
@@ -14,11 +15,15 @@ export const BINDUNGSGRADE = ['pflichtig', 'teils', 'freiwillig'] as const
 
 export type Bindungsgrad = (typeof BINDUNGSGRADE)[number]
 
+/** Schlüssel des Segments für Produkte ohne Bindungsgrad im Plan. */
+export const OHNE_ANGABE = 'ohne' as const
+
 /** Kurzer Anzeigename für Beschriftung, Legende und Aufklapper (UI-SPEC Copywriting). */
-const BEZEICHNUNGEN: Readonly<Record<Bindungsgrad, string>> = {
+const BEZEICHNUNGEN: Readonly<Record<Bindungsgrad | typeof OHNE_ANGABE, string>> = {
   pflichtig: 'Pflichtig',
   teils: 'Teils pflichtig',
   freiwillig: 'Freiwillig',
+  ohne: 'Ohne Angabe im Plan',
 }
 
 /**
@@ -40,7 +45,7 @@ export interface BindungsProdukt {
 }
 
 export interface BindungsSegment {
-  bindungsgrad: Bindungsgrad
+  bindungsgrad: Bindungsgrad | typeof OHNE_ANGABE
   /** Ausgeschriebener Name aus `bindungsgradText`, wie auf der Produktseite. */
   name: string
   /** Kurzer Anzeigename: „Pflichtig“, „Teils pflichtig“, „Freiwillig“. */
@@ -56,9 +61,11 @@ export interface BindungsSegment {
 export interface BindungsgradModell {
   /** Nur Bindungsgrade mit mindestens einem Produkt, in der Reihenfolge von `BINDUNGSGRADE`. */
   segmente: BindungsSegment[]
+  /** Produkte mit Zuschussbedarf, denen der Plan keinen Bindungsgrad zuordnet; `null` ohne solche. */
+  ohneAngabe: BindungsSegment | null
   /** Produkte mit negativem Zuschussbedarf, der größte Überschuss zuerst. */
   ueberschuss: BindungsProdukt[]
-  /** Summe aller Segmente in Euro. */
+  /** Summe aller Produkte mit Zuschussbedarf (Segmente und „Ohne Angabe“) in Euro. */
   summe: number
 }
 
@@ -81,6 +88,7 @@ export function baueBindungsgrad(): BindungsgradModell {
     BINDUNGSGRADE.map((b) => [b, []] as const),
   )
   const ueberschuss: BindungsProdukt[] = []
+  const ohneAngabe: BindungsProdukt[] = []
 
   for (const produkt of produkte) {
     if (produkt.code === FINANZIERUNGSPRODUKT) {
@@ -99,6 +107,10 @@ export function baueBindungsgrad(): BindungsgradModell {
     if (wert < 0) {
       ueberschuss.push(eintrag)
     } else if (wert > 0) {
+      if (produkt.bindungsgrad === null) {
+        ohneAngabe.push(eintrag)
+        continue
+      }
       if (!istBindungsgrad(produkt.bindungsgrad)) {
         throw new Error(
           `Produkt ${produkt.code}: unbekannter Bindungsgrad „${produkt.bindungsgrad}“`,
@@ -112,10 +124,11 @@ export function baueBindungsgrad(): BindungsgradModell {
     const liste = [...(jeBindungsgrad.get(bindungsgrad) ?? [])].sort((a, b) => b.wert - a.wert)
     return liste.length === 0 ? [] : [{ bindungsgrad, liste }]
   })
-  const summe = gefuellt.reduce(
-    (gesamt, { liste }) => gesamt + liste.reduce((s, p) => s + p.wert, 0),
-    0,
-  )
+  const ohneListe = [...ohneAngabe].sort((a, b) => b.wert - a.wert)
+  const ohneSumme = ohneListe.reduce((s, p) => s + p.wert, 0)
+  const summe =
+    gefuellt.reduce((gesamt, { liste }) => gesamt + liste.reduce((s, p) => s + p.wert, 0), 0) +
+    ohneSumme
   const segmente = gefuellt.map(({ bindungsgrad, liste }): BindungsSegment => {
     const segmentSumme = liste.reduce((s, p) => s + p.wert, 0)
     return {
@@ -129,7 +142,25 @@ export function baueBindungsgrad(): BindungsgradModell {
     }
   })
 
-  return { segmente, ueberschuss: ueberschuss.sort((a, b) => a.wert - b.wert), summe }
+  const ohneSegment: BindungsSegment | null =
+    ohneListe.length === 0
+      ? null
+      : {
+          bindungsgrad: OHNE_ANGABE,
+          name: BEZEICHNUNGEN[OHNE_ANGABE],
+          bezeichnung: BEZEICHNUNGEN[OHNE_ANGABE],
+          summe: ohneSumme,
+          anzahl: ohneListe.length,
+          anteil: ohneSumme / summe,
+          produkte: ohneListe,
+        }
+
+  return {
+    segmente,
+    ohneAngabe: ohneSegment,
+    ueberschuss: ueberschuss.sort((a, b) => a.wert - b.wert),
+    summe,
+  }
 }
 
 /** Anzahl der Produkte als Text: „1 Produkt“, sonst „{n} Produkte“ (WR-02). */

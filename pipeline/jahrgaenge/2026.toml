@@ -212,3 +212,9 @@ weitere_tabellen = ["leistungsentgelte", "privatrechtliche_leistungsentgelte", "
 [layout.quellenbelege]
 pruefwoerter = ["Bürgermeister", "Bürgermeisterin", "Kämmerer", "Kämmerin", "gez.", "Telefon", "E-Mail", "Ansprechpartner", "Sachbearbeit", "Verantwortlich", "Produktverantwortlicher", "Geschäftsführ"]
 schwaerzen_nach = []
+
+# [layout.eigenkapital] (Phase 12): Die Spalten der Eigenkapitalübersicht (S. 588) sind Stände
+# zum 31.12. des Jahres vor Ergebnisverrechnung (Fußnote 1); das Jahresergebnis derselben
+# Spalte ist noch nicht verrechnet. Die App rechnet Polster und Rücklagenabbau danach.
+[layout.eigenkapital]
+stand = "jahresende_vor_verrechnung"

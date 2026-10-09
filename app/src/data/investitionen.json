@@ -3783,6 +3783,7 @@
       "produkt": "0111102",
       "massnahme_id": null,
       "konto": null,
+      "name": "Neubau eines Verwaltungsgebäudes Hörstel",
       "jahr": 2027,
       "betrag": 5100000,
       "pdf_seite": 586
@@ -3791,6 +3792,7 @@
       "produkt": "0111102",
       "massnahme_id": "111.02-004",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 250000,
       "pdf_seite": 586
@@ -3799,6 +3801,7 @@
       "produkt": "0111102",
       "massnahme_id": "111.02-008",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 57000,
       "pdf_seite": 586
@@ -3807,6 +3810,7 @@
       "produkt": "0111108",
       "massnahme_id": "111.08-001",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 107000,
       "pdf_seite": 586
@@ -3815,6 +3819,7 @@
       "produkt": "0111108",
       "massnahme_id": "111.08-002",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 47000,
       "pdf_seite": 586
@@ -3823,6 +3828,7 @@
       "produkt": "0212601",
       "massnahme_id": "126.01-005",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 325000,
       "pdf_seite": 586
@@ -3831,6 +3837,7 @@
       "produkt": "0212601",
       "massnahme_id": "126.01-005",
       "konto": null,
+      "name": null,
       "jahr": 2029,
       "betrag": 325000,
       "pdf_seite": 586
@@ -3839,6 +3846,7 @@
       "produkt": "0321101",
       "massnahme_id": "211.01-015",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 3000000,
       "pdf_seite": 586
@@ -3847,6 +3855,7 @@
       "produkt": "0321101",
       "massnahme_id": "211.01-015",
       "konto": null,
+      "name": null,
       "jahr": 2028,
       "betrag": 1750000,
       "pdf_seite": 586
@@ -3855,6 +3864,7 @@
       "produkt": "0842402",
       "massnahme_id": "424.02-005",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 130000,
       "pdf_seite": 586
@@ -3863,6 +3873,7 @@
       "produkt": "0842402",
       "massnahme_id": "424.02.-006",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 1000000,
       "pdf_seite": 586
@@ -3871,6 +3882,7 @@
       "produkt": "1153801",
       "massnahme_id": "538.01-3-003",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 500000,
       "pdf_seite": 586
@@ -3879,6 +3891,7 @@
       "produkt": "1153801",
       "massnahme_id": "538.01-3-003",
       "konto": null,
+      "name": null,
       "jahr": 2028,
       "betrag": 500000,
       "pdf_seite": 586
@@ -3887,6 +3900,7 @@
       "produkt": "1153801",
       "massnahme_id": "538.01-3-009",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 750000,
       "pdf_seite": 586
@@ -3895,6 +3909,7 @@
       "produkt": "1153801",
       "massnahme_id": "538.01-3-009",
       "konto": null,
+      "name": null,
       "jahr": 2028,
       "betrag": 750000,
       "pdf_seite": 586
@@ -3903,6 +3918,7 @@
       "produkt": "1254101",
       "massnahme_id": "541.01-3-004",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 900000,
       "pdf_seite": 586
@@ -3911,6 +3927,7 @@
       "produkt": "1254101",
       "massnahme_id": "541.01-3-004",
       "konto": null,
+      "name": null,
       "jahr": 2028,
       "betrag": 900000,
       "pdf_seite": 586
@@ -3919,6 +3936,7 @@
       "produkt": "1254101",
       "massnahme_id": "541.01-3-009",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 800000,
       "pdf_seite": 586
@@ -3927,6 +3945,7 @@
       "produkt": "1254101",
       "massnahme_id": "541.01-3-009",
       "konto": null,
+      "name": null,
       "jahr": 2028,
       "betrag": 800000,
       "pdf_seite": 586
@@ -3935,6 +3954,7 @@
       "produkt": "1254101",
       "massnahme_id": "541.01-5-003",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 140000,
       "pdf_seite": 586
@@ -3943,6 +3963,7 @@
       "produkt": "1254101",
       "massnahme_id": "541.01-5-007",
       "konto": null,
+      "name": null,
       "jahr": 2027,
       "betrag": 200000,
       "pdf_seite": 586

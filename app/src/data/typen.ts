@@ -81,7 +81,9 @@ export interface Meta {
   einwohner: MetaWert
   flaeche: MetaWert
   hebesaetze: Record<string, MetaWert>
-  kreisumlage: Record<string, MetaWert>
+  /** Kreisumlage netto/brutto und Hebesätze; fehlt, wenn der Vorbericht sie nicht druckt
+   * (Hörstel: Umlagen nur als Beträge in den Transferaufwendungen). */
+  kreisumlage?: Record<string, MetaWert>
   satzung: Record<string, MetaWert>
   vorbericht_werte: Record<string, MetaWert>
 }
@@ -161,8 +163,19 @@ export interface Haushalt {
   finanzplan: Record<string, FinanzplanWerte>
   /** Manuelle Vorberichtstabellen, Schlüssel = Tabellenname. */
   vorbericht: Record<string, VorberichtTabelle>
-  /** Entwicklung des Eigenkapitals (S. 311, int-Euro), D-11, D-12. */
+  /** Entwicklung des Eigenkapitals (int-Euro), D-11, D-12. */
   eigenkapital: VorberichtTabelle
+  /**
+   * Stand der Eigenkapitalspalten: "jahresbeginn" (Bestand zu Jahresbeginn, Jahresergebnis des
+   * Jahres derselben Spalte) oder "jahresende_vor_verrechnung" (Stand zum 31.12. vor der
+   * Verrechnung des Jahresergebnisses derselben Spalte), aus `[layout.eigenkapital]`.
+   */
+  eigenkapital_stand: string
+  /**
+   * Produkt mit Steuern, Schlüsselzuweisung und den Umlagen an Kreis und Land (das Produkt,
+   * aus dem die Weitergabe „KL“ herausgelöst ist), aus `[layout.weitergabe_kreis_land]`.
+   */
+  finanzierungsprodukt: string
   /**
    * Gedruckte Zeilennamen je Zeilenschlüssel, in der Reihenfolge von
    * `ergebnisplan.GESAMT.zeilen` bzw. `finanzplan.GESAMT.zeilen`. Einzige Namensquelle der
@@ -232,7 +245,8 @@ export interface Grundzahl {
   /** Gruppenüberschrift, `null` ohne eigene Gruppe. */
   gruppe: string | null
   bezeichnung: string
-  einheit: string
+  /** Einheit, `null` ohne gedruckte Einheit (Hörstel-Kennzahlen). */
+  einheit: string | null
   nachkommastellen: number
   pdf_seite: number
   werte: GrundzahlWert[]
@@ -257,16 +271,18 @@ export interface Produkt {
   name: string
   pb: string
   pg: string
-  fachbereich: string
-  gremium: string
-  beschreibung: string
+  /** Felder, die ein Haushaltslayout nicht druckt, sind `null` (Hörstel/IKVS: Fachbereich,
+   * Gremium, Bindungsgrad, Klassifizierung, Ziele; Beschreibung teils nur als Leistungen). */
+  fachbereich: string | null
+  gremium: string | null
+  beschreibung: string | null
   leistungen: string[]
-  auftragsgrundlage: string
-  bindungsgrad: string
-  bindungsgrad_original: string
-  klassifizierung: string
-  zielgruppe: string
-  ziele: string
+  auftragsgrundlage: string | null
+  bindungsgrad: string | null
+  bindungsgrad_original: string | null
+  klassifizierung: string | null
+  zielgruppe: string | null
+  ziele: string | null
   erlaeuterungen: Erlaeuterung[]
   pdf_seiten: number[]
   grundzahlen: Grundzahl[]
@@ -279,8 +295,9 @@ export interface Massnahme {
   pb: string
   massnahme_id: string
   massnahme_name: string
-  konto: string
-  konto_name: string
+  /** Sachkonto; `null`, wenn das Layout keine Konten je Maßnahme druckt (Hörstel/IKVS). */
+  konto: string | null
+  konto_name: string | null
   /** "einzahlung" | "auszahlung". */
   richtung: string
   /** Investitionsart (z. B. "bau", "ausstattung", "grundstuecke"), `null` für
@@ -297,8 +314,12 @@ export interface Massnahme {
 /** Eine VE-Fälligkeitszeile (EXTR-09, D-13, D-21). */
 export interface VeFaelligkeit {
   produkt: string
-  massnahme_id: string
-  konto: string
+  /** `null` für eine VE ohne Maßnahme in den Investitionsübersichten (Hörstel: Neubau
+   * Verwaltungsgebäude, nur in der VE-Übersicht S. 586). */
+  massnahme_id: string | null
+  konto: string | null
+  /** Name aus der VE-Übersicht, nur für eine VE ohne Maßnahme; sonst `null` (Name der Maßnahme). */
+  name: string | null
   jahr: number
   betrag: number
   pdf_seite: number

@@ -31,6 +31,17 @@ const finanzierungsName = findeProdukt(FINANZIERUNGSPRODUKT)?.name
 if (finanzierungsName === undefined) {
   throw new Error(`Das Finanzierungsprodukt ${FINANZIERUNGSPRODUKT} fehlt in produkte.json`)
 }
+
+// Ordnet der Plan keinem Produkt einen Bindungsgrad zu (Hörstel), gibt es keinen Balken; die
+// Produkte mit Zuschussbedarf stehen dann in der Liste „Ohne Angabe im Plan“.
+const mitBindungsgrad = bindungsgrad.segmente.length > 0
+const listenSegmente = [
+  ...bindungsgrad.segmente,
+  ...(bindungsgrad.ohneAngabe === null ? [] : [bindungsgrad.ohneAngabe]),
+]
+const listenLead = mitBindungsgrad
+  ? 'Öffne einen Bindungsgrad, um seine Produkte mit dem Zuschussbedarf zu sehen.'
+  : `Öffne die Liste, um die Produkte mit ihrem Zuschussbedarf zu sehen. ${finanzierungsName} (Steuern und Schlüsselzuweisung) bringt Geld ein, das diese Kosten bezahlt, und steht deshalb nicht darin.`
 </script>
 
 <template>
@@ -39,7 +50,7 @@ if (finanzierungsName === undefined) {
       <WertartEtikett :wertart="wertart" />
     </PageIntro>
     <section class="om-rat-entscheidet__abschnitt">
-      <ChartCard :titel="`Zuschussbedarf ${jahrText} nach Bindungsgrad`">
+      <ChartCard v-if="mitBindungsgrad" :titel="`Zuschussbedarf ${jahrText} nach Bindungsgrad`">
         <BindungsgradBalken :modell="bindungsgrad" :wertart-text="wertartText" />
         <template #fuss>
           <p class="om-rat-entscheidet__hinweis">
@@ -57,18 +68,20 @@ if (finanzierungsName === undefined) {
       </wa-callout>
     </section>
     <section
-      v-if="bindungsgrad.segmente.length > 0"
+      v-if="listenSegmente.length > 0"
       class="om-rat-entscheidet__abschnitt om-rat-entscheidet__produkte"
       aria-labelledby="om-rat-entscheidet-produkte"
     >
       <h2 id="om-rat-entscheidet-produkte" class="om-rat-entscheidet__titel">
-        Die Produkte hinter dem Balken
+        {{
+          mitBindungsgrad
+            ? 'Die Produkte hinter dem Balken'
+            : `Produkte mit Zuschussbedarf ${jahrText}`
+        }}
       </h2>
-      <p class="om-rat-entscheidet__lead">
-        Öffne einen Bindungsgrad, um seine Produkte mit dem Zuschussbedarf zu sehen.
-      </p>
+      <p class="om-rat-entscheidet__lead">{{ listenLead }}</p>
       <ProduktBalkenListe
-        v-for="segment in bindungsgrad.segmente"
+        v-for="segment in listenSegmente"
         :key="segment.bindungsgrad"
         :segment="segment"
         :wertart-text="wertartText"

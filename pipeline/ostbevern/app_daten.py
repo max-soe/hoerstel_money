@@ -47,6 +47,7 @@ from ostbevern.schema import (
     PRODUKTE_JSON,
     STELLENPLAN_CSV,
     VE_FAELLIGKEITEN_CSV,
+    VE_UEBERSICHT_CSV,
     VERBINDLICHKEITEN_CSV,
     lies_eigenkapital_csv,
     lies_grundzahlen_csv,
@@ -56,6 +57,7 @@ from ostbevern.schema import (
     lies_produkte_json,
     lies_stellenplan_csv,
     lies_ve_faelligkeiten_csv,
+    lies_ve_uebersicht_csv,
     lies_vorbericht_csv,
     zerlege_spaltenkopf,
 )
@@ -89,6 +91,10 @@ KL_CODE = "KL"
 KL_NAME = "Weitergabe an Kreis und Land"
 # Die KL-Kinder (Posten und Anzeigenamen, Reihenfolge = App-Kinderreihenfolge) kommen aus
 # [layout.weitergabe_kreis_land] posten/namen, siehe weitergabe_posten_namen().
+
+# Stand der Spalten der Eigenkapitalübersicht: Bestand zu Jahresbeginn (Ostbevern S. 311) oder
+# zum 31.12. vor Ergebnisverrechnung (Hörstel S. 588, Fußnote 1).
+EIGENKAPITAL_STAENDE: tuple[str, ...] = ("jahresbeginn", "jahresende_vor_verrechnung")
 
 # Vorbericht-Tabellen mit einem berechneten Posten "Sonstige" (Spez. 3.8): dort, wo die
 # gedruckte Gesamtzeile um mehr als REGEL5_TOLERANZ_GEP_EURO von der GEP-Zeile abweicht,
@@ -610,6 +616,7 @@ def baue_investitionen_json(
     jahre: list[int],
     wertarten: list[str],
     schulden_posten: Sequence[str],
+    ve_uebersicht: pl.DataFrame | None = None,
 ) -> dict[str, object]:
     """Baut `investitionen.json` der App (D-13, D-14, D-21): Maßnahmen (gruppiert nach
     Produkt/Maßnahme/Konto), VE-Fälligkeiten, Finanzierung (GFP), Schuldenstand
@@ -620,11 +627,34 @@ def baue_investitionen_json(
     Transferverbindlichkeiten). Ohne weitere Posten (Hörstel) ist die Reihe 0."""
     massnahmen = _baue_massnahmen(investitionen, hierarchie=hierarchie, jahre=jahre)
 
+    def _ve_name(zeile: Mapping[str, object]) -> str | None:
+        """Name einer VE ohne Maßnahme (IKVS: nur in der VE-Übersicht, z. B. Hörstel S. 586);
+        VE mit Maßnahme heißen wie ihre Maßnahme (`null`)."""
+        if zeile["massnahme_id"] is not None:
+            return None
+        if ve_uebersicht is None:
+            raise AppDatenFehler(
+                f"VE ohne Maßnahme in Produkt {zeile['produkt']}: keine VE-Übersicht"
+            )
+        treffer = ve_uebersicht.filter(
+            ~pl.col("ist_gesamt")
+            & (pl.col("produkt") == zeile["produkt"])
+            & (pl.col("faellig_jahr") == zeile["jahr"])
+            & (pl.col("betrag_teur") * 1000 == zeile["betrag"])
+        )["massnahme"].unique()
+        if treffer.len() != 1:
+            raise AppDatenFehler(
+                f"VE ohne Maßnahme in Produkt {zeile['produkt']} ({zeile['jahr']}, "
+                f"{zeile['betrag']} €): {treffer.len()} Zeilen der VE-Übersicht passen"
+            )
+        return str(treffer[0])
+
     ve_faelligkeiten_liste = [
         {
             "produkt": zeile["produkt"],
             "massnahme_id": zeile["massnahme_id"],
             "konto": zeile["konto"],
+            "name": _ve_name(zeile),
             "jahr": zeile["jahr"],
             "betrag": zeile["betrag"],
             "pdf_seite": zeile["pdf_seite"],
@@ -1075,7 +1105,17 @@ def erzeuge_app_daten(
         "vorbericht": vorbericht,
         "eigenkapital": eigenkapital,
         "zeilen_namen": baue_zeilen_namen(list(finanzplan_app["GESAMT"]["zeilen"])),
+        # Phase 12: Stand der Eigenkapitalspalten ([layout.eigenkapital].stand) und das
+        # Produkt mit Steuern, Schlüsselzuweisung und den Umlagen ([layout.weitergabe_kreis_land]),
+        # damit die App keine Jahrgangswerte im Code braucht. Neue Felder hängen hinten an.
+        "eigenkapital_stand": layout_text(jahrgang, "eigenkapital", "stand"),
+        "finanzierungsprodukt": weitergabe_produkt,
     }
+    if daten["eigenkapital_stand"] not in EIGENKAPITAL_STAENDE:
+        raise AppDatenFehler(
+            f"[layout.eigenkapital].stand muss einer von {EIGENKAPITAL_STAENDE} sein, "
+            f"nicht {daten['eigenkapital_stand']!r}"
+        )
 
     pfad = app_daten_wurzel / HAUSHALT_JSON
     schreibe_app_json(daten, pfad, praefix="haushalt")
@@ -1105,6 +1145,7 @@ def erzeuge_app_daten(
         jahre=jahre,
         wertarten=wertarten,
         schulden_posten=layout_liste(jahrgang, "schulden", "posten"),
+        ve_uebersicht=lies_ve_uebersicht_csv(daten_wurzel / VE_UEBERSICHT_CSV),
     )
     investitionen_pfad = app_daten_wurzel / INVESTITIONEN_JSON
     schreibe_app_json(investitionen_daten, investitionen_pfad, praefix="investitionen")

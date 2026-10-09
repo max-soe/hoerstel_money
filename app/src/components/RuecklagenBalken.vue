@@ -10,14 +10,13 @@ import BaseChart from '@/components/BaseChart.vue'
 import { haushalt } from '@/data/daten'
 import { useSchmalerBildschirm } from '@/lib/bildschirm'
 import { wertartName } from '@/lib/jahr'
-import { baueRuecklagen } from '@/lib/ruecklagen'
+import { baueRuecklagen, bestandText } from '@/lib/ruecklagen'
 
 const LEER_TITEL = 'Für diese Auswahl gibt es keine Einzelwerte'
 const LEER_TEXT = 'Der Haushaltsplan nennt für diese Jahre keine Rücklagen. Öffne die Tabelle.'
-const BESCHREIBUNG =
-  'Säulendiagramm: Ausgleichsrücklage und allgemeine Rücklage der Gemeinde als Bestand zu Jahresbeginn je Jahr, mit der Summe über jeder Säule. Die Werte stehen in der Tabelle darunter.'
-/** Die Spaltenüberschrift von S. 311, wörtlich: die Werte sind der Bestand zu Jahresbeginn. */
-const ACHSEN_UNTERSCHRIFT = 'Bestand zu Jahresbeginn'
+const BESCHREIBUNG = `Säulendiagramm: Ausgleichsrücklage und allgemeine Rücklage als ${bestandText()} je Jahr, mit der Summe über jeder Säule. Die Werte stehen in der Tabelle darunter.`
+/** Wie die Spalten der Eigenkapitalübersicht zu lesen sind (`haushalt.eigenkapital_stand`). */
+const ACHSEN_UNTERSCHRIFT = bestandText()
 
 const AUSGLEICH_NAME = 'Ausgleichsrücklage'
 const ALLGEMEINE_NAME = 'Allgemeine Rücklage'

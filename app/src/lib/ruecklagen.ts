@@ -14,6 +14,12 @@
 // dem Jahr, dessen Spalte ihn berechnet, und wird auf den Bestand zu Jahresbeginn bezogen. Die
 // Regel ist dieselbe wie `_allgemeine_ruecklage_abbau` in `pipeline/ostbevern/texte.py`.
 // `rueckgangFormelText()` beschreibt diese Regel für die Fußnote auf /entwicklung aus denselben Konstanten.
+//
+// Hörstel (`haushalt.eigenkapital_stand` = "jahresende_vor_verrechnung", S. 588): Die Spalten sind
+// der Stand zum 31.12. vor Verrechnung des Jahresergebnisses derselben Spalte; die Rücklagen sind
+// also ebenfalls der Bestand, auf den das Jahresergebnis noch trifft. Abbau und Rückgang rechnen
+// deshalb gleich. Eine Zeile zur Bilanzierungshilfe gibt es dort nicht (Verrechnung 0), und der
+// Vorbericht druckt keine Schwellen der Haushaltssicherung (`hskSchwellen()` ist dann `null`).
 
 import { haushalt } from '@/data/daten'
 import type { Meta, VorberichtTabelle } from '@/data/typen'
@@ -23,6 +29,24 @@ const ALLGEMEINE = 'allgemeine_ruecklage'
 const AUSGLEICH = 'ausgleichsruecklage'
 const VERRECHNUNG = 'verrechnung_bilanzierungshilfe'
 const ERGEBNIS = 'jahresergebnis'
+
+/** Stände der Eigenkapitalspalten, wie `[layout.eigenkapital].stand` sie nennt. */
+export const STAND_JAHRESBEGINN = 'jahresbeginn'
+export const STAND_VOR_VERRECHNUNG = 'jahresende_vor_verrechnung'
+
+/**
+ * Wie die Rücklagenspalten zu lesen sind, für Spaltenköpfe und Beschreibungen: „Bestand zu
+ * Jahresbeginn“ (Ostbevern) oder „Bestand vor Verrechnung des Jahresergebnisses“ (Hörstel).
+ */
+export function bestandText(stand: string = haushalt.eigenkapital_stand): string {
+  if (stand === STAND_JAHRESBEGINN) {
+    return 'Bestand zu Jahresbeginn'
+  }
+  if (stand === STAND_VOR_VERRECHNUNG) {
+    return 'Bestand vor Verrechnung des Jahresergebnisses'
+  }
+  throw new Error(`haushalt.eigenkapital_stand „${stand}“ ist unbekannt`)
+}
 
 /** Schlüssel der Schwellen in `meta.vorbericht_werte` (S. 23, § 76 GO NRW laut Vorbericht). */
 const SCHWELLE_EIN_JAHR = 'hsk_schwelle_ein_jahr'
@@ -52,6 +76,15 @@ function postenWerte(tabelle: VorberichtTabelle, schluessel: string): readonly (
 
 function wertAn(tabelle: VorberichtTabelle, schluessel: string, index: number): number | null {
   return postenWerte(tabelle, schluessel)[index] ?? null
+}
+
+function hatPosten(tabelle: VorberichtTabelle, schluessel: string): boolean {
+  return tabelle.posten.some((kandidat) => kandidat.posten === schluessel)
+}
+
+/** Die Verrechnung der Bilanzierungshilfe; ohne diese Zeile in der Übersicht (Hörstel) 0. */
+function verrechnungAn(tabelle: VorberichtTabelle, index: number): number | null {
+  return hatPosten(tabelle, VERRECHNUNG) ? wertAn(tabelle, VERRECHNUNG, index) : 0
 }
 
 function pruefeIndex(index: number): void {
@@ -97,7 +130,7 @@ export function abbau(
 ): number | null {
   pruefeIndex(index)
   const ausgleich = wertAn(tabelle, AUSGLEICH, index)
-  const verrechnung = wertAn(tabelle, VERRECHNUNG, index)
+  const verrechnung = verrechnungAn(tabelle, index)
   const ergebnis = wertAn(tabelle, ERGEBNIS, index)
   if (ausgleich === null || verrechnung === null || ergebnis === null) {
     return null
@@ -133,6 +166,9 @@ function postenName(tabelle: VorberichtTabelle, schluessel: string): string {
 
 /** Wahr, wenn mindestens ein Jahr eine Verrechnung der Bilanzierungshilfe ungleich 0 trägt. */
 function hatVerrechnung(tabelle: VorberichtTabelle): boolean {
+  if (!hatPosten(tabelle, VERRECHNUNG)) {
+    return false
+  }
   return postenWerte(tabelle, VERRECHNUNG).some((wert) => wert !== null && wert !== 0)
 }
 
@@ -143,13 +179,18 @@ function hatVerrechnung(tabelle: VorberichtTabelle): boolean {
  * erscheint genau dann, wenn die Daten sie in mindestens einem Jahr ungleich 0 führen, und mit dem
  * gedruckten Postennamen der Eigenkapitalübersicht.
  */
-export function rueckgangFormelText(tabelle: VorberichtTabelle = haushalt.eigenkapital): string {
-  // Immer lesen, damit ein fehlender Posten auch ohne Verrechnung als Datenfehler auffällt.
-  const verrechnungsName = postenName(tabelle, VERRECHNUNG)
+export function rueckgangFormelText(
+  tabelle: VorberichtTabelle = haushalt.eigenkapital,
+  stand: string = haushalt.eigenkapital_stand,
+): string {
   const verrechnung = hatVerrechnung(tabelle)
-    ? `, zuzüglich der Verrechnung aus der Zeile „${verrechnungsName}“`
+    ? `, zuzüglich der Verrechnung aus der Zeile „${postenName(tabelle, VERRECHNUNG)}“`
     : ''
-  return `der Fehlbetrag des Jahres, soweit die Ausgleichsrücklage ihn nicht deckt${verrechnung}, geteilt durch die allgemeine Rücklage zu Jahresbeginn.`
+  const bezug =
+    stand === STAND_JAHRESBEGINN
+      ? 'die allgemeine Rücklage zu Jahresbeginn'
+      : 'die allgemeine Rücklage vor Verrechnung des Jahresergebnisses'
+  return `der Fehlbetrag des Jahres, soweit die Ausgleichsrücklage ihn nicht deckt${verrechnung}, geteilt durch ${bezug}.`
 }
 
 export interface HskSchwellen {
@@ -175,8 +216,14 @@ function schwelle(meta: Meta, schluessel: string): { anteil: number; seite: numb
 /**
  * Die beiden Schwellen der Haushaltssicherung, wie der Vorbericht sie nennt (S. 23, ganze
  * Prozentpunkte in den Daten, hier als Anteil). Die App gibt sie nur wieder und bewertet nichts.
+ * Nennt der Vorbericht keine Schwellen (Hörstel), fehlen beide und das Ergebnis ist `null`; fehlt
+ * nur eine, ist das ein Datenfehler.
  */
-export function hskSchwellen(meta: Meta = haushalt.meta): HskSchwellen {
+export function hskSchwellen(meta: Meta = haushalt.meta): HskSchwellen | null {
+  const werte = meta.vorbericht_werte
+  if (werte[SCHWELLE_EIN_JAHR] === undefined && werte[SCHWELLE_ZWEI_JAHRE] === undefined) {
+    return null
+  }
   const ein = schwelle(meta, SCHWELLE_EIN_JAHR)
   const zwei = schwelle(meta, SCHWELLE_ZWEI_JAHRE)
   if (ein.seite !== zwei.seite) {
@@ -194,9 +241,26 @@ export function hskSchwellen(meta: Meta = haushalt.meta): HskSchwellen {
  */
 export function ausgleichsruecklageAufgebrauchtJahr(
   tabelle: VorberichtTabelle = haushalt.eigenkapital,
+  stand: string = haushalt.eigenkapital_stand,
 ): number | null {
   const start = haushalt.jahre.indexOf(haushalt.haushaltsjahr)
   const ausgleich = postenWerte(tabelle, AUSGLEICH)
+  if (stand === STAND_VOR_VERRECHNUNG) {
+    // Stand vor Verrechnung: aufgebraucht im ersten Jahr ab dem Haushaltsjahr, dessen Fehlbetrag
+    // die Ausgleichsrücklage der Spalte erreicht (wie `_vor_verrechnung` in texte.py).
+    const ergebnis = postenWerte(tabelle, ERGEBNIS)
+    for (let index = start; index < haushalt.jahre.length; index += 1) {
+      const rest = ausgleich[index] ?? null
+      const jahresergebnis = ergebnis[index] ?? null
+      if (rest === null || jahresergebnis === null) {
+        continue
+      }
+      if (rest + jahresergebnis <= 0) {
+        return haushalt.jahre[index] ?? null
+      }
+    }
+    return null
+  }
   for (let index = start + 1; index < haushalt.jahre.length; index += 1) {
     if (ausgleich[index] === 0) {
       const jahr = haushalt.jahre[index]

@@ -41,8 +41,8 @@ export interface ProduktKopf {
   zurueckText: string
   /** Erste PDF-Seite des Produkts (1-basiert) für die Quellzeile. */
   quelleSeite: number | null
-  /** Ausgeschriebener Bindungsgrad. */
-  bindungsgrad: string
+  /** Ausgeschriebener Bindungsgrad; `null`, wenn der Plan keinen nennt (Hörstel). */
+  bindungsgrad: string | null
   /** Wortlaut des Plans, wenn er sich vom ausgeschriebenen Bindungsgrad unterscheidet. */
   bindungsgradOriginal: string | null
 }
@@ -83,8 +83,11 @@ export function baueProduktKopf(
     rueckQuery.pg = pg
   }
 
-  const bindungsgrad = bindungsgradText(produkt.bindungsgrad)
-  const abweichend = normiere(produkt.bindungsgrad_original) !== normiere(bindungsgrad)
+  const bindungsgrad = produkt.bindungsgrad === null ? null : bindungsgradText(produkt.bindungsgrad)
+  const abweichend =
+    bindungsgrad !== null &&
+    produkt.bindungsgrad_original !== null &&
+    normiere(produkt.bindungsgrad_original) !== normiere(bindungsgrad)
 
   return {
     produkt,

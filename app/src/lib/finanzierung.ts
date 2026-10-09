@@ -22,7 +22,8 @@ import { jahrSchluessel, type Tabelle } from '@/lib/produkt'
 /** Eine Maßnahme mit Verpflichtungsermächtigung, die in einem Jahr fällig wird. */
 export interface VeMassnahme {
   produkt: string
-  massnahmeId: string
+  /** `null` für eine VE ohne Maßnahme in den Investitionsübersichten (nur VE-Übersicht). */
+  massnahmeId: string | null
   name: string
   betrag: number
   pdfSeite: number
@@ -39,16 +40,16 @@ export interface VeFaelligkeitsjahr {
 
 const SORTIERUNG = new Intl.Collator('de')
 
-function massnahmenSchluessel(produkt: string, massnahmeId: string): string {
-  return `${produkt}/${massnahmeId}`
+function massnahmenSchluessel(produkt: string, massnahmeId: string | null): string {
+  return `${produkt}/${massnahmeId ?? ''}`
 }
 
 /**
  * Fasst VE-Zeilen je Fälligkeitsjahr zusammen (aufsteigend nach Jahr). Innerhalb eines Jahres
  * werden die Konten einer Maßnahme `(produkt, massnahme_id)` gebündelt und absteigend nach
- * Betrag geordnet; den Namen liefert die Maßnahmenzeile mit demselben Schlüssel. Eine VE-Zeile
- * ohne Maßnahme ist ein Datenfehler und wirft mit Produkt und Kennung. Jahre ohne VE kommen
- * nicht vor.
+ * Betrag geordnet; den Namen liefert die Maßnahmenzeile mit demselben Schlüssel. Eine VE ohne
+ * Maßnahme (nur in der VE-Übersicht, Hörstel) bringt ihren Namen selbst mit; fehlt beides, ist das
+ * ein Datenfehler und wirft mit Produkt und Kennung. Jahre ohne VE kommen nicht vor.
  */
 export function baueVeFaelligkeiten(
   zeilen: readonly VeFaelligkeit[],
@@ -65,7 +66,7 @@ export function baueVeFaelligkeiten(
   const jahre = new Map<number, Map<string, VeMassnahme>>()
   for (const zeile of zeilen) {
     const schluessel = massnahmenSchluessel(zeile.produkt, zeile.massnahme_id)
-    const name = namen.get(schluessel)
+    const name = namen.get(schluessel) ?? zeile.name ?? undefined
     if (name === undefined) {
       throw new Error(
         `VE-Zeile ohne Maßnahme: Produkt ${zeile.produkt}, Maßnahme ${zeile.massnahme_id}`,
@@ -94,7 +95,7 @@ export function baueVeFaelligkeiten(
         (a, b) =>
           b.betrag - a.betrag ||
           SORTIERUNG.compare(a.name, b.name) ||
-          SORTIERUNG.compare(a.massnahmeId, b.massnahmeId),
+          SORTIERUNG.compare(a.massnahmeId ?? '', b.massnahmeId ?? ''),
       )
       return { jahr, betrag: liste.reduce((s, m) => s + m.betrag, 0), massnahmen: liste }
     })

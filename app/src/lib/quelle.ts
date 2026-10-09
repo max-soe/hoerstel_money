@@ -8,8 +8,8 @@
 //   meta:{pfad}                                        MetaWert (Pfad gepunktet)
 //   gz:{produkt}:{position}                            Grundzahl
 //   pr:{produkt}                                       Produktseite
-//   inv:{produkt}:{massnahme_id}:{konto}:{richtung}    Investitionsmaßnahme
-//   ve:{produkt}:{massnahme_id}:{konto}                VE-Fälligkeiten einer Kontozeile
+//   inv:{produkt}:{massnahme_id}:{konto}:{richtung}    Investitionsmaßnahme (Konto leer ohne Konto)
+//   ve:{produkt}:{massnahme_id}:{konto}                VE-Fälligkeiten einer Kontozeile (leere Teile ohne Wert)
 //   sd:{reihe}                                         Schuldenstandsreihe
 //   sp:{teil}:{position}:{produktbereich oder -}       Stellenplanzeile
 //   seite:{n}                                          Seitenbeleg ohne Zeile
@@ -30,10 +30,11 @@ export const belegSchluessel = {
   meta: (pfad: string): string => `meta:${pfad}`,
   gz: (produkt: string, position: Teil): string => `gz:${produkt}:${String(position)}`,
   pr: (produkt: string): string => `pr:${produkt}`,
-  inv: (produkt: string, massnahmeId: string, konto: string, richtung: string): string =>
-    `inv:${produkt}:${massnahmeId}:${konto}:${richtung}`,
-  ve: (produkt: string, massnahmeId: string, konto: string): string =>
-    `ve:${produkt}:${massnahmeId}:${konto}`,
+  // Fehlt Konto oder Maßnahme (IKVS-Layout, Hörstel), steht der Teil leer, wie in der Pipeline.
+  inv: (produkt: string, massnahmeId: string, konto: string | null, richtung: string): string =>
+    `inv:${produkt}:${massnahmeId}:${konto ?? ''}:${richtung}`,
+  ve: (produkt: string, massnahmeId: string | null, konto: string | null): string =>
+    `ve:${produkt}:${massnahmeId ?? ''}:${konto ?? ''}`,
   sd: (reihe: string): string => `sd:${reihe}`,
   sp: (teil: string, position: Teil, produktbereich: string | null): string =>
     `sp:${teil}:${String(position)}:${produktbereich ?? '-'}`,

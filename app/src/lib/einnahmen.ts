@@ -206,7 +206,16 @@ export function baueZuwendungen(jahrIndex: number): PostenZeile[] {
     .filter(istAnzeigbar)
 }
 
+/**
+ * Die Konzessionsabgaben nach Sparte aus `meta.vorbericht_werte`. Druckt der Jahrgang keine
+ * Aufteilung (Hörstel), fehlen alle Sparten und die Liste ist leer; fehlt nur ein Teil, ist das
+ * ein Datenfehler.
+ */
 function konzessionsabgabeNachSparte(): SonstigeErtragZeile[] {
+  const werte = haushalt.meta.vorbericht_werte
+  if (KONZESSIONSSPARTEN.every(([schluessel]) => werte[schluessel] === undefined)) {
+    return []
+  }
   return KONZESSIONSSPARTEN.map(([schluessel, name]) => {
     const meta = haushalt.meta.vorbericht_werte[schluessel]
     if (meta === undefined || typeof meta.wert !== 'number') {

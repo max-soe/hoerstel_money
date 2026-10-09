@@ -39149,5 +39149,7 @@
         "ist_summe": true
       }
     ]
-  }
+  },
+  "eigenkapital_stand": "jahresbeginn",
+  "finanzierungsprodukt": "160101"
 }

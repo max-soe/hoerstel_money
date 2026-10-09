@@ -335,11 +335,18 @@ def test_zeilen_namen_decken_finanzplan_ab(tmp_path: Path) -> None:
 
 
 def test_zeilen_namen_ist_letzter_schluessel_nach_eigenkapital(tmp_path: Path) -> None:
-    """Das neue Top-Level-Feld hängt hinten an: bestehende Schlüssel behalten ihre
+    """Neue Top-Level-Felder hängen hinten an: bestehende Schlüssel behalten ihre
     Reihenfolge (D-21-Vertrag)."""
     erzeuge_app_daten(STANDARD_JAHR, app_daten_wurzel=tmp_path)
     daten = json.loads((tmp_path / HAUSHALT_JSON).read_text(encoding="utf-8"))
-    assert list(daten)[-2:] == ["eigenkapital", "zeilen_namen"]
+    assert list(daten)[-4:] == [
+        "eigenkapital",
+        "zeilen_namen",
+        "eigenkapital_stand",
+        "finanzierungsprodukt",
+    ]
+    assert daten["eigenkapital_stand"] == "jahresbeginn"
+    assert daten["finanzierungsprodukt"] == "160101"
 
 
 def test_haushalt_json_meta(tmp_path: Path) -> None:
@@ -355,7 +362,7 @@ def test_haushalt_json_meta(tmp_path: Path) -> None:
 def test_haushalt_json_eigenkapital(tmp_path: Path) -> None:
     erzeuge_app_daten(STANDARD_JAHR, app_daten_wurzel=tmp_path)
     daten = json.loads((tmp_path / HAUSHALT_JSON).read_text(encoding="utf-8"))
-    assert list(daten)[-2] == "eigenkapital"
+    assert list(daten)[-4] == "eigenkapital"
     eigenkapital = daten["eigenkapital"]
     assert eigenkapital["tabelle"] == "eigenkapital"
     assert eigenkapital["quelle_einheit"] == "euro"
@@ -635,6 +642,8 @@ def test_haushalt_json_knoten_und_ergebnisplan(tmp_path: Path) -> None:
         "vorbericht",
         "eigenkapital",
         "zeilen_namen",
+        "eigenkapital_stand",
+        "finanzierungsprodukt",
     ]
     knoten_je_code = {k["code"]: k for k in daten["knoten"]}
     assert knoten_je_code["KL"]["eltern"] == "GESAMT"

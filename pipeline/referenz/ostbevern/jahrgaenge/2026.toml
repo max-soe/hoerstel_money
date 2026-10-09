@@ -230,3 +230,8 @@ sozial_erziehungsdienst_pauschal = "pauschal"
 [layout.quellenbelege]
 pruefwoerter = ["Bürgermeister", "Bürgermeisterin", "Kämmerer", "Kämmerin", "gez.", "Telefon", "E-Mail", "Ansprechpartner", "Sachbearbeit", "Verantwortlich"]
 schwaerzen_nach = []
+
+# [layout.eigenkapital] (Phase 12): Die Rücklagenzeilen der Eigenkapitalübersicht (S. 311) sind
+# Bestände zu Jahresbeginn, das Jahresergebnis gehört zum Jahr derselben Spalte.
+[layout.eigenkapital]
+stand = "jahresbeginn"

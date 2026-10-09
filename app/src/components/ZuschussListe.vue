@@ -69,10 +69,10 @@ function gruppeAnsicht(
   schluessel: string,
   titel: string,
   quellenName: string,
-  gruppe: ZuschussGruppe,
+  gruppe: ZuschussGruppe | null,
   beschriftung: string,
 ): GruppeAnsicht | null {
-  if (gruppe.posten.length === 0) {
+  if (gruppe === null || gruppe.posten.length === 0) {
     return null
   }
   const posten = absteigend(gruppe.posten)
@@ -141,7 +141,9 @@ const karten = computed<KarteAnsicht[]>(() => {
       schluessel: 'weitere',
       titel: 'Weitere Zuschüsse',
       beschreibung:
-        'Zuschüsse, die der Vorbericht einzeln nennt, außerhalb der Kindertagesstätten.',
+        kita === null
+          ? 'Zuschüsse, die der Vorbericht einzeln nennt.'
+          : 'Zuschüsse, die der Vorbericht einzeln nennt, außerhalb der Kindertagesstätten.',
       gruppen: weitereGruppen,
     })
   }
