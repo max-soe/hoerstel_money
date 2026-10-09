@@ -800,7 +800,11 @@ def _pruefe_regel4_satzung(
     planwerte_finanzplan: Planwerte,
     sollwerte: dict,
     haushaltsjahr: int,
+    ve_ohne_gesamtfinanzplan: int | None = None,
 ) -> tuple[int, list[Pruefpunkt]]:
+    """Satzung § 1-3 gegen die Gesamtpläne. Druckt der Gesamtfinanzplan keine VE-Spalte
+    (IKVS, Hörstel), ist `ve_ohne_gesamtfinanzplan` der Ist-Wert der VE (Gesamtbetrag der
+    VE-Übersicht, Euro)."""
     satzung = sollwerte["satzung"]
     pdf_seite = satzung.get("pdf_seite")
     quellen = {"ergebnisplan": planwerte_ergebnisplan, "finanzplan": planwerte_finanzplan}
@@ -815,10 +819,13 @@ def _pruefe_regel4_satzung(
             raise PruefungsFehler(f"Regel 4: keine Satzungsformel für Schlüssel {schluessel!r}")
         datei, wertart, komponenten = formel
         planwerte = quellen[datei]
-        ist = sum(
-            vorzeichen * planwerte.wert("GESAMT", "", zeile, haushaltsjahr, wertart)
-            for vorzeichen, zeile in komponenten
-        )
+        if schluessel == "verpflichtungsermaechtigungen" and ve_ohne_gesamtfinanzplan is not None:
+            ist = ve_ohne_gesamtfinanzplan
+        else:
+            ist = sum(
+                vorzeichen * planwerte.wert("GESAMT", "", zeile, haushaltsjahr, wertart)
+                for vorzeichen, zeile in komponenten
+            )
         geprueft += 1
         punkt = Pruefpunkt(
             regel=4,
@@ -1014,6 +1021,7 @@ def _pruefe_regel4(
     spalten: tuple[str, ...],
     steuerarten: pl.DataFrame,
     transferaufwendungen: pl.DataFrame,
+    ve_ohne_gesamtfinanzplan: int | None = None,
 ) -> Regelergebnis:
     haushaltsjahr = sollwerte["haushaltsjahr"]
 
@@ -1028,6 +1036,7 @@ def _pruefe_regel4(
         planwerte_finanzplan=planwerte_finanzplan,
         sollwerte=sollwerte,
         haushaltsjahr=haushaltsjahr,
+        ve_ohne_gesamtfinanzplan=ve_ohne_gesamtfinanzplan,
     )
     geprueft_b3, abweichungen_b3 = _pruefe_regel4_b3(
         planwerte=planwerte_ergebnisplan,
@@ -1863,8 +1872,11 @@ def _pruefe_regel5_ve_uebersicht(
     ve_faelligkeiten: pl.DataFrame,
     planwerte_finanzplan: Planwerte,
     haushaltsjahr: int,
+    ve_investitionsuebersichten: int | None = None,
 ) -> tuple[int, list[Pruefpunkt], list[Luecke]]:
-    """D-11: VE-Gesamtbetrag == GFP-VE Z. 30 (`zeile` `summe_gfp_ve`) und je (Produkt,
+    """D-11: VE-Gesamtbetrag == GFP-VE Z. 30 (`zeile` `summe_gfp_ve`; ohne VE-Spalte im
+    Gesamtfinanzplan, IKVS: == Σ VE der Investitionsübersichten, `zeile`
+    `summe_investitionen_ve`) und je (Produkt,
     Fälligkeitsjahr) die VE-Übersicht gegen `ve_faelligkeiten.csv` (`zeile`
     `faellig_{produkt}`); ein Paar nur in einer Quelle ist eine `Luecke` (structural,
     keine Betragsabweichung, 03-03-Mechanismus)."""
@@ -1881,14 +1893,19 @@ def _pruefe_regel5_ve_uebersicht(
     abweichungen: list[Pruefpunkt] = []
     luecken: list[Luecke] = []
 
-    soll_gfp_ve = planwerte_finanzplan.wert("GESAMT", "", "30", haushaltsjahr, "ve")
+    if ve_investitionsuebersichten is None:
+        soll_gfp_ve = planwerte_finanzplan.wert("GESAMT", "", "30", haushaltsjahr, "ve")
+        zeile_summe = "summe_gfp_ve"
+    else:
+        soll_gfp_ve = ve_investitionsuebersichten
+        zeile_summe = "summe_investitionen_ve"
     geprueft += 1
     punkt_summe = Pruefpunkt(
         regel=5,
         plan="ve_uebersicht",
         ebene="GESAMT",
         code="",
-        zeile="summe_gfp_ve",
+        zeile=zeile_summe,
         jahr=haushaltsjahr,
         wertart="ve",
         soll=soll_gfp_ve,
@@ -2010,6 +2027,7 @@ def pruefe_regel5_schulden_ruecklagen_ve(
     planwerte_finanzplan: Planwerte,
     eckwerte: Mapping[str, Mapping[str, int]],
     haushaltsjahr: int,
+    ve_investitionsuebersichten: int | None = None,
 ) -> tuple[int, list[Pruefpunkt], list[Luecke]]:
     """Orchestriert die D-11 bis D-14-Erweiterungen von Regel 5 (Schulden, Rücklagen,
     VE): Eigenkapital-Summe, Kredit-Fortschreibung, Jahresergebnis vs. GEP Z. 28,
@@ -2053,6 +2071,7 @@ def pruefe_regel5_schulden_ruecklagen_ve(
         ve_faelligkeiten=ve_faelligkeiten,
         planwerte_finanzplan=planwerte_finanzplan,
         haushaltsjahr=haushaltsjahr,
+        ve_investitionsuebersichten=ve_investitionsuebersichten,
     )
     geprueft += geprueft_ve
     abweichungen += abweichungen_ve
@@ -2853,6 +2872,17 @@ def pruefe_alles(
     eigenkapital = lies_eigenkapital_csv(daten_wurzel / EIGENKAPITAL_CSV)
     ve_uebersicht = lies_ve_uebersicht_csv(daten_wurzel / VE_UEBERSICHT_CSV)
     validiere_ve_uebersicht(ve_uebersicht)
+    # IKVS (Hörstel): der Gesamtfinanzplan druckt keine VE-Spalte; Satzung § 3 wird gegen den
+    # Gesamtbetrag der VE-Übersicht geprüft, diese gegen die Investitionsübersichten (Phase 11).
+    ikvs = jahrgang.software == "ikvs"
+    ve_gesamt_uebersicht = (
+        int(
+            ve_uebersicht.filter(pl.col("ist_gesamt") & pl.col("faellig_jahr").is_null())[
+                "betrag_teur"
+            ].sum()
+        )
+        * 1000
+    )
     stellenplan = lies_stellenplan_csv(daten_wurzel / STELLENPLAN_CSV)
     vorbericht = {
         **lies_vorberichtstabellen(daten_wurzel, jahrgang),
@@ -2890,6 +2920,7 @@ def pruefe_alles(
         spalten=jahrgang.spalten["ergebnisplan"],
         steuerarten=vorbericht["steuerarten"],
         transferaufwendungen=vorbericht["transferaufwendungen"],
+        ve_ohne_gesamtfinanzplan=ve_gesamt_uebersicht if ikvs else None,
     )
     regel5 = _pruefe_regel5(
         vorbericht=vorbericht,
@@ -2909,6 +2940,9 @@ def pruefe_alles(
         planwerte_finanzplan=Planwerte(finanzplan, datei="finanzplan"),
         eckwerte=eckwerte,
         haushaltsjahr=jahrgang.haushaltsjahr,
+        ve_investitionsuebersichten=(
+            int(investitionen.filter(pl.col("wertart") == "ve")["betrag"].sum()) if ikvs else None
+        ),
     )
     if (daten_wurzel / FRAKTIONSZUWENDUNGEN_CSV).is_file():
         geprueft_fraktion, abweichungen_fraktion = _pruefe_regel5_fraktionszuwendungen(

@@ -203,3 +203,12 @@ posten = ["kredite_investitionen"]
 [layout.vorbericht]
 einzeltabellen = ["steuerarten", "zuwendungen", "transferaufwendungen", "investitionszuwendungen"]
 weitere_tabellen = ["leistungsentgelte", "privatrechtliche_leistungsentgelte", "personal", "sachaufwand", "sonstige_aufwendungen", "sonstige_ertraege"]
+
+# [layout.quellenbelege] (Phase 11, Datenschutz der Belegseiten): `pruefwoerter` markieren
+# Belegseiten, die Namen oder Kontaktdaten enthalten könnten (Bericht
+# daten/pruefberichte/quellenbelege.md, nur Seite/Stichwort/Zeilenindex). Den Personennamen
+# unter „Produktverantwortlicher“ (auf allen 69 Produktinformationsseiten genau eine Zeile)
+# schwärzt produkte.personenfeld_rechtecke; `schwaerzen_nach` bleibt deshalb leer (D-09).
+[layout.quellenbelege]
+pruefwoerter = ["Bürgermeister", "Bürgermeisterin", "Kämmerer", "Kämmerin", "gez.", "Telefon", "E-Mail", "Ansprechpartner", "Sachbearbeit", "Verantwortlich", "Produktverantwortlicher", "Geschäftsführ"]
+schwaerzen_nach = []

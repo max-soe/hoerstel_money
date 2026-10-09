@@ -45,27 +45,36 @@ jobs:
         run: uv run pytest
       - name: Pipeline reproduzierbar (D-24)
         working-directory: ${{ github.workspace }}
-        # Bis die Pipeline den Hörsteler Haushalt (IKVS-Layout) vollständig liest, prüft dieser
-        # Schritt den Ostbevern-Referenzstand (ProFIS+), aus dem daten/ und app/src/data noch
-        # stammen. PIPELINE_REFERENZ lenkt Jahrgang, daten/ und App-Ausgaben nach
-        # pipeline/referenz/ostbevern/ um; die Tests setzen dieselbe Umlenkung in
-        # tests/conftest.py.
-        env:
-          PIPELINE_REFERENZ: referenz/ostbevern
+        # Der aktive Jahrgang ist Hörstel (IKVS): alle.py muss daten/ und app/src/data exakt
+        # reproduzieren und darf unter app/public/quellen keine Belegseite neu anlegen.
         run: |
           uv run --directory pipeline python alle.py
-          REF=pipeline/referenz/ostbevern
-          git diff --stat --exit-code -- "$REF/daten" "$REF/app/src/data"
-          if [ -n "$(git status --porcelain --untracked-files=all -- "$REF/daten" "$REF/app/src/data")" ]; then
-            git status --porcelain --untracked-files=all -- "$REF/daten" "$REF/app/src/data"
+          git diff --stat --exit-code -- daten app/src/data
+          if [ -n "$(git status --porcelain --untracked-files=all -- daten app/src/data)" ]; then
+            git status --porcelain --untracked-files=all -- daten app/src/data
             exit 1
           fi
           # Schritt 08 rendert nur fehlende Belegseiten (RESEARCH Pitfall 2): Alle Bilder
           # müssen eingecheckt sein. Die WebP-Bytes werden bewusst nicht verglichen, weil
           # PDFium und libwebp je Plattform andere Bytes liefern können; geprüft wird nur, dass
           # alle.py unter app/public/quellen keine Datei neu anlegt oder ändert.
-          if [ -n "$(git status --porcelain --untracked-files=all -- "$REF/app/public/quellen")" ]; then
-            git status --porcelain --untracked-files=all -- "$REF/app/public/quellen"
+          if [ -n "$(git status --porcelain --untracked-files=all -- app/public/quellen)" ]; then
+            git status --porcelain --untracked-files=all -- app/public/quellen
+            exit 1
+          fi
+      - name: Ostbevern-Referenz reproduzierbar
+        working-directory: ${{ github.workspace }}
+        # Ostbevern bleibt Regressionsreferenz für das ProFIS+-Layout. PIPELINE_REFERENZ lenkt
+        # Jahrgang, daten/ und App-Ausgaben nach pipeline/referenz/ostbevern/ um; die Tests
+        # setzen dieselbe Umlenkung in tests/conftest.py.
+        env:
+          PIPELINE_REFERENZ: referenz/ostbevern
+        run: |
+          uv run --directory pipeline python alle.py
+          REF=pipeline/referenz/ostbevern
+          git diff --stat --exit-code -- "$REF/daten" "$REF/app/src/data"
+          if [ -n "$(git status --porcelain --untracked-files=all -- "$REF/daten" "$REF/app/src/data" "$REF/app/public/quellen")" ]; then
+            git status --porcelain --untracked-files=all -- "$REF/daten" "$REF/app/src/data" "$REF/app/public/quellen"
             exit 1
           fi
 

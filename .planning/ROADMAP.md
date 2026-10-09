@@ -29,7 +29,7 @@ Die Phasen werden ohne GSD-Befehle bearbeitet und hier von Hand nachgeführt.
 - [x] **Phase 8: Hörstel-Grundlage** — Jahrgang Hörstel, IKVS-Leser für die Gesamtpläne, Ostbevern als Testreferenz (HOE-01, HOE-02, HOE-03) (completed 2026-10-08)
 - [x] **Phase 9: IKVS-Seiten und Teilpläne** — Seitenklassifikation ohne Kopfzeile, Hierarchie 2/5/7-stellig, Teilergebnis- und Teilfinanzpläne, Regeln 1–3, Sollwerte je PB (HOE-04, HOE-05, HOE-14) (completed 2026-10-08)
 - [x] **Phase 10: IKVS-Details** — Produktinformationen ohne Personennamen, Erläuterungen, Investitionsübersichten mit VE, Haushaltsquerschnitte (HOE-06 bis HOE-09) (completed 2026-10-08)
-- [ ] **Phase 11: Manuelle Daten und App-Daten Hörstel** — Bildseiten (Stellenplan, Fraktionen, Eigenkapital) manuell, Vorberichtsdaten, `meta.json`, Texte; `alle.py` und CI auf Hörstel (HOE-10 bis HOE-12)
+- [x] **Phase 11: Manuelle Daten und App-Daten Hörstel** — Bildseiten (Stellenplan, Fraktionen, Eigenkapital) manuell, Vorberichtsdaten, `meta.json`, Texte; `alle.py` und CI auf Hörstel (HOE-10 bis HOE-12) (completed 2026-10-09)
 - [ ] **Phase 12: App auf Hörstel umstellen** — Texte, Namen, Links, Deployment (HOE-13)
 
 ## Phase Details
@@ -65,7 +65,7 @@ Die Phasen werden ohne GSD-Befehle bearbeitet und hier von Hand nachgeführt.
 - [x] 11-02: Stellenplan (Bildseiten S. 568–574) abschreiben, Schritt 05 und Regel 10 im IKVS-Layout
 - [x] 11-03: Vorberichtstabellen, Fraktionszuwendungen, Eigenkapital (Bild S. 588), Verbindlichkeiten, VE-Übersicht, `meta.json`, Eckwerte; Regel 5/9
 - [x] 11-04: Erklärtexte und Glossar für Hörstel
-- [ ] 11-05: `befunde.md`, Prüfbericht, App-Daten, Quellenbelege mit Schwärzliste, `alle.py` durchgehend, CI-Reproduzierbarkeit auf Hörstel
+- [x] 11-05: `befunde.md`, Prüfbericht, App-Daten, Quellenbelege mit Schwärzliste, `alle.py` durchgehend, CI-Reproduzierbarkeit auf Hörstel
 
 ### Phase 12: App auf Hörstel umstellen
 **Goal**: Die öffentliche App erklärt den Hörsteler Haushalt.

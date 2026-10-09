@@ -857,6 +857,8 @@ def personenfeld_rechtecke(
     pi_seiten = seiten.filter(
         pl.col("produkt").is_not_null() & (pl.col("typ") == "produktinformationen")
     ).sort(["produkt", "pdf_seite"])
+    if jahrgang.software == "ikvs":
+        return _ikvs_personenfeld_rechtecke(dokument, jahrgang, pi_seiten)
 
     rechtecke: dict[int, list[tuple[float, float, float, float]]] = {}
     kaesten_je_seite: dict[int, dict[tuple[float, float, str], WortRahmen]] = {}
@@ -907,6 +909,36 @@ def personenfeld_rechtecke(
                     "(nichts zu schwärzen)"
                 )
     return {seite: tuple(sorted(set(liste))) for seite, liste in sorted(rechtecke.items())}
+
+
+def _ikvs_personenfeld_rechtecke(
+    dokument: PdfDokument, jahrgang: Jahrgang, pi_seiten: pl.DataFrame
+) -> dict[int, tuple[tuple[float, float, float, float], ...]]:
+    """IKVS-Layout (Hörstel, Phase 11): Das Label „Produktverantwortlicher“ steht allein auf
+    einer Zeile, der Personenname auf der nächsten Zeile der ersten Produktinformationen-Seite.
+    Je Produkt ein Rechteck um alle Wörter dieser Zeile (mit `_SCHWAERZUNG_RAND`). Bricht ab,
+    wenn das Label fehlt oder keine Folgezeile hat."""
+    label = layout_text(jahrgang, "ikvs_produktinformationen", "verantwortlich")
+    rechtecke: dict[int, tuple[tuple[float, float, float, float], ...]] = {}
+    for produkt in sorted(pi_seiten["produkt"].unique().to_list()):
+        seite = pi_seiten.filter(pl.col("produkt") == produkt)["pdf_seite"].min()
+        zeilen = dokument.zeilen_mit_rahmen(seite)
+        indizes = [i for i, zeile in enumerate(zeilen) if zeile.text == label]
+        if len(indizes) != 1 or indizes[0] + 1 >= len(zeilen):
+            raise ProdukteFehler(
+                f"Produkt {produkt}: Personenfeld {label!r} auf S. {seite} nicht eindeutig "
+                "gefunden; Schwärzung würde nichts decken"
+            )
+        woerter = zeilen[indizes[0] + 1].woerter
+        rechtecke[seite] = (
+            (
+                max(0.0, min(w.x0 for w in woerter) - _SCHWAERZUNG_RAND),
+                max(0.0, min(w.top for w in woerter) - _SCHWAERZUNG_RAND),
+                max(w.x1 for w in woerter) + _SCHWAERZUNG_RAND,
+                max(w.bottom for w in woerter) + _SCHWAERZUNG_RAND,
+            ),
+        )
+    return rechtecke
 
 
 def _baue_produktinfo(

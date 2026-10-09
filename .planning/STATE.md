@@ -3,24 +3,24 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: Hörstel
 status: In progress
-stopped_at: Phase 11 Plan 04 complete (von Hand gepflegt, ohne GSD-Befehle)
-last_updated: "2026-10-08T00:00:00.000Z"
-last_activity: 2026-10-08
-last_activity_desc: Phase 11, Pläne 01-04 (Ostbevern-Referenz, Stellenplan, Vorberichtsdaten, Texte Hörstel)
+stopped_at: Phase 11 complete (von Hand gepflegt, ohne GSD-Befehle)
+last_updated: "2026-10-09T00:00:00.000Z"
+last_activity: 2026-10-09
+last_activity_desc: Phase 11 abgeschlossen (manuelle Daten, Texte, befunde.md, alle.py und CI auf Hörstel)
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
-  percent: 60
-current_phase: 10
+  completed_phases: 4
+  total_plans: 9
+  completed_plans: 9
+  percent: 80
+current_phase: 11
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-08)
+See: .planning/PROJECT.md (updated 2026-10-09)
 
 **Core value:** Jede Zahl in der App ist korrekt aus dem Haushalts-PDF abgeleitet und durch automatische Prüfungen belegt. Die Leitfragen „Woher?“ und „Wofür?“ sind für Laien verständlich beantwortet.
 **Current focus:** Meilenstein v2.0 Hörstel: den Haushalt 2026 der Stadt Hörstel (IKVS-Layout) lesen und die App darauf umstellen.
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-08)
 ## Current Position
 
 Milestone: v2.0 Hörstel (Phases 8-12)
-Phase: 11 of 8-12 (Manuelle Daten und App-Daten Hörstel) — 4 of 5 plans
-Plan: 10-01 complete
-Status: In progress (Plan 11-05: befunde.md, Prüfbericht, App-Daten, Quellen, alle.py, CI)
-Last activity: 2026-10-09 — Plan 11-04 abgeschlossen
+Phase: 11 of 8-12 (Manuelle Daten und App-Daten Hörstel) — complete
+Plan: 11-05 complete
+Status: Ready for Phase 12 (App auf Hörstel umstellen)
+Last activity: 2026-10-09 — Phase 11 abgeschlossen
 
 Hinweis: Dieser Meilenstein wird in einer Cloud-Session ohne GSD-Befehle bearbeitet. ROADMAP, REQUIREMENTS, STATE und die Phasen-Summaries unter `.planning/phases/` werden von Hand nachgeführt; PLAN-, VERIFICATION- und UAT-Dateien gibt es für diese Phasen nicht.
 
@@ -78,15 +78,12 @@ None.
 
 ### Blockers/Concerns
 
-Aus v2.0 (Phase 8):
-- `alle.py` läuft für Hörstel bis einschließlich Querschnitte (Schritte 01–04); Schritt 05 liest seit 11-02 die geprüfte Stellenplan-Abschrift aus `daten/manuell/`; danach fehlen manuelle Daten, `befunde.md` und die Hörsteler `pruefe_alles`-Anpassungen (Phase 11). Der Ostbevern-Stand liegt seit 11-01 unter `pipeline/referenz/ostbevern/` (`PIPELINE_REFERENZ`); die Ostbevern-Dateien im Projekt-`daten/` und `app/src/data/` werden bis 11-05 durch Hörstel ersetzt, die CI-Reproduzierbarkeit prüft bis dahin den Referenzstand.
-- Alle Bildseiten (Stellenplan, Fraktionszuwendungen, Eigenkapital) sind abgeschrieben (11-02, 11-03). Die App erwartet noch Ostbevern-Tabellen (Kita, Einzelzuschüsse, HSK-Schwellen, Bilanzierungshilfe, Konzessions-Sparten) → Phase 12.
-- Hörstel druckt Ist-Ergebnisse 2024 in den Gesamtplänen mit Cent; gerundet wird kaufmännisch auf Euro (bisher ohne Formelabweichung).
-- Gedruckte Abweichungen sind bisher nur in den Tests (`tests/test_ikvs_teilplaene.py`, `tests/test_ikvs_details.py`) und in den Summaries 09-01/10-01 belegt; sie müssen in Phase 11 in die Hörsteler `befunde.md`: 11 aus Regeln 1–3 (u. a. 5.800 €/4.400 € Transferaufwendungen), 11 aus Regel 6 (Produkte 0212201, 1557302), 7 Erläuterungsansätze, 11 Rundungsdifferenzen der Stellenübersicht (Regel 10, Summary 11-02), 4 Befunde der Vorberichtsdaten (Summary 11-03) und die VE von 5.100 T€, die nur in der VE-Übersicht S. 586 steht (Satzung § 3).
-- Regel 4 (Satzung § 3 VE) prüft im ProFIS+-Layout Gesamtfinanzplan-VE; für Hörstel muss sie in Phase 11 auf die Investitionsübersichten plus VE-Übersicht umgestellt werden.
+Aus v2.0:
+- Die App ist noch auf Ostbevern zugeschnitten und schlägt mit den Hörsteler Daten fehl (Typprüfung, 242 von 1.640 vitest-Tests, Stand 11-05): fehlender `meta.kreisumlage`-Block, Produkte ohne Fachbereich/Bindungsgrad, Maßnahmen ohne Sachkonto (`konto: null`, Belegschlüssel mit leerem Konto), keine Kita-/Einzelzuschuss-Tabellen, keine HSK-Schwellen, keine Bilanzierungshilfe, keine Konzessions-Sparten, Reihe `nrw_bank` = 0, Grundzahlen-Zeitreihen (Produkt 160101) und Stellen-Gruppennamen. Die CI läuft nur für `main` und Pull Requests; der App-Job wird erst mit Phase 12 wieder grün → Phase 12 (HOE-13).
+- Quellenbelege Hörstel: 899 von 2.768 Belegen ohne Markierung (597 davon berechnete Produktgruppen-Zeilen, 171 Stellenplan auf Bildseiten, Rest Vorberichtsgrafiken und umbrochene Tabellenzeilen); die App zeigt dann die Seite ohne Markierung.
+- Hörstel druckt Ist-Ergebnisse 2024 mit Cent; gerundet wird kaufmännisch auf Euro (Rundungsbefunde in `befunde.md`).
 
 Aus v1.0 übernommen (offen):
-- `app/node_modules` im gemounteten Repo enthält macOS-Binaries; im Linux-Sandbox App-Checks in einer Scratch-Kopie ausführen.
 - Code-Review-Restbefunde: 02-REVIEW.md (3 Warnungen), 04-REVIEW-DISPOSITION.md (WR-01…WR-05, IN-02), alle ohne Auswirkung auf die Daten.
 - `/gsd-secure-phase 04` steht aus.
 - Kein Milestone-Audit für v1.0; Phasen-Verifikationen „stale“ (vom Nutzer akzeptiert).
@@ -107,9 +104,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-10-08
-Stopped at: Phase 11 Plan 04 complete
-Resume file: .planning/phases/11-manuelle-daten-und-app-daten-hoerstel/11-04-SUMMARY.md
+Stopped at: Phase 11 complete
+Resume file: .planning/phases/11-manuelle-daten-und-app-daten-hoerstel/11-05-SUMMARY.md
 
 ## Operator Next Steps
 
-- Plan 11-05 (befunde.md, pruefe_alles, App-Daten, Quellenbelege mit Schwärzliste, alle.py, CI auf Hörstel); Planliste in ROADMAP.md
+- Phase 12 (App auf Hörstel umstellen, HOE-13): App-Typen und -Tests an die Hörsteler Daten anpassen, Texte, Namen, Links, Deployment

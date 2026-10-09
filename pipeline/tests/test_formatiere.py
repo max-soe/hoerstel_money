@@ -20,7 +20,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 import pytest
 
-from ostbevern.konfiguration import PROJEKT_WURZEL
+from ostbevern.konfiguration import APP_WURZEL, PROJEKT_WURZEL
 from ostbevern.schema import DATEN_WURZEL, ERKLAERUNGEN_MD
 from ostbevern.texte import (
     FORMATKUERZEL,
@@ -30,7 +30,9 @@ from ostbevern.texte import (
     textwerte,
 )
 
-APP_DATEN_WURZEL = PROJEKT_WURZEL / "app" / "src" / "data"
+# App-Daten des Referenzstands (conftest.py: PIPELINE_REFERENZ, Ostbevern); das Projekt-app/
+# enthält seit Phase 11 Hörstel.
+APP_DATEN_WURZEL = APP_WURZEL / "src" / "data"
 
 _NBSP = "\u00a0"
 

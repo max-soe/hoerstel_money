@@ -1,202 +1,89 @@
-# Befunde – bekannte Abweichungen im Haushalt
+# Befunde – bekannte Abweichungen im Haushalt der Stadt Hörstel
 
-Diese Datei dokumentiert bekannte Abweichungen zwischen den aus dem Haushalts-PDF
-extrahierten Planwerten und den von `pipeline/ostbevern/pruefung.py` berechneten Prüfsummen.
-Abweichungen über 1 € gelten als Fehler (Spez. 5.5), außer sie sind hier mit Begründung und
-PDF-Seite dokumentiert.
+Diese Datei dokumentiert bekannte Abweichungen zwischen den aus `raw_data/haushalt-2026.pdf`
+(Stadt Hörstel, Axians IKVS) extrahierten bzw. abgeschriebenen Werten und den Prüfsummen von
+`pipeline/ostbevern/pruefung.py`. Abweichungen über 1 € gelten als Fehler (Spez. 5.5), außer
+sie sind hier mit Begründung und PDF-Seite dokumentiert. Einträge sind nur für Abweichungen
+erlaubt, die so im PDF gedruckt sind, niemals zum Verdecken von Extraktions- oder
+Abschreibfehlern. Ein Befund, der nicht mehr auftritt, gilt selbst als Fehler. Die Ostbevern-
+Befunde stehen unter `pipeline/referenz/ostbevern/daten/pruefberichte/befunde.md`, dort sind
+auch alle Regeln und Spalten ausführlich beschrieben.
 
-Regel 7 (Haushaltsquerschnitte, S. 291-300, PRUEF-07): `abweichung = ist − soll`, wobei `soll`
-der im Querschnitt gedruckte Wert ist und `ist` der über `Planwerte` aus den eigenen
-PG-/PB-Teilplänen hergeleitete Wert (REGEL7_KENNZAHLEN-Formelkette); `zeile` trägt den
-Kennzahl-Schlüssel (z. B. `ordentliche_ertraege`), `plan` ist `querschnitt_ergebnisplan` oder
-`querschnitt_finanzplan`, `pdf_seite` ist die Querschnitt-Seite (291-300).
+Kurz zu den Spalten: `abweichung = ist − soll`; `soll` ist der gedruckte Wert (Summenzeile,
+Elternknoten, Gesamtplan, Satzung, Teil A/B), `ist` der aus den Bestandteilen hergeleitete Wert.
+Ein Befund deckt eine Abweichung nur ab, wenn Regel, Plan, Ebene, Code, Zeile, Jahr und Wertart
+übereinstimmen und die Abweichung höchstens um die Toleranz der Regel (Regel 9 und 10: 0, sonst
+1 €) von der dokumentierten abweicht.
 
-Regel 6 (Investitionsmaßnahmen → Teil-/Gesamtfinanzplan, PRUEF-06): `abweichung = ist − soll`;
-bei `plan` `investitionen_produkt`/`investitionen_gesamt` ist `soll` die Teilfinanzplan- bzw.
-Gesamtfinanzplan-Zeile 23 (Einzahlungen, `zeile` "23") oder 30 (Auszahlungen, `zeile` "30") und
-`ist` die Summe der Maßnahmen in `investitionen.csv` dieser Richtung; bei `plan`
-`ve_faelligkeiten` ist `soll` die VE einer Kontozeile und `ist` die Summe ihrer Fälligkeiten in
-`ve_faelligkeiten.csv`, `zeile` = `Maßnahme/Konto`. Regel 6 (`plan` `investitionen_pb_liste`):
-Summe der Produktseiten (`ist`) minus Summe der PB-Investitionsliste (`soll`) je Maßnahme/Konto
-(`zeile` = `Maßnahme/Konto`). Lücken (Maßnahme nur in einer Quelle) sind keine Abweichungen und
-können hier nicht dokumentiert werden (D-06, 03-03).
+Besonderheiten des IKVS-Layouts, die hier zu Befunden führen:
 
-Regel 8 (Vollständigkeit der Produkte, PRUEF-08, Spez. 5.5) hat keine Abweichungen (keinen
-Soll/Ist-Betragsvergleich), sondern meldet jeden Verstoß (fehlendes/unbekanntes Produkt, falsche
-Gesamtanzahl, leeres Pflichtfeld, unbekannter Bindungsgrad, fehlende Teilergebnis-/
-Teilfinanzplan-Zeile) als Lücke. Eine Lücke ist, wie bei Regel 6, nie über diese Datei
-abdeckbar — ein fehlendes Produkt oder eine leere Produktbeschreibung ist kein Rundungsfehler.
+- **Cent-Rundung:** Die Ist-Ergebnisse 2024 sind in den Plänen mit Cent gedruckt und werden je
+  Wert kaufmännisch auf Euro gerundet; Summen gerundeter Werte weichen um wenige Euro ab
+  (Regeln 1–3, 6).
+- **Transferaufwendungen 2026/2027:** Die Teilpläne enthalten 5.800 € (2026) bzw. 4.400 € (2027)
+  weniger Transferaufwendungen als der Gesamtergebnisplan (Regel 3).
+- **Investitionen:** zwei Produkte, deren Investitionsübersicht nicht dem Teilfinanzplan
+  entspricht (Regel 6), und eine VE über 5.100 T€, die nur in der VE-Übersicht und der Satzung
+  steht (Regel 5, VE-Übersicht).
+- **Vorbericht und Anlagen:** zwei Rundungsdifferenzen von 1 T€, eine falsch gedruckte Summe der
+  Verbindlichkeiten und eine Kreditfortschreibung, die nicht aufgeht (Regel 5).
+- **Stellenübersicht:** auf Hundertstel gerundete Zellen gegen exakte Spaltensummen (Regel 10).
 
-Regel 5 (manuelle Vorberichtstabellen → Planzeilen, PRUEF-05, D-07) prüft vier Tabellen unter
-`daten/manuell/` sowie die sechs weiteren Vorberichtstabellen in
-`daten/manuell/weitere_vorberichtstabellen.csv` (Leistungsentgelte, Kostenerstattungen,
-Personal, Sachaufwand, Sonstige Aufwendungen, D-08, und seit Phase 5 Sonstige ordentliche
-Erträge, Tabelle 2.1.7, gegen Zeile 07, D-04) zweistufig: Stufe (a) `zeile`
-`summe_posten` vergleicht die Summe der Posten
-mit der mit abgeschriebenen, gedruckten Gesamtzeile derselben Tabelle und desselben Jahres
-(beide in T€, × 1000 in Euro umgerechnet; jede Differenz ab 1 T€ = 1.000 € überschreitet die
-strenge TOLERANZ_EURO = 1 € und wird dokumentationspflichtig). Stufe (b) `zeile` `gep_NN`
-vergleicht die gedruckte Gesamtzeile × 1000 mit der zugeordneten Zeile NN des
-Gesamtergebnisplans (`plan` `vorbericht_{tabelle}`), Toleranz ±1.000 €. Für `kita_zuschuesse`
-prüft `zeile` `transfer_kita` zusätzlich die Kita-Gesamtzeile gegen den Transferaufwendungen-
-Posten „Zuschüsse an Kindertageseinr.“ desselben Jahres (strenge TOLERANZ_EURO = 1 €, D-07).
-Für `investitionszuwendungen` (Vorbericht S. 52, Phase 5 D-03) läuft Stufe (b) mit `zeile`
-`gfp_18` gegen die Zeile 18 „Zuwendungen für Investitionsmaßnahmen“ des Gesamtfinanzplans
-statt gegen den Gesamtergebnisplan (gleiche Toleranz ±1.000 €). Die Aufteilung der
-Konzessionsabgaben auf Strom, Gas und Wasser (`meta.json`, S. 33; `plan`
-`vorbericht_konzessionsabgaben`, `zeile` `summe_strom_gas_wasser`) vergleicht deren Summe exakt
-mit dem Posten `konzessionsabgaben` der Tabelle 2.1.7 im Haushaltsjahr (`soll` Posten × 1000,
-`ist` Summe der drei Werte). Beide Prüfungen sind auf den eingecheckten Daten ohne Abweichung.
-Die Weitergabe an Kreis und Land (D-01, `plan` `weitergabe_kreis_land`, `ebene` `P`, `code` der
-Produktcode aus `[layout.weitergabe_kreis_land]`, `zeile` `tp_15`) vergleicht die Summe der drei
-Transferaufwendungen-Posten Kreisumlage, Gewerbesteuerumlage und Krankenhausinvestitionsumlage
-(× 1000) mit Zeile 15 des Teilergebnisplans dieses Produkts, Toleranz ±3.000 € (drei Posten ×
-±1.000 €). Die D-10-Unterprüfungen (`plan` `meta_kreisumlage`, `ebene` `GESAMT`) prüfen die
-Kreisumlage aus `meta.json`: `zeile` `brutto_formel` (`soll` netto + Rückstellungsauflösung,
-`ist` brutto, exakt), `zeile` `netto_transfer` (`soll` Transferaufwendungen-Posten Kreisumlage
-des Haushaltsjahrs × 1000, `ist` meta netto, exakt) und `zeile` `brutto_fussnote` (`soll`
-Eckwert `kreisumlage_umlage_fussnote`, Anhang B.6, `ist` brutto, Toleranz ±50.000 €, da der
-Fußnotentext „rd. 11,5 Mio. €“ selbst gerundet ist). In allen Fällen gilt
-`abweichung = ist − soll`, mit `ist` dem aus den Vorbericht-Posten hergeleiteten Wert und
-`soll` dem jeweils gedruckten oder im Gesamtergebnisplan ausgewiesenen Referenzwert.
+## Hinweise ohne Prüfregel
 
-Regel 9 (Eckwerte, Anhang B.6, D-10/D-14) vergleicht jeden `[eckwerte.*]`-Sollwert exakt (0 €
-bzw. 0 Einheiten Toleranz, `pruefung.TOLERANZ_JE_REGEL`) gegen den aus `meta.json` oder
-`zuwendungen.csv` hergeleiteten Ist-Wert; `plan` ist `anhang_b6`, `ebene` `GESAMT`, `zeile` der
-Eckwert-Name (z. B. `hebesatz_kreisumlage_promille`, `pro_kopf_verschuldung_vorjahr`), `jahr`
-das Haushaltsjahr, `wertart` `ansatz`. Die Einheit eines Eckwerts (Prozent, Promille, T€,
-Personen, Euro) ist dieselbe wie im Sollwert selbst — Regel 9 rechnet nichts um. Ein
-`[eckwerte.*]`-Schlüssel, den weder Regel 5 noch Regel 9 konsumiert, bricht `pruefe_alles` mit
-`PruefungsFehler` ab (kein Sollwert bleibt unbewacht). Der Eckwert `stellen_beamte`
-(`soll` = Sollwert × 100, da `ist` in Hundertsteln geführt wird, D-20, Plan 04-03) vergleicht
-Anhang B.6 „Beamte 2026 = 8“ gegen Σ Teil A (Beamte, S. 284) Stellen des Haushaltsjahrs ohne
-Produktbereich aus `stellenplan.csv`.
+Die Erläuterungen zu den Teilergebnisplänen nennen je Überschrift einen Ansatz 2026. Er wird
+nicht geprüft (Erläuterungen sind Text), weicht aber in sieben Fällen vom Teilergebnisplan ab;
+die App zeigt die Erläuterungen wie gedruckt:
 
-Regel 10 (Stellenplan: Stellenübersicht → Teil A/B, D-20, Plan 04-03) prüft je (`teil`, `zeile`
-= Gruppe, z. B. `A 14`, `9c`, `S 12`) exakt (0 Hundertstel Toleranz): `soll` ist der Teil-A/B-
-Stellenwert des Haushaltsjahrs ohne Produktbereich (0, wenn die Gruppe dort nicht vorkommt),
-`ist` ist die Summe aller Stellenübersicht-Zeilen derselben Gruppe über alle Produktbereiche
-(0, wenn die Gruppe in keiner Stellenübersicht vorkommt). `plan` ist `stellenuebersicht_{teil}`
-(`teil` = `beamte`, `tarif` oder `sozial_erziehungsdienst`), `ebene` `GESAMT`, `jahr` das
-Haushaltsjahr, `wertart` `ansatz`, `pdf_seite` die Seite der Stellenübersicht (S. 287-289), bei
-einer Gruppe ohne Stellenübersicht-Zeile die Teil-A/B-Seite. Eine gedruckte VZÄ-
-Rundungsdifferenz zwischen beiden Tabellen wäre hier mit Seitenbeleg zu dokumentieren; auf den
-eingecheckten Daten tritt keine auf.
-
-Die D-11-Erweiterungen (Schulden, Rücklagen, VE, Task 04-02/3) prüfen `verbindlichkeiten.csv`,
-`eigenkapital.csv` und `ve_uebersicht.csv` quer gegen Extrahiertes: `plan` `vorbericht_eigenkapital`
-`zeile` `summe_posten` ist dieselbe Stufe-(a)-Prüfung wie bei den Vorberichtstabellen, aber
-bereits in int-Euro (kein ×1000, D-12). `plan` `verbindlichkeiten` `zeile`
-`kredite_fortschreibung` vergleicht die gedruckte Investitionskredit-Zeile Ende Haushaltsjahr
-gegen `manuell.investitionskredite_ende(Ende Vorjahr, GFP Z. 33, GFP Z. 35)`, Toleranz ±1.000 €.
-`plan` `eigenkapital` `zeile` `jahresergebnis_gep_28` vergleicht das gedruckte Jahresergebnis
-(S. 311) je Jahr gegen Zeile 28 des Gesamtergebnisplans. `plan` `satzung_paragraf4` prüft
-Research Pitfall 4 (nicht der rohe Jahresdelta!): `zeile` `ausgleichsruecklage` vergleicht
-Ausgleichsrücklage Stand Haushaltsjahr − Stand Folgejahr gegen den Eckwert
-`verringerung_ausgleichsruecklage`, `zeile` `summe_verringerung` vergleicht die Summe beider
-Satzungs-§-4-Eckwerte gegen −GEP Z. 28 des Haushaltsjahrs. `plan` `ve_uebersicht` `zeile`
-`summe_gfp_ve` vergleicht den VE-Gesamtbetrag (S. 309) gegen die GFP-Zeile 30 (Wertart `ve`);
-`zeile` `faellig_{produkt}` vergleicht je (Produkt, Fälligkeitsjahr) die VE-Übersicht gegen
-`ve_faelligkeiten.csv` — ein Paar, das nur in einer der beiden Quellen vorkommt, ist eine
-Lücke (strukturell, nicht über diese Datei abdeckbar, wie bei Regel 6).
-
-Ein Befund deckt eine Abweichung nur ab, wenn Regel, Plan, Ebene, Code, Zeile, Jahr und
-Wertart übereinstimmen **und** die tatsächliche Abweichung um höchstens `toleranz_fuer(regel)`
-von der hier dokumentierten abweicht (D-05, Phase 4). Für Regel 9 (Eckwerte, Anhang B.6) und
-Regel 10 (Stellenplan: Stellenübersicht → Teil A/B) ist diese Toleranz exakt 0 (€ bzw.
-Hundertstel), für jede andere Regel bleibt es bei 1 € (`pruefung.TOLERANZ_JE_REGEL`).
-`abweichung = ist − soll`, je nach Regel in `pruefung.py` berechnet (Regel 1: Formelkette minus
-gedruckte Summe; Regel 2: Summe der Kinder minus gedruckter Elternwert, je Ebene PG→P bzw.
-PB→PG; Regel 3: Summe der 15 PB minus gedrucktem Gesamtergebnisplan; Regel 4: Pipeline-Wert
-minus Sollwert aus Anhang B bzw. Satzung; Regel 9: Sollwert aus Anhang B.6 minus Ist-Wert aus
-`meta.json`/`zuwendungen.csv`/`stellenplan.csv`; Regel 10: Teil-A/B-Stellenwert minus Σ
-Stellenübersicht derselben Gruppe).
-
-Ein Befund, der nicht mehr auftritt, gilt selbst als Fehler (D-04) — diese Datei darf keine
-Fehler still verdecken. Einträge sind nur für Abweichungen erlaubt, die so im PDF gedruckt
-sind (z. B. dokumentierte Rundungsdifferenzen), niemals zum Verdecken von Extraktions- oder
-Parsing-Fehlern.
+| Produkt | Zeile | Ansatz Erläuterung (€) | Teilergebnisplan (€) | Seite |
+|---|---|---|---|---|
+| 0111107 | 06 | 26.660 | 26.600 | 151 |
+| 0111110 | 02 | 69.630 | 106.130 | 172 |
+| 0111112 | 16 | 16.000 | 36.000 | 182 |
+| 0842403 | 27 | 189.000 | 189.500 | 379 |
+| 1254501 | 04 | 48.826 | 46.826 | 476 |
+| 1254701 | 05 | 1.000 | 0 | 486 |
+| 1557101 | 15 | 145.500 | 151.300 | 531 |
 
 ## Schlüsseltabelle
 
 | regel | plan | ebene | code | zeile | jahr | wertart | abweichung | pdf_seite | begruendung |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | teilergebnisplan | PB | 08 | 17 | 2024 | ergebnis | 2 | 203 | Teilergebnisplan PB 08 (Sportförderung), Spalte Ergebnis 2024: Summe der gedruckten Zeilen 11, 13-16 (12 nicht gedruckt, D-11) ergibt 186.501 C, gedruckt ist 186.499 C. Wortweise gegen das PDF verifiziert (Zeile 17 "186.499" exakt so gedruckt); kein Extraktionsfehler, sondern eine Rundungsdifferenz von 2 C im PDF selbst. |
-| 1 | teilergebnisplan | PG | 0801 | 17 | 2024 | ergebnis | 2 | 206 | Dieselbe Rundungsdifferenz wie PB 08 Z. 17 2024 (siehe oben): PB 08 hat nur die synthetische PG 0801 mit dem einzigen Produkt 080101, daher druckt S. 206 (Produkt-Teilergebnisplan) dieselbe Zeile 17 "186.499" wie S. 203, und die synthetische PG 0801 ist nach D-14 eine Kopie dieser Produktzeile. |
-| 1 | teilergebnisplan | P | 080101 | 17 | 2024 | ergebnis | 2 | 206 | Dieselbe Rundungsdifferenz wie PB 08 Z. 17 2024 (siehe oben), hier auf der Produktseite selbst: S. 206 druckt Zeile 17 "186.499" für 2024, die Summe der gedruckten Zeilen 11, 13-16 ergibt 186.501. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler. |
-| 2 | teilergebnisplan | PB | 01 | 29 | 2024 | ergebnis | -2 | 66 | Teilergebnisplan PB 01 (Innere Verwaltung), Spalte Ergebnis 2024: PB 01 druckt Zeile 29 als "-2.556.326" (S. 66). Die Summe der gedruckten Zeile 29 aller 12 Produktgruppen (S. 73, 75, 78, 80, 82, 83, 95, 97, 100, 102, 110, 112) ergibt -2.556.328. Ursache sind eigenständig gerundete Teilsummen auf den PG-Seiten (Zeile 10 und 17 weichen dort je 1 C vom PB-Wert ab); wortweise gegen das PDF verifiziert, kein Extraktionsfehler. |
-| 2 | teilergebnisplan | PB | 01 | 31 | 2024 | ergebnis | -2 | 66 | Dieselbe Rundungsdifferenz wie PB 01 Zeile 29 2024 (siehe oben): der globale Minderaufwand (Zeile 30) ist 2024 bei PB 01 und allen seinen Produktgruppen 0, daher gilt Zeile 31 = Zeile 29 unverändert (S. 66, Formel Z.29+30). |
-| 2 | teilergebnisplan | PB | 02 | 10 | 2024 | ergebnis | 2 | 124 | Teilergebnisplan PB 02 (Sicherheit und Ordnung), Spalte Ergebnis 2024: PB 02 druckt Zeile 10 als "334.222" (S. 124). Die Summe der gedruckten Zeile 10 der 7 Produkte (S. 129, 131, 133, 135, 137, 139, 141: 26.009+12.164+6.264+107.996+11.728+12.827+157.236 = 334.224) ergibt 334.224. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 2 C im PDF selbst. |
-| 2 | teilergebnisplan | PB | 02 | 29 | 2024 | ergebnis | -2 | 124 | Folge der Rundungsdifferenz bei PB 02 Zeile 10 2024 (siehe oben): die Summe der gedruckten Zeile 29 der 7 Produktgruppen (S. 129, 131, 133, 135, 137, 139, 141) ergibt -820.758, PB 02 druckt -820.756 (S. 124). |
-| 2 | teilergebnisplan | PB | 02 | 31 | 2024 | ergebnis | -2 | 124 | Dieselbe Rundungsdifferenz wie PB 02 Zeile 29 2024 (siehe oben): der globale Minderaufwand (Zeile 30) ist 2024 bei PB 02 und allen seinen Produktgruppen 0, daher gilt Zeile 31 = Zeile 29 unverändert. |
-| 2 | teilfinanzplan | PB | 01 | 09 | 2024 | ergebnis | 2 | 66 | Teilfinanzplan PB 01, Spalte Ergebnis 2024: PB 01 druckt Zeile 09 als "859.878" (S. 66). Die Summe der gedruckten Zeile 09 der 9 Produktgruppen, die diese Zeile drucken (PG 0104/0105/0108 drucken keine Zeile 09, D-11; S. 73, 75, 78, 83, 95, 100, 102, 110, 112), ergibt 859.880. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler. |
-| 3 | gesamtergebnisplan | GESAMT |  | 11 | 2024 | ergebnis | 3 | 62 | Gesamtergebnisplan (Anhang B.1), Spalte Ergebnis 2024: Zeile 11 (Personalaufwendungen) ist mit "4.629.147" gedruckt (S. 62). Die Summe der gedruckten Zeile 11 aller 15 Produktbereiche (S. 66, 124, 145, 169, 178, 192, 203, 208, 220, 231, 234, 255, 268, 271, 278) ergibt 4.629.150. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 3 C im PDF selbst. |
-| 7 | querschnitt_finanzplan | PG | 0110 | einzahlungen_laufende_verwaltung | 2026 | ansatz | -300 | 291 | Haushaltsquerschnitt PG 0110 (Finanzmanagement und Rechnungswesen), Spalte "Einzahlungen aus lfd. Verwaltungstätigkeit" (S. 291): gedruckt "157.900". Der eigene Teilfinanzplan der PG 0110 (S. 102) druckt Zeile 09 "Einzahlungen aus lfd. Verw.-tätigkeit" Ansatz 2026 = "157.600". Wortweise gegen beide PDF-Seiten verifiziert; eine echte Differenz zwischen Teilfinanzplan- und Querschnittseite im PDF selbst, kein Extraktions- oder Zuordnungsfehler. |
-| 7 | querschnitt_finanzplan | PG | 0110 | saldo_laufende_verwaltung | 2026 | ansatz | -300 | 291 | Folge derselben Differenz wie PG 0110 "einzahlungen_laufende_verwaltung" oben (S. 291 vs. S. 102 Zeile 09): "Saldo aus lfd. Verwaltungstätigkeit" ist Einzahlungen minus Auszahlungen (Zeile 17 = Z.09-Z.16); die Auszahlungenseite stimmt überein, daher trägt der Saldo dieselbe Differenz von -300 C weiter. |
-| 7 | querschnitt_finanzplan | PG | 0110 | finanzmittelueberschuss | 2026 | ansatz | -300 | 291 | Folge derselben Differenz wie PG 0110 "einzahlungen_laufende_verwaltung" oben: "Finanzmittelüberschuss/-fehlbetrag" ist Saldo lfd. Verwaltung plus Saldo Investitionstätigkeit (Z.17+Z.31); die Investitionsseite stimmt überein, daher trägt auch dieser Wert dieselbe Differenz von -300 C weiter. |
-| 7 | querschnitt_finanzplan | PB | 01 | einzahlungen_laufende_verwaltung | 2026 | ansatz | -300 | 292 | Haushaltsquerschnitt PB 01 (Innere Verwaltung), GESAMTSUMME-Zeile "Einzahlungen aus lfd. Verwaltungstätigkeit" (S. 292): gedruckt "433.150". PB 01 hat nur eine Produktgruppe mit abweichender Teilfinanzplan-Einzahlung, PG 0110 (siehe oben, S. 291/102, -300 C); alle anderen Produktgruppen von PB 01 stimmen überein, daher trägt die GESAMTSUMME dieselbe Differenz von -300 C weiter (Regel 2 bleibt grün, da Teilfinanzplan-intern Σ PG == PB gilt). |
-| 7 | querschnitt_finanzplan | PB | 01 | saldo_laufende_verwaltung | 2026 | ansatz | -300 | 292 | Folge derselben Differenz wie PB 01 "einzahlungen_laufende_verwaltung" oben (S. 292, Ursache PG 0110 S. 291/102). |
-| 7 | querschnitt_finanzplan | PB | 01 | finanzmittelueberschuss | 2026 | ansatz | -300 | 292 | Folge derselben Differenz wie PB 01 "einzahlungen_laufende_verwaltung" oben (S. 292, Ursache PG 0110 S. 291/102). |
-| 7 | querschnitt_finanzplan | PG | 0207 | verpflichtungsermaechtigungen | 2026 | ve | 3200000 | 292 | Haushaltsquerschnitt PG 0207 (Feuer- und Bevölkerungsschutz), Spalte "Verpflichtungsermächtigung" (S. 292): gedruckt "0". Der eigene Teilfinanzplan der PG 0207 (S. 142) druckt Zeile 30 "Auszahlungen aus Investitionstätigkeit" in der zweiten "2026"-Spalte (VE) = "3.200.000" (Baumaßnahmenzeile 25 trägt dieselbe VE). Der Haushaltsquerschnitt druckt in dieser Spalte durchgängig "0" für alle 64 PB-/PG-Zeilen (geprüft gegen querschnitte.csv), auch dort, wo wie hier eine reale Verpflichtungsermächtigung besteht; die Summe der drei betroffenen Produktgruppen (0207, 0301, 1201) ergibt exakt die Satzungs-Verpflichtungsermächtigung von 11.600.000 C (Anhang, § 1-3, S. 8). Wortweise gegen beide PDF-Seiten verifiziert; eine echte, systematisch leere Spalte im Querschnitt, kein Extraktions- oder Zuordnungsfehler (die Zuordnung ist durch die Spaltenkopf-Zusammensetzung "Verpflich-"+"tungser-"+"mächtigung" eindeutig belegt). |
-| 7 | querschnitt_finanzplan | PB | 02 | verpflichtungsermaechtigungen | 2026 | ve | 3200000 | 292 | Folge derselben leeren VE-Spalte wie PG 0207 oben: PB 02 (Sicherheit und Ordnung) hat nur die eine Produktgruppe 0207 mit einer Verpflichtungsermächtigung, daher trägt die GESAMTSUMME (S. 292) dieselbe Differenz von 3.200.000 C. |
-| 7 | querschnitt_finanzplan | PG | 0301 | verpflichtungsermaechtigungen | 2026 | ve | 5700000 | 293 | Haushaltsquerschnitt PG 0301 (Schulische Einrichtungen und schülerbezogene Leistungen), Spalte "Verpflichtungsermächtigung" (S. 293): gedruckt "0". Der eigene Teilfinanzplan der PG 0301 (S. 150) druckt Zeile 30 "Auszahlungen aus Investitionstätigkeit" in der VE-Spalte "2026" = "5.700.000" (Baumaßnahmenzeile 25 trägt dieselbe VE). Dieselbe systematisch leere VE-Spalte des Querschnitts wie bei PG 0207 (siehe dort); wortweise gegen beide PDF-Seiten verifiziert. |
-| 7 | querschnitt_finanzplan | PB | 03 | verpflichtungsermaechtigungen | 2026 | ve | 5700000 | 293 | Folge derselben leeren VE-Spalte wie PG 0301 oben: PB 03 (Schulträgeraufgaben) hat nur die eine Produktgruppe 0301 mit einer Verpflichtungsermächtigung, daher trägt die GESAMTSUMME (S. 293) dieselbe Differenz von 5.700.000 C. |
-| 7 | querschnitt_finanzplan | PG | 1201 | auszahlungen_investitionen | 2026 | ansatz | 100000 | 298 | Haushaltsquerschnitt PG 1201 (Öffentliche Verkehrsflächen und Verkehrsanlagen), Spalte "Auszahlungen aus Investitionstätigkeit" (S. 298): gedruckt "2.510.000". Der eigene Teilfinanzplan der PG 1201 (S. 240) druckt Zeile 30 "Auszahlungen aus Investitionstätigkeit" Ansatz 2026 = "2.610.000". Wortweise gegen beide PDF-Seiten verifiziert; eine echte Differenz zwischen Teilfinanzplan- und Querschnittseite im PDF selbst, kein Extraktions- oder Zuordnungsfehler. |
-| 7 | querschnitt_finanzplan | PG | 1201 | saldo_investitionen | 2026 | ansatz | -100000 | 298 | Folge derselben Differenz wie PG 1201 "auszahlungen_investitionen" oben: "Saldo aus Investitionstätigkeit" ist Einzahlungen minus Auszahlungen (Zeile 31 = Z.23-Z.30); die Einzahlungenseite stimmt überein, daher trägt der Saldo dieselbe Differenz von -100.000 C weiter. |
-| 7 | querschnitt_finanzplan | PG | 1201 | finanzmittelueberschuss | 2026 | ansatz | -100000 | 298 | Folge derselben Differenz wie PG 1201 "auszahlungen_investitionen" oben: "Finanzmittelüberschuss/-fehlbetrag" ist Saldo lfd. Verwaltung plus Saldo Investitionstätigkeit (Z.17+Z.31); die lfd.-Verwaltungsseite stimmt überein, daher trägt auch dieser Wert dieselbe Differenz von -100.000 C weiter. |
-| 7 | querschnitt_finanzplan | PG | 1201 | verpflichtungsermaechtigungen | 2026 | ve | 2700000 | 298 | Haushaltsquerschnitt PG 1201, Spalte "Verpflichtungsermächtigung" (S. 298): gedruckt "0". Der eigene Teilfinanzplan der PG 1201 (S. 240) druckt Zeile 30 in der VE-Spalte "2026" = "2.700.000" (Baumaßnahmenzeile 25 trägt dieselbe VE). Dieselbe systematisch leere VE-Spalte des Querschnitts wie bei PG 0207/0301 (siehe dort); wortweise gegen beide PDF-Seiten verifiziert. |
-| 7 | querschnitt_finanzplan | PB | 12 | auszahlungen_investitionen | 2026 | ansatz | 100000 | 298 | Folge derselben Differenz wie PG 1201 "auszahlungen_investitionen" oben: PB 12 (Verkehrsflächen und -anlagen) hat nur die eine Produktgruppe 1201, daher trägt die GESAMTSUMME (S. 298) dieselbe Differenz von 100.000 C (eigener Teilfinanzplan PB 12 S. 234, Zeile 30 Ansatz 2026 = "3.440.000" gegen Querschnitt "3.340.000"). |
-| 7 | querschnitt_finanzplan | PB | 12 | saldo_investitionen | 2026 | ansatz | -100000 | 298 | Folge derselben Differenz wie PB 12 "auszahlungen_investitionen" oben. |
-| 7 | querschnitt_finanzplan | PB | 12 | finanzmittelueberschuss | 2026 | ansatz | -100000 | 298 | Folge derselben Differenz wie PB 12 "auszahlungen_investitionen" oben. |
-| 7 | querschnitt_finanzplan | PB | 12 | verpflichtungsermaechtigungen | 2026 | ve | 2700000 | 298 | Folge derselben leeren VE-Spalte wie PG 1201 oben: PB 12 hat nur die eine Produktgruppe 1201 mit einer Verpflichtungsermächtigung, daher trägt die GESAMTSUMME (S. 298) dieselbe Differenz von 2.700.000 C. |
-| 6 | investitionen_produkt | P | 011201 | 23 | 2024 | ergebnis | -36145 | 115 | Produkt 011201 (Bauunterhaltung von kommunal genutzten Gebäuden), Teilfinanzplan Zeile 23 (Einzahlungen aus Investitionstätigkeit), Spalte Ergebnis 2024 (S. 115): gedruckt 36.145 C. Die Summe der in der Investitionsmaßnahmen-Tabelle (ab S. 115) gedruckten Einzahlungs-Kontozeilen ergibt für dieselbe Spalte 0 C. Wortweise gegen das PDF verifiziert: die 2024 tatsächlich gebuchte Einzahlung ist im aktuellen Haushalt keiner der dort aufgeführten, 2026 laufenden Maßnahmen mehr zugeordnet (historische Ist-Buchung auf einer inzwischen abgeschlossenen Maßnahme), kein Extraktionsfehler. |
-| 6 | investitionen_produkt | P | 020701 | 30 | 2024 | ergebnis | -6328 | 142 | Produkt 020701 (Feuer- und Bevölkerungsschutz), Teilfinanzplan Zeile 30 (Auszahlungen aus Investitionstätigkeit), Spalte Ergebnis 2024 (S. 142): gedruckt 253.204 C. Die Summe der in der Investitionsmaßnahmen-Tabelle (ab S. 143) gedruckten Auszahlungs-Kontozeilen derselben Spalte ergibt 246.876 C. Wortweise gegen das PDF verifiziert: dieselbe Art historischer Ist-Differenz wie bei Produkt 011201 (siehe oben), kein Extraktionsfehler. |
-| 6 | investitionen_produkt | P | 030102 | 23 | 2024 | ergebnis | -30940 | 157 | Produkt 030102 (Franz-von-Assisi-Grundschule), Teilfinanzplan Zeile 23, Spalte Ergebnis 2024 (S. 157): gedruckt 36.444 C. Die Summe der Einzahlungs-Kontozeilen der Investitionsmaßnahmen-Tabelle (ab S. 157) ergibt 5.504 C für dieselbe Spalte. Wortweise gegen das PDF verifiziert: dieselbe Art historischer Ist-Differenz wie bei Produkt 011201 (siehe oben), kein Extraktionsfehler. |
-| 6 | investitionen_produkt | P | 050201 | 23 | 2024 | ergebnis | 2322 | 185 | Produkt 050201 (Zuschüsse an Dritte im Bereich des sozialen Lebens), Teilfinanzplan Zeile 23, Spalte Ergebnis 2024 (S. 185): gedruckt -2.322 C. Das Produkt druckt im aktuellen Haushalt keine Investitionsmaßnahmen-Tabelle mehr (EXTR-09, Flagged assumption: ohne Tabelle 0 C), die Summe ist daher 0 C. Wortweise gegen das PDF verifiziert: eine 2024 gebuchte, im aktuellen Haushalt nicht mehr geführte historische Ist-Buchung, kein Extraktionsfehler. |
-| 6 | investitionen_produkt | P | 120101 | 23 | 2024 | ergebnis | -425849 | 243 | Produkt 120101 (Bau von Straßen, Wegen, Plätzen und sonstigen Verkehrsanlagen), Teilfinanzplan Zeile 23, Spalte Ergebnis 2024 (S. 243): gedruckt 1.335.695 C. Die Summe der Einzahlungs-Kontozeilen der Investitionsmaßnahmen-Tabelle (ab S. 245) ergibt 909.846 C für dieselbe Spalte. Wortweise gegen das PDF verifiziert: dieselbe Art historischer Ist-Differenz wie bei Produkt 011201 (siehe oben), kein Extraktionsfehler. |
-| 6 | investitionen_produkt | P | 120102 | 30 | 2024 | ergebnis | -134535 | 249 | Produkt 120102 (Unterhaltung von Straßen, Wegen, Plätzen und sonstigen Verkehrsanlagen), Teilfinanzplan Zeile 30, Spalte Ergebnis 2024 (S. 249): gedruckt 134.535 C. Das Produkt druckt im aktuellen Haushalt keine Investitionsmaßnahmen-Tabelle mehr (EXTR-09, Flagged assumption: ohne Tabelle 0 C), die Summe ist daher 0 C. Wortweise gegen das PDF verifiziert: eine 2024 gebuchte, im aktuellen Haushalt nicht mehr geführte historische Ist-Buchung, kein Extraktionsfehler. |
-| 6 | investitionen_gesamt | GESAMT |  | 23 | 2024 | ergebnis | -490612 | 63 | Gesamtfinanzplan Zeile 23, Spalte Ergebnis 2024 (S. 63): Summe der sechs produktweisen Ergebnis-2024-Differenzen bei Zeile 23 (011201, 030102, 050201, 120101, siehe oben), da alle anderen Produkte exakt übereinstimmen. Folge derselben historischen Ist-Differenzen, kein Extraktionsfehler. |
-| 6 | investitionen_gesamt | GESAMT |  | 30 | 2024 | ergebnis | -142826 | 63 | Gesamtfinanzplan Zeile 30, Spalte Ergebnis 2024 (S. 63): Summe der produktweisen Ergebnis-2024-Differenzen bei Zeile 30 (020701, 120102, siehe oben), da alle anderen Produkte exakt übereinstimmen. Folge derselben historischen Ist-Differenzen, kein Extraktionsfehler. |
-| 5 | vorbericht_zuwendungen | GESAMT |  | summe_posten | 2025 | ansatz | 1000 | 28 | Zuwendungen und allgemeine Umlagen, Spalte Ansatz 2025 (S. 28): Summe der Posten Schlüsselzuweisung (2.807), Zuweisungen für lfd. Zwecke (936) und Auflösung von Sonderposten (1.225) ergibt 4.968 T€, gedruckt ist die Gesamtzeile mit 4.967 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_zuwendungen | GESAMT |  | summe_posten | 2026 | ansatz | -1000 | 28 | Zuwendungen und allgemeine Umlagen, Spalte Ansatz 2026 (S. 28): Summe der Posten (890 + 1.323 + 895 = 3.108 T€) liegt 1 T€ unter der gedruckten Gesamtzeile von 3.109 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz im Vorbericht selbst. |
-| 5 | vorbericht_zuwendungen | GESAMT |  | gep_02 | 2026 | ansatz | -4200 | 28 | Zuwendungen und allgemeine Umlagen, Spalte Ansatz 2026 (S. 28): Die gedruckte Gesamtzeile von 3.109 T€ (= 3.109.000 €) weicht um 4.200 € von der Zeile 02 des Gesamtergebnisplans ab (3.113.200 €, S. 62, Spez. 3.8). Die App weist die Differenz als eigenen, berechneten Posten "Sonstige" aus. |
-| 5 | vorbericht_transferaufwendungen | GESAMT |  | summe_posten | 2027 | planung | -1000 | 46 | Transferaufwendungen, Spalte Planung 2027 (S. 45-46): Summe der zehn Posten ergibt 15.756 T€, gedruckt ist die Gesamtzeile mit 15.757 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_transferaufwendungen | GESAMT |  | summe_posten | 2028 | planung | -1000 | 46 | Transferaufwendungen, Spalte Planung 2028 (S. 45-46): Summe der zehn Posten ergibt 16.232 T€, gedruckt ist die Gesamtzeile mit 16.233 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_transferaufwendungen | GESAMT |  | summe_posten | 2029 | planung | -1000 | 46 | Transferaufwendungen, Spalte Planung 2029 (S. 45-46): Summe der zehn Posten ergibt 16.746 T€, gedruckt ist die Gesamtzeile mit 16.747 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_leistungsentgelte | GESAMT |  | summe_posten | 2024 | ergebnis | 1000 | 30 | Öffentlich-rechtliche Leistungsentgelte, Spalte Ergebnis 2024 (S. 29-30): Summe der elf Posten (153+191+37+45+1.027+88+69+119+10+1+587) ergibt 2.327 T€, gedruckt ist die Gesamtzeile mit 2.326 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_leistungsentgelte | GESAMT |  | summe_posten | 2029 | planung | 1000 | 30 | Öffentlich-rechtliche Leistungsentgelte, Spalte Planung 2029 (S. 29-30): Summe der elf Posten ergibt 2.551 T€, gedruckt ist die Gesamtzeile mit 2.550 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_leistungsentgelte | GESAMT |  | gep_04 | 2029 | planung | -1035 | 30 | Öffentlich-rechtliche Leistungsentgelte, Spalte Planung 2029 (S. 30): Die gedruckte Gesamtzeile von 2.550 T€ (= 2.550.000 €) weicht um 1.035 € von Zeile 04 des Gesamtergebnisplans ab (2.551.035 €, S. 62). Wortweise gegen beide PDF-Seiten verifiziert; eine echte Differenz im Vorbericht selbst, kein Extraktionsfehler. |
-| 5 | vorbericht_kostenerstattungen | GESAMT |  | summe_posten | 2025 | ansatz | 2000 | 32 | Kostenerstattungen und Kostenumlagen, Spalte Ansatz 2025 (S. 32): Summe der zehn Posten (0+8+350+48+3+102+6+14+75+82) ergibt 688 T€, gedruckt ist die Gesamtzeile mit 686 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 2 T€ im Vorbericht selbst. |
-| 5 | vorbericht_kostenerstattungen | GESAMT |  | summe_posten | 2026 | ansatz | 1000 | 32 | Kostenerstattungen und Kostenumlagen, Spalte Ansatz 2026 (S. 32): Summe der zehn Posten ergibt 763 T€, gedruckt ist die Gesamtzeile mit 762 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_kostenerstattungen | GESAMT |  | summe_posten | 2027 | planung | 1000 | 32 | Kostenerstattungen und Kostenumlagen, Spalte Planung 2027 (S. 32): Summe der zehn Posten ergibt 772 T€, gedruckt ist die Gesamtzeile mit 771 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_kostenerstattungen | GESAMT |  | summe_posten | 2029 | planung | 1000 | 32 | Kostenerstattungen und Kostenumlagen, Spalte Planung 2029 (S. 32): Summe der zehn Posten ergibt 783 T€, gedruckt ist die Gesamtzeile mit 782 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_sachaufwand | GESAMT |  | summe_posten | 2025 | ansatz | 1000 | 37 | Aufwendungen für Sach- und Dienstleistungen, Spalte Ansatz 2025 (S. 36-37): Summe der 35 Posten ergibt 6.963 T€, gedruckt ist die Gesamtzeile mit 6.962 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_sachaufwand | GESAMT |  | summe_posten | 2026 | ansatz | 1000 | 37 | Aufwendungen für Sach- und Dienstleistungen, Spalte Ansatz 2026 (S. 36-37): Summe der 35 Posten ergibt 7.024 T€, gedruckt ist die Gesamtzeile mit 7.023 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_sachaufwand | GESAMT |  | summe_posten | 2027 | planung | 2000 | 37 | Aufwendungen für Sach- und Dienstleistungen, Spalte Planung 2027 (S. 36-37): Summe der 35 Posten ergibt 6.577 T€, gedruckt ist die Gesamtzeile mit 6.575 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 2 T€ im Vorbericht selbst. |
-| 5 | vorbericht_sachaufwand | GESAMT |  | summe_posten | 2028 | planung | 3000 | 37 | Aufwendungen für Sach- und Dienstleistungen, Spalte Planung 2028 (S. 36-37): Summe der 35 Posten ergibt 6.658 T€, gedruckt ist die Gesamtzeile mit 6.655 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 3 T€ im Vorbericht selbst. |
-| 5 | vorbericht_sachaufwand | GESAMT |  | summe_posten | 2029 | planung | 3000 | 37 | Aufwendungen für Sach- und Dienstleistungen, Spalte Planung 2029 (S. 36-37): Summe der 35 Posten ergibt 6.713 T€, gedruckt ist die Gesamtzeile mit 6.710 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 3 T€ im Vorbericht selbst. |
-| 5 | vorbericht_sachaufwand | GESAMT |  | gep_13 | 2027 | planung | -3021 | 37 | Aufwendungen für Sach- und Dienstleistungen, Spalte Planung 2027 (S. 37): Die gedruckte Gesamtzeile von 6.575 T€ (= 6.575.000 €) weicht um 3.021 € von Zeile 13 des Gesamtergebnisplans ab (6.578.021 €, S. 62). Wortweise gegen beide PDF-Seiten verifiziert; eine echte Differenz im Vorbericht selbst, kein Extraktionsfehler. |
-| 5 | vorbericht_sachaufwand | GESAMT |  | gep_13 | 2028 | planung | -3705 | 37 | Aufwendungen für Sach- und Dienstleistungen, Spalte Planung 2028 (S. 37): Die gedruckte Gesamtzeile von 6.655 T€ (= 6.655.000 €) weicht um 3.705 € von Zeile 13 des Gesamtergebnisplans ab (6.658.705 €, S. 62). Wortweise gegen beide PDF-Seiten verifiziert; eine echte Differenz im Vorbericht selbst, kein Extraktionsfehler. |
-| 5 | vorbericht_sachaufwand | GESAMT |  | gep_13 | 2029 | planung | -3846 | 37 | Aufwendungen für Sach- und Dienstleistungen, Spalte Planung 2029 (S. 37): Die gedruckte Gesamtzeile von 6.710 T€ (= 6.710.000 €) weicht um 3.846 € von Zeile 13 des Gesamtergebnisplans ab (6.713.846 €, S. 62). Wortweise gegen beide PDF-Seiten verifiziert; eine echte Differenz im Vorbericht selbst, kein Extraktionsfehler. |
-| 5 | vorbericht_sonstige_aufwendungen | GESAMT |  | summe_posten | 2027 | planung | 2000 | 48 | Sonstige ordentliche Aufwendungen, Spalte Planung 2027 (S. 48): Summe der 16 Posten ergibt 1.244 T€, gedruckt ist die Gesamtzeile mit 1.242 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 2 T€ im Vorbericht selbst. |
-| 5 | vorbericht_sonstige_aufwendungen | GESAMT |  | summe_posten | 2028 | planung | -1000 | 48 | Sonstige ordentliche Aufwendungen, Spalte Planung 2028 (S. 48): Summe der 16 Posten ergibt 1.797 T€, gedruckt ist die Gesamtzeile mit 1.798 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_sonstige_aufwendungen | GESAMT |  | summe_posten | 2029 | planung | 1000 | 48 | Sonstige ordentliche Aufwendungen, Spalte Planung 2029 (S. 48): Summe der 16 Posten ergibt 2.401 T€, gedruckt ist die Gesamtzeile mit 2.400 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. |
-| 5 | vorbericht_sonstige_ertraege | GESAMT |  | summe_posten | 2024 | ergebnis | 2000 | 33 | Sonstige ordentliche Erträge (Tabelle 2.1.7), Spalte Ergebnis 2024 (S. 33): Summe der fünf Posten (470+1.180+37+284+795) ergibt 2.766 T€, gedruckt ist die Gesamtzeile mit 2.764 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 2 T€ im Vorbericht selbst. Die Gesamtzeile trifft die Zeile 07 des Gesamtergebnisplans (2.764.446 €, S. 62) innerhalb der Toleranz. |
-| 5 | vorbericht_sonstige_ertraege | GESAMT |  | summe_posten | 2025 | ansatz | 1000 | 33 | Sonstige ordentliche Erträge (Tabelle 2.1.7), Spalte Ansatz 2025 (S. 33): Summe der fünf Posten (470+1.303+21+273+40) ergibt 2.107 T€, gedruckt ist die Gesamtzeile mit 2.106 T€. Wortweise gegen das PDF verifiziert; kein Extraktionsfehler, sondern eine Rundungsdifferenz von 1 T€ im Vorbericht selbst. Die Gesamtzeile trifft die Zeile 07 des Gesamtergebnisplans (2.106.281 €, S. 62) innerhalb der Toleranz. |
-| 5 | vorbericht_sonstige_ertraege | GESAMT |  | summe_posten | 2028 | planung | -51000 | 33 | Sonstige ordentliche Erträge (Tabelle 2.1.7), Spalte Ansatz 2028 (S. 33): Summe der fünf Posten (470+1.520+33+245+77) ergibt 2.345 T€, gedruckt ist die Gesamtzeile mit 2.396 T€. Wortweise gegen das PDF und das gerenderte Seitenbild verifiziert: Die gedruckte Gesamtzeile entspricht nicht der Summe der Posten, ein Druckfehler im Vorbericht selbst (kein Extraktionsfehler). Die Zeile 07 des Gesamtergebnisplans (2.346.161 €, S. 62) bestätigt die Summe der Posten; die App folgt der GEP-Zeile (siehe die folgende Zeile gep_07). |
-| 5 | vorbericht_sonstige_ertraege | GESAMT |  | gep_07 | 2028 | planung | 49839 | 33 | Sonstige ordentliche Erträge (Tabelle 2.1.7), Spalte Ansatz 2028 (S. 33): Die gedruckte Gesamtzeile von 2.396 T€ (= 2.396.000 €) weicht um 49.839 € von Zeile 07 des Gesamtergebnisplans ab (2.346.161 €, S. 62). Wortweise gegen beide PDF-Seiten verifiziert; die Abweichung ist der Druckfehler der gedruckten Gesamtzeile im Vorbericht selbst (Summe der Posten 2.345 T€). Die App zeigt die Posten und weist die Differenz zur GEP-Zeile als eigenen, berechneten Posten „Sonstige“ aus; die GEP-Zeile bleibt maßgeblich. |
-| 5 | eigenkapital | GESAMT |  | jahresergebnis_gep_28 | 2025 | ansatz | 1331520 | 311 | Entwicklung des Eigenkapitals, Spalte 2025/Plan (S. 311): Jahresergebnis ist mit "0,00 €" gedruckt. Zeile 28 des Gesamtergebnisplans (Anhang B.1, S. 62) weist für 2025 −1.331.520 € aus. Wortweise gegen das PDF verifiziert; die Eigenkapitalübersicht druckt für dieses eine Jahr einen von der Planzeile abweichenden, offenbar vor der letzten Planfortschreibung eingefrorenen Wert — kein Extraktionsfehler (D-11, D-12). |
-
-## Beobachtungen ohne Prüfregel
-
-- Gesamtergebnisplan, Zeilen 29–33 (Nachrichtlich: Verrechnung von Erträgen und Aufwendungen
-  mit der allgemeinen Rücklage, PDF-Seite des Seitenbereichs `gesamtergebnisplan`): weder
-  Spez. 5.5 noch Anhang B führen diese Zeilen als Prüfregel. Zeile 33 (Verrechnungssaldo) ist
-  mit umgekehrtem Vorzeichen der einfachen Summe 29+30-31-32 gedruckt. Die Zeilen werden
-  extrahiert (D-08 löst hier nicht aus, siehe Zeilen-Wörterbuch), aber von Regel 1 und
-  Regel 4 bewusst ausgenommen.
-- Rundungsdifferenzen von genau 1 €, die innerhalb `TOLERANZ_EURO` bleiben und deshalb keinen
-  Schlüsseltabelle-Eintrag benötigen (Regel 1 bleibt für sie grün): Gesamtfinanzplan Zeile 09
-  (Einzahlungen aus lfd. Verw.-tätigkeit), Spalte Ergebnis des ersten Jahres (Summe der
-  Zeilen 01–08 liegt 1 € unter dem gedruckten Wert), und Gesamtergebnisplan Zeile 21
-  (Finanzergebnis), Spalte Ergebnis des ersten Jahres.
+| 1 | teilergebnisplan | PG | 02126 | 10 | 2024 | ergebnis | -2 | 205 | Synthetische PG 02126 = Produkt 0212601 (einziges Produkt). Ist-Ergebnisse 2024 sind mit Cent gedruckt und werden je Wert kaufmännisch auf Euro gerundet; die Summe der gerundeten Zeilen weicht um -2 € von der gerundeten Summenzeile ab. Wortweise gegen das PDF verifiziert, kein Extraktionsfehler. |
+| 1 | teilergebnisplan | P | 0212601 | 10 | 2024 | ergebnis | -2 | 206 | Teilergebnisplan Produkt 0212601, Zeile 10 Ergebnis 2024 (S. 206): Summe der gedruckten Ertragszeilen gegen die gedruckte Zeile 10. Ist-Ergebnisse 2024 sind mit Cent gedruckt und werden je Wert kaufmännisch auf Euro gerundet; die Summe der gerundeten Zeilen weicht um -2 € von der gerundeten Summenzeile ab. Wortweise gegen das PDF verifiziert, kein Extraktionsfehler. |
+| 2 | teilergebnisplan | PB | 05 | 29 | 2024 | ergebnis | -2 | 275 | Teilergebnisplan PB 05 (S. 275) gegen die Summe seiner Produkte, Ergebnis 2024. Ist-Ergebnisse 2024 sind mit Cent gedruckt und werden je Wert kaufmännisch auf Euro gerundet; die Summe der gerundeten Zeilen weicht um -2 € von der gerundeten Summenzeile ab. Wortweise gegen das PDF verifiziert, kein Extraktionsfehler. |
+| 2 | teilergebnisplan | PB | 05 | 31 | 2024 | ergebnis | -2 | 275 | Teilergebnisplan PB 05 (S. 275) gegen die Summe seiner Produkte, Ergebnis 2024. Ist-Ergebnisse 2024 sind mit Cent gedruckt und werden je Wert kaufmännisch auf Euro gerundet; die Summe der gerundeten Zeilen weicht um -2 € von der gerundeten Summenzeile ab. Wortweise gegen das PDF verifiziert, kein Extraktionsfehler. |
+| 2 | teilergebnisplan | PB | 12 | 29 | 2024 | ergebnis | -2 | 443 | Teilergebnisplan PB 12 (S. 443) gegen die Summe seiner Produkte, Ergebnis 2024. Ist-Ergebnisse 2024 sind mit Cent gedruckt und werden je Wert kaufmännisch auf Euro gerundet; die Summe der gerundeten Zeilen weicht um -2 € von der gerundeten Summenzeile ab. Wortweise gegen das PDF verifiziert, kein Extraktionsfehler. |
+| 2 | teilergebnisplan | PB | 12 | 31 | 2024 | ergebnis | -2 | 443 | Teilergebnisplan PB 12 (S. 443) gegen die Summe seiner Produkte, Ergebnis 2024. Ist-Ergebnisse 2024 sind mit Cent gedruckt und werden je Wert kaufmännisch auf Euro gerundet; die Summe der gerundeten Zeilen weicht um -2 € von der gerundeten Summenzeile ab. Wortweise gegen das PDF verifiziert, kein Extraktionsfehler. |
+| 3 | gesamtergebnisplan | GESAMT |  | 10 | 2024 | ergebnis | -2 | 79 | Gesamtergebnisplan Zeile 10 Ergebnis 2024 (S. 79) gegen die Summe der 16 PB. Ist-Ergebnisse 2024 sind mit Cent gedruckt und werden je Wert kaufmännisch auf Euro gerundet; die Summe der gerundeten Zeilen weicht um -2 € von der gerundeten Summenzeile ab. Wortweise gegen das PDF verifiziert, kein Extraktionsfehler. |
+| 3 | gesamtergebnisplan | GESAMT |  | 15 | 2026 | ansatz | -5800 | 79 | Gesamtergebnisplan (S. 79) Zeile 15 Transferaufwendungen gegen die Summe der 16 PB-Teilpläne: die Teilpläne enthalten 5800 € weniger als der Gesamtplan. Auch die Summe der Haushaltsquerschnitte je PG (S. 85-109) erreicht den Querschnitt Gesamthaushalt (S. 110) nicht; die Differenz steht so im PDF. |
+| 3 | gesamtergebnisplan | GESAMT |  | 15 | 2027 | planung | -4400 | 79 | Gesamtergebnisplan (S. 79) Zeile 15 Transferaufwendungen gegen die Summe der 16 PB-Teilpläne: die Teilpläne enthalten 4400 € weniger als der Gesamtplan. Auch die Summe der Haushaltsquerschnitte je PG (S. 85-109) erreicht den Querschnitt Gesamthaushalt (S. 110) nicht; die Differenz steht so im PDF. |
+| 3 | gesamtergebnisplan | GESAMT |  | 17 | 2026 | ansatz | -5800 | 79 | Folge der Differenz in Zeile 15 (siehe dort): Zeile 17 Ordentliche Aufwendungen weicht um denselben Betrag ab. |
+| 3 | gesamtergebnisplan | GESAMT |  | 17 | 2027 | planung | -4400 | 79 | Folge der Differenz in Zeile 15 (siehe dort): Zeile 17 Ordentliche Aufwendungen weicht um denselben Betrag ab. |
+| 5 | vorbericht_leistungsentgelte | GESAMT |  | summe_posten | 2025 | ansatz | 1000 | 24 | Vorbericht S. 24, öffentlich-rechtliche Leistungsentgelte Plan 2025: Summe der vier Posten 10.842 T€, gedruckte Summe 10.841 T€ (Rundung). |
+| 5 | vorbericht_sonstige_aufwendungen | GESAMT |  | summe_posten | 2026 | ansatz | 1000 | 37 | Vorbericht S. 37, sonstige ordentliche Aufwendungen Plan 2026: Summe der Posten 2.369 T€, gedruckte Summe 2.368 T€ (Rundung). |
+| 5 | vorbericht_verbindlichkeiten | GESAMT |  | summe_posten | 2026 | ansatz | 180000 | 587 | Übersicht über die Verbindlichkeiten (S. 587), Stand 31.12.2026: die Zeilen 1-8 ergeben 56.715 T€, Zeile 9 druckt 56.535 T€. Wie gedruckt abgeschrieben. |
+| 5 | verbindlichkeiten | GESAMT |  | kredite_fortschreibung | 2026 | ansatz | -308842 | 587 | Übersicht über die Verbindlichkeiten (S. 587): Investitionskredite 01.01.2026 28.345 T€ + Kreditaufnahme 2026 17.527.000 € − Tilgung 2.293.842 € (Gesamtfinanzplan S. 81) = 43.578.158 €; gedruckt sind 43.887 T€ zum 31.12.2026. |
+| 5 | ve_uebersicht | GESAMT |  | summe_investitionen_ve | 2026 | ve | 5100000 | 586 | VE-Übersicht (S. 586) und Satzung § 3 (S. 7): 18.331 T€. Die Investitionsübersichten enthalten 13.231 T€; die VE „Neubau eines Verwaltungsgebäudes Hörstel“ über 5.100 T€ steht nur in der VE-Übersicht (Maßnahme 111.02-004 auf S. 124 druckt 250.000 € VE). |
+| 6 | investitionen_produkt | P | 0212201 | 30 | 2026 | ansatz | -3125 | 196 | Produkt 0212201 (S. 196): die Investitionsübersicht druckt 105.000 € (2026) bzw. keine Auszahlung (2027-2029), der Teilfinanzplan Zeile 30 108.125 € bzw. 3.125 € je Jahr. |
+| 6 | investitionen_produkt | P | 0212201 | 30 | 2027 | planung | -3125 | 196 | Produkt 0212201 (S. 196): die Investitionsübersicht druckt 105.000 € (2026) bzw. keine Auszahlung (2027-2029), der Teilfinanzplan Zeile 30 108.125 € bzw. 3.125 € je Jahr. |
+| 6 | investitionen_produkt | P | 0212201 | 30 | 2028 | planung | -3125 | 196 | Produkt 0212201 (S. 196): die Investitionsübersicht druckt 105.000 € (2026) bzw. keine Auszahlung (2027-2029), der Teilfinanzplan Zeile 30 108.125 € bzw. 3.125 € je Jahr. |
+| 6 | investitionen_produkt | P | 0212201 | 30 | 2029 | planung | -3125 | 196 | Produkt 0212201 (S. 196): die Investitionsübersicht druckt 105.000 € (2026) bzw. keine Auszahlung (2027-2029), der Teilfinanzplan Zeile 30 108.125 € bzw. 3.125 € je Jahr. |
+| 6 | investitionen_produkt | P | 1557302 | 23 | 2025 | ansatz | -62333 | 543 | Produkt 1557302 (S. 542/543): der Teilfinanzplan druckt in Zeile 23 für 2025 62.333 €, die Investitionsübersicht keine Einzahlung. |
+| 6 | investitionen_gesamt | GESAMT |  | 23 | 2024 | ergebnis | 2 | 80 | Folge der Produktbefunde 0212201 und 1557302 (siehe dort) im Gesamtfinanzplan (S. 80); 2024 zusätzlich Cent-Rundung der Ist-Ergebnisse. |
+| 6 | investitionen_gesamt | GESAMT |  | 23 | 2025 | ansatz | -62333 | 80 | Folge der Produktbefunde 0212201 und 1557302 (siehe dort) im Gesamtfinanzplan (S. 80); 2024 zusätzlich Cent-Rundung der Ist-Ergebnisse. |
+| 6 | investitionen_gesamt | GESAMT |  | 30 | 2026 | ansatz | -3125 | 80 | Folge der Produktbefunde 0212201 und 1557302 (siehe dort) im Gesamtfinanzplan (S. 80); 2024 zusätzlich Cent-Rundung der Ist-Ergebnisse. |
+| 6 | investitionen_gesamt | GESAMT |  | 30 | 2027 | planung | -3125 | 80 | Folge der Produktbefunde 0212201 und 1557302 (siehe dort) im Gesamtfinanzplan (S. 80); 2024 zusätzlich Cent-Rundung der Ist-Ergebnisse. |
+| 6 | investitionen_gesamt | GESAMT |  | 30 | 2028 | planung | -3125 | 80 | Folge der Produktbefunde 0212201 und 1557302 (siehe dort) im Gesamtfinanzplan (S. 80); 2024 zusätzlich Cent-Rundung der Ist-Ergebnisse. |
+| 6 | investitionen_gesamt | GESAMT |  | 30 | 2029 | planung | -3125 | 80 | Folge der Produktbefunde 0212201 und 1557302 (siehe dort) im Gesamtfinanzplan (S. 80); 2024 zusätzlich Cent-Rundung der Ist-Ergebnisse. |
+| 10 | stellenuebersicht_beamte | GESAMT |  | A10 | 2026 | ansatz | 1 | 570 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um 1 Hundertstel ab. |
+| 10 | stellenuebersicht_beamte | GESAMT |  | A11 | 2026 | ansatz | 1 | 570 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um 1 Hundertstel ab. |
+| 10 | stellenuebersicht_beamte | GESAMT |  | A12 | 2026 | ansatz | 2 | 570 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um 2 Hundertstel ab. |
+| 10 | stellenuebersicht_beamte | GESAMT |  | A14 | 2026 | ansatz | 4 | 570 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um 4 Hundertstel ab. |
+| 10 | stellenuebersicht_beamte | GESAMT |  | A9Z | 2026 | ansatz | 2 | 570 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um 2 Hundertstel ab. |
+| 10 | stellenuebersicht_tarif | GESAMT |  | 05 | 2026 | ansatz | 1 | 572 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um 1 Hundertstel ab. |
+| 10 | stellenuebersicht_tarif | GESAMT |  | 06 | 2026 | ansatz | 1 | 572 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um 1 Hundertstel ab. |
+| 10 | stellenuebersicht_tarif | GESAMT |  | 07 | 2026 | ansatz | 1 | 572 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um 1 Hundertstel ab. |
+| 10 | stellenuebersicht_tarif | GESAMT |  | 08 | 2026 | ansatz | -1 | 572 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um -1 Hundertstel ab. |
+| 10 | stellenuebersicht_tarif | GESAMT |  | 09b | 2026 | ansatz | 2 | 572 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um 2 Hundertstel ab. |
+| 10 | stellenuebersicht_tarif | GESAMT |  | 09c | 2026 | ansatz | -2 | 572 | Stellenübersicht (S. 570-573): die Zellen je Produkt sind auf Hundertstel gerundet, die gedruckte Spaltensumme (= Teil A/B, S. 568/569) offenbar aus ungerundeten Anteilen gebildet. Die Summe der gerundeten Zellen weicht um -2 Hundertstel ab. |

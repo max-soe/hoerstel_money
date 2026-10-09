@@ -18,7 +18,7 @@ Die vollständige fachliche Spezifikation steht in `discussion/SPEZIFIKATION.md`
 
 Ziel: Die App erklärt den Haushalt 2026 der Stadt Hörstel. Phasen 8–12 in `ROADMAP.md`, Anforderungen HOE-01 bis HOE-14 in `REQUIREMENTS.md`. Der Meilenstein wird ohne GSD-Befehle bearbeitet und von Hand nachgeführt.
 
-Stand (2026-10-08): Phasen 8 bis 10 abgeschlossen. Der Jahrgang 2026 ist Hörstel (`software = "ikvs"`). Schritt 01 klassifiziert alle 592 Seiten (16 PB, 50 PG, 69 Produkte), Schritt 02 liest Gesamt- und alle 170 Teilpläne; Regeln 1–3 zeigen nur 11 belegte Abweichungen des PDF. Schritt 03/04 und die Querschnitte lesen Produktinformationen (ohne Personennamen), Kennzahlen, Erläuterungen, 188 Investitionsmaßnahmen und 593 Querschnittswerte; Regel 7 ohne, Regel 6 nur mit belegten Abweichungen, Regel 8 ohne Lücken. Ostbevern bleibt als ProFIS+-Referenz unter `pipeline/referenz/ostbevern/` (Jahrgang, `daten/`, App-Daten) und `raw_data/ostbevern/` testbar (`PIPELINE_REFERENZ`). Die ausgelieferte App zeigt noch Ostbevern.
+Stand (2026-10-09): Phasen 8 bis 11 abgeschlossen. Der Jahrgang 2026 ist Hörstel (`software = "ikvs"`). `alle.py` liest alle 592 Seiten (16 PB, 50 PG, 69 Produkte), übernimmt die abgeschriebenen Bildseiten und Vorberichtsdaten aus `daten/manuell/` und schreibt `daten/`, `app/src/data/` und die Belegbilder; alle 10 Prüfregeln sind grün, 38 im PDF gedruckte Abweichungen sind in `befunde.md` belegt. Ostbevern bleibt als ProFIS+-Referenz unter `pipeline/referenz/ostbevern/` (`PIPELINE_REFERENZ`) und `raw_data/ostbevern/` testbar. Die App ist noch auf Ostbevern zugeschnitten (Phase 12).
 
 ## Backlog (nach v2.0)
 

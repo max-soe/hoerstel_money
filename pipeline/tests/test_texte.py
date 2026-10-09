@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from ostbevern.konfiguration import PROJEKT_WURZEL, STANDARD_JAHR, lade_jahrgang
+from ostbevern.konfiguration import APP_WURZEL, PROJEKT_WURZEL, STANDARD_JAHR, lade_jahrgang
 from ostbevern.schema import DATEN_WURZEL, ERKLAERUNGEN_MD, GLOSSAR_MD
 from ostbevern.texte import (
     ABGELEITET,
@@ -31,7 +31,9 @@ from ostbevern.texte import (
     vorschau,
 )
 
-APP_DATEN_WURZEL = PROJEKT_WURZEL / "app" / "src" / "data"
+# App-Daten des Referenzstands (conftest.py: PIPELINE_REFERENZ, Ostbevern); das Projekt-app/
+# enthält seit Phase 11 Hörstel.
+APP_DATEN_WURZEL = APP_WURZEL / "src" / "data"
 
 # Die zehn Erklärtexte des Phase-4-Umfangs (D-16); gleicher Vollständigkeits-Check wie
 # die Task-1-Acceptance-Kriterien, aber als dauerhafter Regressionstest.
