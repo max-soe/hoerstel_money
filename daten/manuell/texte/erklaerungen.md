@@ -60,6 +60,24 @@ Quelle: S. 25, S. 590, S. 591
 
 Einige Aufgaben erledigt Hörstel über eigene Gesellschaften, die eigene Bücher führen und deshalb nicht im Kernhaushalt stehen. Dazu gehören die Hörsteler Energie GmbH, die Photovoltaikanlagen im Stadtgebiet betreibt, und die Stadtmarketing Hörstel UG. Im Haushalt tauchen sie nur dort auf, wo Geld zwischen Stadt und Gesellschaft fließt, zum Beispiel als Zuschuss oder als Zinsen auf Darlehen der Stadt. Ihre Wirtschaftspläne zeigt diese App nicht.
 
+## nicht_im_haushalt_ausgaben
+Titel: Was nicht im Haushalt steht
+Quelle: S. 25, S. 590, S. 591
+
+Nicht alles, was in Hörstel mit öffentlichem Geld geschieht, steht in diesem Haushalt. Die Hörsteler Energie GmbH und die Stadtmarketing Hörstel UG führen eigene Bücher. Im Haushalt siehst du nur, was zwischen Stadt und Gesellschaft fließt.
+
+## nicht_im_haushalt_einnahmen
+Titel: Was nicht im Haushalt steht
+Quelle: S. 25, S. 590, S. 591
+
+Die Einnahmen der städtischen Gesellschaften findest du hier nicht. Die Hörsteler Energie GmbH und die Stadtmarketing Hörstel UG führen eigene Bücher; im Haushalt steht nur, was zwischen Stadt und Gesellschaft fließt.
+
+## nicht_im_haushalt_kurz
+Titel: Was nicht im Haushalt steht
+Quelle: S. 25, S. 590, S. 591
+
+Die Hörsteler Energie GmbH und die Stadtmarketing Hörstel UG führen eigene Bücher und stehen nicht in diesem Haushalt.
+
 ## steuern_selbst_festgelegt
 Titel: Welche Steuern die Stadt selbst festlegt
 Quelle: S. 8, S. 19, S. 20

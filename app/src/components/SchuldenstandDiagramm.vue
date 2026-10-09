@@ -15,6 +15,7 @@ import {
   schuldenstandOption,
   schuldenTabelle,
 } from '@/lib/schulden'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const LEER_TITEL = 'Keine Schuldenwerte'
 const LEER_TEXT = 'Der Haushaltsplan nennt hier keinen Schuldenstand. Öffne die Tabelle.'
@@ -41,7 +42,7 @@ const zeitraum = computed(() => {
 
 const beschreibung = computed(
   () =>
-    `Säulendiagramm: Schuldenstand der Gemeinde ${zeitraum.value}, gestapelt aus Investitionskrediten und NRW.Bank-Mitteln, mit der Summe über jeder Säule. ` +
+    `Säulendiagramm: Schuldenstand der ${KOMMUNE_ART} ${zeitraum.value}, gestapelt aus Investitionskrediten und NRW.Bank-Mitteln, mit der Summe über jeder Säule. ` +
     (berechnetVorhanden
       ? 'Fortgeschriebene Jahre tragen Streifen und die Achsenzeile berechnet. '
       : '') +

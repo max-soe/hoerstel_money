@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import BaseChart from '@/components/BaseChart.vue'
 import { useJahr } from '@/lib/jahr'
 import { geldflussOption, zielCodeAusKlick, type Geldfluss } from '@/lib/geldfluss'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const props = defineProps<{
   geldfluss: Geldfluss
@@ -13,8 +14,7 @@ const props = defineProps<{
 }>()
 
 // Bildbeschreibung (A11Y-01): ohne Zahl, die Werte und die Links stehen in den Tabellen darunter.
-const BESCHREIBUNG =
-  'Flussdiagramm: links stehen die Ertragsarten, in der Mitte der Gemeindehaushalt, rechts die Ausgaben. Die Breite der Bänder zeigt den Betrag. Dieselben Werte und die Links zu den Aufgabenbereichen stehen in den Tabellen darunter.'
+const BESCHREIBUNG = `Flussdiagramm: links stehen die Ertragsarten, in der Mitte der Haushalt der ${KOMMUNE_ART}, rechts die Ausgaben. Die Breite der Bänder zeigt den Betrag. Dieselben Werte und die Links zu den Aufgabenbereichen stehen in den Tabellen darunter.`
 
 const router = useRouter()
 const { jahrLink } = useJahr()

@@ -19,11 +19,11 @@ import { wertartFuerJahr, wertartName } from '@/lib/jahr'
 import { quellenZeile } from '@/lib/kennzahlen'
 import { belegSchluessel } from '@/lib/quelle'
 import { baueSchuldenstand, schuldenKacheln } from '@/lib/schulden'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 // Die Seite zeigt alle ausgewiesenen Jahre, ohne Jahr-Umschalter (UI-SPEC Routes). Der Lead
 // enthält keine Zahlen und darf deshalb als Text im Code stehen.
-const lead =
-  'Hier siehst du, was die Gemeinde in den kommenden Jahren baut und anschafft, wie sie das bezahlt und wie hoch ihre Schulden sind.'
+const lead = `Hier siehst du, was die ${KOMMUNE_ART} in den kommenden Jahren baut und anschafft, wie sie das bezahlt und wie hoch ihre Schulden sind.`
 
 const massnahmenTitel = computed(() => {
   const jahre = planjahre()

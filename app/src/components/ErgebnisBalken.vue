@@ -13,11 +13,11 @@ import { haushalt } from '@/data/daten'
 import { useSchmalerBildschirm } from '@/lib/bildschirm'
 import { baueErgebnisReihen, ergebnisBeschriftung, ergebnisTabelle } from '@/lib/entwicklung'
 import { wertartName } from '@/lib/jahr'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const LEER_TITEL = 'Für diese Auswahl gibt es keine Einzelwerte'
 const LEER_TEXT = 'Der Haushaltsplan nennt für diese Jahre keine Werte. Öffne die Tabelle.'
-const BESCHREIBUNG =
-  'Säulendiagramm: Jahresergebnis der Gemeinde nach globalem Minderaufwand je Jahr. Ein Defizit liegt unter der Nulllinie, ein Überschuss darüber. Die Werte stehen in der Tabelle darunter.'
+const BESCHREIBUNG = `Säulendiagramm: Jahresergebnis der ${KOMMUNE_ART} nach globalem Minderaufwand je Jahr. Ein Defizit liegt unter der Nulllinie, ein Überschuss darüber. Die Werte stehen in der Tabelle darunter.`
 
 const istSchmal = useSchmalerBildschirm()
 const reihen = baueErgebnisReihen()

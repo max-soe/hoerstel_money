@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
 
 import ErklaerText from '@/components/ErklaerText.vue'
-import { findeText } from '@/lib/texte'
+import { findeText, rendereAbsatz } from '@/lib/texte'
 
 type Variante = 'ausgaben' | 'einnahmen' | 'kurz'
 
@@ -11,29 +11,25 @@ const props = defineProps<{
   variante: Variante
 }>()
 
-// Die Leitsätze nennen bewusst keine Zahl: Beträge zu BBO und TEO stehen nur im geprüften
-// Pipeline-Text `nicht_im_haushalt`, mit PDF-Seite (UI-05, D-18).
-const LEITSAETZE: ReadonlyMap<Variante, string> = new Map<Variante, string>([
-  [
-    'ausgaben',
-    'Nicht alles, was in Ostbevern Geld kostet, steht in diesem Haushalt. Das Hallenbad führt die BBO in eigenen Büchern. Im Haushalt siehst du nur die Verlustübernahme.',
-  ],
-  [
-    'einnahmen',
-    'Abwassergebühren findest du hier nicht. Die Abwasserentsorgung führt der TEO AöR in eigenen Büchern.',
-  ],
-  [
-    'kurz',
-    'Das Hallenbad (BBO) und die Abwasserentsorgung (TEO AöR) führen eigene Bücher und stehen nicht in diesem Haushalt.',
-  ],
-])
+// Die Leitsätze sind geprüfte Pipeline-Texte je Variante (`nicht_im_haushalt_{variante}`),
+// denn was außerhalb des Haushalts steht (eigene Gesellschaften, Eigenbetriebe), ist je Kommune
+// verschieden. Sie nennen keine Zahl; Beträge stehen nur
+// im ausführlichen Text `nicht_im_haushalt`, mit PDF-Seite (UI-05, D-18).
+function leitsatzFuer(variante: Variante): string {
+  const text = findeText(`nicht_im_haushalt_${variante}`)
+  if (text === undefined) {
+    throw new Error(`Erklärtext nicht_im_haushalt_${variante} fehlt in texte.json`)
+  }
+  return text.absaetze.map((absatz) => rendereAbsatz(absatz)).join(' ')
+}
 
 const GLOSSAR_ZIEL: RouteLocationRaw = { name: 'glossar', hash: '#nicht_im_haushalt' }
 
-const leitsatz = computed(() => LEITSAETZE.get(props.variante) ?? '')
+const leitsatz = computed(() => leitsatzFuer(props.variante))
 const istKurz = computed(() => props.variante === 'kurz')
 // Fehlt der Pipeline-Text, entfällt nur der Aufklapper; der Leitsatz bleibt (UI-SPEC E11 empty).
-const hatErklaerung = computed(() => findeText('nicht_im_haushalt') !== undefined)
+const erklaerung = computed(() => findeText('nicht_im_haushalt'))
+const hatErklaerung = computed(() => erklaerung.value !== undefined)
 </script>
 
 <template>
@@ -47,7 +43,7 @@ const hatErklaerung = computed(() => findeText('nicht_im_haushalt') !== undefine
       </p>
       <wa-details
         v-else-if="hatErklaerung"
-        summary="Was sind BBO und TEO?"
+        :summary="erklaerung?.titel ?? ''"
         class="om-hinweis__details"
       >
         <ErklaerText schluessel="nicht_im_haushalt" :ueberschrift="false" />

@@ -1,6 +1,6 @@
 // Geldfluss-Modell der Seite „Vom Ertrag zur Ausgabe“ (FLUSS-01 bis FLUSS-04, D-11, D-19).
 // Gebaut ausschließlich aus dem Ergebnisplan: links die Ertragsarten, in der Mitte der
-// Gemeindehaushalt, rechts Weitergabe an Kreis und Land, die Aufgabenbereiche und die
+// Haushalt der Kommune, rechts Weitergabe an Kreis und Land, die Aufgabenbereiche und die
 // Zinsen. Der Ausgleich entsteht datengetrieben, ohne Sonderfall je Jahr:
 //   Defizit (Entnahme aus Rücklagen) = −Jahresergebnis nach Minderaufwand, links, wenn negativ
 //   Globaler Minderaufwand           = −Z. 27, links, wenn ≠ 0
@@ -29,6 +29,7 @@ import { haushalt } from '@/data/daten'
 import { anteil } from '@/lib/berechnung'
 import { findeKlKnoten } from '@/lib/kreisumlage'
 import { textFuerJahr } from '@/lib/texte'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 export type KnotenSeite = 'links' | 'mitte' | 'rechts'
 
@@ -282,7 +283,7 @@ export function baueGeldfluss(jahrIndex: number): Geldfluss {
   const summeLinks = knoten.reduce((s, k) => s + k.wert, 0)
   knoten.push({
     id: GEMEINDE_ID,
-    name: 'Gemeindehaushalt',
+    name: `Haushalt der ${KOMMUNE_ART}`,
     wert: summeLinks,
     seite: 'mitte',
     art: 'gemeinde',
@@ -691,7 +692,7 @@ export function lesehilfeSatz(geldfluss: Geldfluss, jahr: number, wertart: strin
   ]
   if (defizit) {
     saetze.push(
-      `Das Defizit von ${euro(defizit.wert)} steht links, weil die Gemeinde diesen Betrag aus ihren Rücklagen deckt.`,
+      `Das Defizit von ${euro(defizit.wert)} steht links, weil die ${KOMMUNE_ART} diesen Betrag aus ihren Rücklagen deckt.`,
     )
   }
   if (minderaufwand) {

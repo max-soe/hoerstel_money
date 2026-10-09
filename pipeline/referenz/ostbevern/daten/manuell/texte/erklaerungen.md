@@ -60,6 +60,24 @@ Quelle: S. 14, S. 33, S. 46, S. 48
 
 Zwei größere Einrichtungen tauchen im Kernhaushalt nur am Rand auf, weil sie eigene Wirtschaftspläne führen: die Bäder- und Beteiligungsgesellschaft Ostbevern mbH (BBO, u. a. das Hallenbad) und der Technische Eigenbetrieb Ostbevern AöR (TEO, u. a. Abwasser). Für den BBO-Verlustausgleich plant der eigene Wirtschaftsplan {{meta.vorbericht_werte.bbo_verlustausgleich_wirtschaftsplan|euro}}, wovon {{vorbericht.transferaufwendungen.verlustuebernahme_bbo.2026|euro}} als Verlustübernahme im Kernhaushalt {{jahr.haushaltsjahr|jahr}} erscheinen. Der TEO verzinst sein Eigenkapital gegenüber der Gemeinde eigenständig; beide Betriebe werden in dieser App nur mit diesem Hinweis erwähnt, nicht im Detail dargestellt.
 
+## nicht_im_haushalt_ausgaben
+Titel: Was nicht im Haushalt steht
+Quelle: S. 14, S. 46
+
+Nicht alles, was in Ostbevern Geld kostet, steht in diesem Haushalt. Das Hallenbad führt die BBO in eigenen Büchern. Im Haushalt siehst du nur die Verlustübernahme.
+
+## nicht_im_haushalt_einnahmen
+Titel: Was nicht im Haushalt steht
+Quelle: S. 14, S. 48
+
+Abwassergebühren findest du hier nicht. Die Abwasserentsorgung führt der TEO AöR in eigenen Büchern.
+
+## nicht_im_haushalt_kurz
+Titel: Was nicht im Haushalt steht
+Quelle: S. 14
+
+Das Hallenbad (BBO) und die Abwasserentsorgung (TEO AöR) führen eigene Bücher und stehen nicht in diesem Haushalt.
+
 ## steuern_selbst_festgelegt
 Titel: Welche Steuern die Gemeinde selbst festlegt
 Quelle: S. 9, S. 27, S. 28

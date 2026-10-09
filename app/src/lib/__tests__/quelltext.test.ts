@@ -216,3 +216,30 @@ describe('Keine getippten Zahlen in den Templates (UI-05, T-05-40, T-05-41)', ()
     expect(getippteZahlen(templateTeil(text))).toEqual([])
   })
 })
+
+// Phase 12: Name und Art der Kommune kommen aus den Daten (`lib/kommune.ts`). Weder ein
+// Ortsname noch die feste Art („Gemeinde“ bzw. „Stadt“ als Bezeichnung der Kommune) steht in
+// Komponenten, Seiten oder Bibliotheksmodulen; Ausnahme ist `lib/kommune.ts` selbst.
+const anwendungsquelltexte = import.meta.glob<string>(
+  ['/src/**/*.vue', '/src/**/*.ts', '!/src/**/__tests__/**', '!/src/data/**'],
+  { query: '?raw', import: 'default', eager: true },
+)
+
+describe('Keine Ortsnamen im App-Code (Phase 12)', () => {
+  it('nennt weder Ostbevern noch Hörstel und nicht „der Gemeinde“/„der Stadt“ im Text', () => {
+    const treffer: string[] = []
+    for (const [pfad, inhalt] of Object.entries(anwendungsquelltexte)) {
+      if (pfad.endsWith('/lib/kommune.ts')) {
+        continue
+      }
+      // Kommentare zählen nicht: sie dürfen Jahrgänge beim Namen nennen.
+      const ohneKommentare = inhalt.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+      for (const muster of [/Ostbevern/, /Hörstel/, /\b(der|die) (Gemeinde|Stadt)\b/]) {
+        if (muster.test(ohneKommentare)) {
+          treffer.push(`${pfad}: ${String(muster)}`)
+        }
+      }
+    }
+    expect(treffer).toEqual([])
+  })
+})

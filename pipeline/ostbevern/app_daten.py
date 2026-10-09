@@ -777,6 +777,21 @@ def schreibe_app_json(daten: Mapping[str, object], pfad: Path, *, praefix: str) 
         temp_pfad.unlink(missing_ok=True)
 
 
+# Arten der Kommune; beide Wörter sind feminin, die App sagt „der Stadt“/„der Gemeinde“.
+KOMMUNE_ARTEN = ("Stadt", "Gemeinde")
+
+
+def baue_kommune(jahrgang: Jahrgang) -> dict[str, str]:
+    """Name und Art der Kommune aus `[layout.kommune]` (Phase 12): Seitentitel, Kopfzeile und
+    Texte der App nennen sie, ohne dass ein Ortsname im App-Code steht."""
+    art = layout_text(jahrgang, "kommune", "art")
+    if art not in KOMMUNE_ARTEN:
+        raise AppDatenFehler(
+            f"layout.kommune.art muss einer von {KOMMUNE_ARTEN} sein, nicht {art!r}"
+        )
+    return {"name": layout_text(jahrgang, "kommune", "name"), "art": art}
+
+
 def baue_bezugsgroessen(jahrgang: Jahrgang, *, produkt_codes: set[str]) -> list[dict[str, object]]:
     """Die Produkte mit „Zuschussbedarf je Einheit“ aus `[layout.bezugsgroessen]` (Freigabe
     05-03): je Produktcode eine Liste aus Einheit im Zeilennamen und den gedruckten
@@ -1167,6 +1182,7 @@ def erzeuge_app_daten(
         "bezugsgroessen": baue_bezugsgroessen(
             jahrgang, produkt_codes=set(hierarchie["code"].to_list())
         ),
+        "kommune": baue_kommune(jahrgang),
     }
     if daten["eigenkapital_stand"] not in EIGENKAPITAL_STAENDE:
         raise AppDatenFehler(

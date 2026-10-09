@@ -37,6 +37,7 @@ import {
 import { useJahr, wertartName } from '@/lib/jahr'
 import { findeKlKnoten } from '@/lib/kreisumlage'
 import { rendereAbsatz, textFuerJahr } from '@/lib/texte'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const router = useRouter()
 const { jahr, index, wertart } = useJahr()
@@ -222,7 +223,7 @@ const gesamtSeite = computed(() => {
 <template>
   <PageIntro
     titel="Wofür wird das Geld ausgegeben?"
-    beschreibung="Hier siehst du, wohin das Geld der Gemeinde fließt. Klicke auf einen Bereich, um genauer hinzuschauen."
+    :beschreibung="`Hier siehst du, wohin das Geld der ${KOMMUNE_ART} fließt. Klicke auf einen Bereich, um genauer hinzuschauen.`"
   />
   <div class="om-ausgaben-steuerung">
     <JahrUmschalter />
@@ -236,7 +237,7 @@ const gesamtSeite = computed(() => {
     >
       <span slot="hint">
         <GlossarBegriff schluessel="zuschussbedarf">Zuschussbedarf</GlossarBegriff>: Was ein Bereich
-        mehr kostet, als er selbst einnimmt. Das bezahlt die Gemeinde aus Steuern.
+        mehr kostet, als er selbst einnimmt. Das bezahlt die {{ KOMMUNE_ART }} aus Steuern.
       </span>
       <wa-radio appearance="button" value="aufwand">Aufwand</wa-radio>
       <wa-radio appearance="button" value="zuschussbedarf">Zuschussbedarf</wa-radio>

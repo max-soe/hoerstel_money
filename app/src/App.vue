@@ -9,6 +9,7 @@ import { KONTAKT_EMAIL, ORIGINAL_PDF_URL } from '@/config'
 import { haushalt } from '@/data/daten'
 import { useSchmalerBildschirm } from '@/lib/bildschirm'
 import { useJahr } from '@/lib/jahr'
+import { KOMMUNE_VOLL, SEITENNAME } from '@/lib/kommune'
 import { MENUE, type MenueLink } from '@/lib/menue'
 
 // Datenstand (D-18): das Haushaltsjahr und der Tag des Satzungsbeschlusses, beides aus den
@@ -122,7 +123,7 @@ onBeforeUnmount(() => {
     <span slot="skip-to-content">Zum Inhalt springen</span>
 
     <div slot="header" class="om-header">
-      <RouterLink :to="{ name: 'start' }" class="om-site-name">Ostbevern Money</RouterLink>
+      <RouterLink :to="{ name: 'start' }" class="om-site-name">{{ SEITENNAME }}</RouterLink>
 
       <nav v-if="!schmal" aria-label="Hauptnavigation" class="om-nav">
         <ul>
@@ -192,14 +193,12 @@ onBeforeUnmount(() => {
       <p>
         Datenstand: Haushalt {{ haushaltsjahr }}, beschlossen am {{ beschlussDatum }}.
         <a :href="ORIGINAL_PDF_URL" target="_blank" rel="noopener noreferrer"
-          >Original-Haushaltsplan (PDF) der Gemeinde Ostbevern<wa-icon
-            name="arrow-up-right-from-square"
-            class="om-extern-icon"
-          ></wa-icon
+          >Original-Haushaltsplan (PDF) der {{ KOMMUNE_VOLL
+          }}<wa-icon name="arrow-up-right-from-square" class="om-extern-icon"></wa-icon
           ><span class="om-visually-hidden"> (öffnet in neuem Tab)</span></a
         >
       </p>
-      <p>Inoffizielles Projekt, keine Veröffentlichung der Gemeinde Ostbevern.</p>
+      <p>Inoffizielles Projekt, keine Veröffentlichung der {{ KOMMUNE_VOLL }}.</p>
       <p>
         Kontakt:
         <a :href="`mailto:${KONTAKT_EMAIL}`" class="om-kontakt">{{ KONTAKT_EMAIL }}</a>

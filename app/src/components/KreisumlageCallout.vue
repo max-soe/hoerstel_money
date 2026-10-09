@@ -7,6 +7,7 @@ import ErklaerText from '@/components/ErklaerText.vue'
 import { haushalt } from '@/data/daten'
 import { baueKreisumlage } from '@/lib/kreisumlage'
 import { textFuerJahr } from '@/lib/texte'
+import { KOMMUNE_ART, KOMMUNE_NAME } from '@/lib/kommune'
 
 const props = withDefaults(
   defineProps<{
@@ -48,7 +49,8 @@ const aufteilungSeiten = computed(() => {
       <p>
         Der größte Einzelposten ist die Weitergabe an Kreis und Land:
         <span class="om-zahl">{{ euroKurz(kreisumlage.gesamt) }}</span
-        >. Diesen Betrag reicht Ostbevern weiter, die Gemeinde kann ihn nicht selbst steuern.
+        >. Diesen Betrag reicht {{ KOMMUNE_NAME }} weiter, die {{ KOMMUNE_ART }} kann ihn nicht
+        selbst steuern.
       </p>
       <p v-if="kreisumlage.pdfSeite !== null" class="om-kreisumlage__quelle">
         Quelle: PDF-Seite {{ kreisumlage.pdfSeite }}
@@ -62,7 +64,8 @@ const aufteilungSeiten = computed(() => {
       <p>
         Weitergabe an Kreis und Land:
         <span class="om-zahl">{{ euroKurz(kreisumlage.gesamt) }}</span> ({{ wertart }}
-        {{ jahrText }}). Diesen Betrag reicht Ostbevern weiter und kann ihn nicht selbst steuern.
+        {{ jahrText }}). Diesen Betrag reicht {{ KOMMUNE_NAME }} weiter und kann ihn nicht selbst
+        steuern.
       </p>
       <ul class="om-kreisumlage__liste">
         <li v-for="u in kreisumlage.unterposten" :key="u.code">

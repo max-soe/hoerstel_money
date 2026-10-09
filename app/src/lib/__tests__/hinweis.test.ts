@@ -52,17 +52,20 @@ describe('HinweisNichtImHaushalt auf /einnahmen und in der Kurzform (UI-04, D-18
     )
   })
 
-  it('die Komponente trägt die drei Leitsätze wörtlich', () => {
+  // Was außerhalb des Haushalts steht, ist je Kommune verschieden: die Leitsätze sind geprüfte
+  // Pipeline-Texte `nicht_im_haushalt_{variante}` und stehen nie im Quelltext.
+  it('die Leitsätze kommen je Variante aus den Pipeline-Texten, ohne Zahl', () => {
     const komponente = quelltext(KOMPONENTE)
-    expect(komponente).toContain(
-      'Nicht alles, was in Ostbevern Geld kostet, steht in diesem Haushalt. Das Hallenbad führt die BBO in eigenen Büchern. Im Haushalt siehst du nur die Verlustübernahme.',
-    )
-    expect(komponente).toContain(
-      'Abwassergebühren findest du hier nicht. Die Abwasserentsorgung führt der TEO AöR in eigenen Büchern.',
-    )
-    expect(komponente).toContain(
-      'Das Hallenbad (BBO) und die Abwasserentsorgung (TEO AöR) führen eigene Bücher und stehen nicht in diesem Haushalt.',
-    )
+    expect(komponente).toContain('findeText(`nicht_im_haushalt_${variante}`)')
+    expect(komponente).not.toMatch(/Ostbevern|Hörstel|BBO|TEO/)
+    for (const variante of ['ausgaben', 'einnahmen', 'kurz']) {
+      const text = findeText(`nicht_im_haushalt_${variante}`)
+      expect(text, variante).toBeDefined()
+      expect(text?.absaetze.length, variante).toBeGreaterThan(0)
+      for (const absatz of text?.absaetze ?? []) {
+        expect(absatz, variante).not.toMatch(/\{\{|\d/)
+      }
+    }
   })
 
   it('die Kurzform verlinkt auf den Glossaranker nicht_im_haushalt', () => {
@@ -71,10 +74,10 @@ describe('HinweisNichtImHaushalt auf /einnahmen und in der Kurzform (UI-04, D-18
     expect(komponente).toContain('Mehr dazu im Glossar')
   })
 
-  it('der Aufklapper „Was sind BBO und TEO?“ hängt am vorhandenen Pipeline-Text', () => {
+  it('der Aufklapper trägt den Titel des vorhandenen Pipeline-Texts', () => {
     const komponente = quelltext(KOMPONENTE)
-    expect(komponente).toContain('Was sind BBO und TEO?')
     expect(komponente).toContain("findeText('nicht_im_haushalt')")
+    expect(komponente).toContain('erklaerung?.titel')
   })
 })
 

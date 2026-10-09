@@ -40,6 +40,7 @@ import { baueErtragsarten } from '@/lib/ertragsarten'
 import { useJahr, wertartName } from '@/lib/jahr'
 import { STANDARD_ZEITREIHE, baueZeitreihe, zeitreihenSeite } from '@/lib/zeitreihen'
 import { zeilenName } from '@/lib/zeilen'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const { jahr, index, wertart } = useJahr()
 const reduzierteBewegung = useReducedMotion()
@@ -272,7 +273,7 @@ const investivSeite = computed(() => {
 <template>
   <PageIntro
     titel="Woher kommt das Geld?"
-    beschreibung="Die Gemeinde finanziert sich aus Steuern, Zuweisungen und Gebühren. Hier siehst du, wie viel aus welcher Quelle kommt."
+    :beschreibung="`Die ${KOMMUNE_ART} finanziert sich aus Steuern, Zuweisungen und Gebühren. Hier siehst du, wie viel aus welcher Quelle kommt.`"
   />
   <JahrUmschalter />
 

@@ -3,6 +3,7 @@ import GlossarListe from '@/components/GlossarListe.vue'
 import PageIntro from '@/components/PageIntro.vue'
 import ProduktAkkordeon from '@/components/ProduktAkkordeon.vue'
 import { glossarBegriffe } from '@/lib/glossar'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const sprungmarken = glossarBegriffe().map((begriff) => ({
   schluessel: begriff.schluessel,
@@ -13,7 +14,7 @@ const sprungmarken = glossarBegriffe().map((begriff) => ({
 <template>
   <PageIntro
     titel="Glossar und alle Produkte"
-    beschreibung="Hier findest du die wichtigsten Begriffe des Haushalts und alle Produkte der Gemeinde."
+    :beschreibung="`Hier findest du die wichtigsten Begriffe des Haushalts und alle Produkte der ${KOMMUNE_ART}.`"
   />
 
   <nav aria-label="Begriffe" class="om-glossar-sprung">

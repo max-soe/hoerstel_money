@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
 import { MENUE, menueLinks, type MenueGruppe } from '../src/lib/menue'
@@ -7,7 +9,11 @@ import { routen } from './routen'
 // bei jedem Routenwechsel (A11Y-02) und reduzierte Bewegung bei den Web-Awesome-Komponenten.
 // Gruppenname und Untereinträge stammen aus `MENUE`, nichts davon ist getippt.
 
-const TITEL_ENDE = '– Ostbevern Money'
+// Der Seitenname kommt aus den Daten (`haushalt.kommune`, wie `lib/kommune.ts`).
+const { kommune } = JSON.parse(
+  readFileSync(new URL('../src/data/haushalt.json', import.meta.url), 'utf-8'),
+) as { kommune: { name: string } }
+const TITEL_ENDE = `– ${kommune.name} Money`
 
 const gruppe = MENUE.find((eintrag): eintrag is MenueGruppe => eintrag.typ === 'gruppe')
 if (gruppe === undefined) {

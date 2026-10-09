@@ -39182,5 +39182,9 @@
         "Betreute Kinder von 3 - 6 Jahre"
       ]
     }
-  ]
+  ],
+  "kommune": {
+    "name": "Ostbevern",
+    "art": "Gemeinde"
+  }
 }

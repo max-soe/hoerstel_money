@@ -244,3 +244,9 @@ stand = "jahresbeginn"
 "030102" = ["Schüler/in", "Schüler/innen"]
 "040301" = ["Musikschüler/in", "Musikschüler/innen"]
 "060101" = ["betreutem Kind", "Betreute Kinder unter 3 Jahre", "Betreute Kinder von 3 - 6 Jahre"]
+
+# [layout.kommune] (Phase 12): Name und Art der Kommune für Seitentitel, Kopfzeile und Texte
+# der App („Ostbevern Money“, „der Gemeinde Ostbevern“).
+[layout.kommune]
+name = "Ostbevern"
+art = "Gemeinde"

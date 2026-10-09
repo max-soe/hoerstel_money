@@ -1,4 +1,4 @@
-// ECharts-Theme für Ostbevern Money. Liest ausschließlich die Web-Awesome-
+// ECharts-Theme der App. Liest ausschließlich die Web-Awesome-
 // Design-Tokens (--wa-color-*, --wa-font-family-body) zur Laufzeit via
 // getComputedStyle — es gibt keine zweite, hart codierte Farbpalette.
 // Diese Datei registriert beim Modul-Laden (Münster-Muster) den Renderer,
@@ -63,7 +63,7 @@ export const NEUTRAL_DUNKEL_FARBE = token('--wa-color-neutral-40', '#545868')
 /** Mittleres Grau der kategorischen Palette (dritte Serienfarbe). */
 export const NEUTRAL_MITTEL_FARBE = token('--wa-color-neutral-60', '#9194a2')
 
-/** Kategorische Serienfarben: Ostbevern-Gold zuerst, dann Grautöne. */
+/** Kategorische Serienfarben: Gold zuerst, dann Grautöne. */
 export const KATEGORIE_FARBEN = [
   token('--wa-color-brand-60', '#da7e00'),
   NEUTRAL_DUNKEL_FARBE,
@@ -71,7 +71,7 @@ export const KATEGORIE_FARBEN = [
   token('--wa-color-neutral-80', '#c7c9d0'),
 ]
 
-/** Sequenzielle Farben hell -> dunkel (Ostbevern-Gold-Verlauf). */
+/** Sequenzielle Farben hell -> dunkel (Gold-Verlauf). */
 export const SEQUENZ_FARBEN = [
   token('--wa-color-brand-90', '#ffe495'),
   token('--wa-color-brand-80', '#fac22b'),
@@ -228,7 +228,7 @@ export const STEUER_FARBE = token('--wa-color-brand-50', '#b45f04')
 export const INVEST_FARBE = token('--wa-color-neutral-40', '#545868')
 /** Aufwandsarten: neutral, nie PB-Farben. */
 export const AUFWANDSART_FARBE = token('--wa-color-neutral-40', '#545868')
-/** Knoten „Gemeindehaushalt“ (Sankey Mitte). */
+/** Mittlerer Knoten „Haushalt der Stadt/Gemeinde“ (Sankey). */
 export const GEMEINDE_FARBE = token('--wa-color-gray-40', '#545868')
 /** Knoten „Zinsen“ (Sankey rechts). */
 export const ZINSEN_FARBE = token('--wa-color-gray-60', '#9194a2')

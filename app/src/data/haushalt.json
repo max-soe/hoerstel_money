@@ -40010,5 +40010,9 @@
   },
   "eigenkapital_stand": "jahresende_vor_verrechnung",
   "finanzierungsprodukt": "1661101",
-  "bezugsgroessen": []
+  "bezugsgroessen": [],
+  "kommune": {
+    "name": "Hörstel",
+    "art": "Stadt"
+  }
 }

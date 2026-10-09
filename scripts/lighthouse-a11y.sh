@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Einmaliger Lighthouse-Lauf (nur Kategorie "accessibility") je Route von Ostbevern Money.
+# Einmaliger Lighthouse-Lauf (nur Kategorie "accessibility") je Route der App.
 #
 # Nutzung nach D-13 (Phase 7): einmalige Messung für den Verifikationsbericht, Ziel je Route >= 95
 # (A11Y-04). Das Skript läuft NICHT in der CI und lighthouse steht NICHT in app/package.json.

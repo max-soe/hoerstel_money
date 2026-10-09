@@ -118,10 +118,12 @@ describe('App.vue (Fußzeile, D-17, D-18)', () => {
 
   it('zeigt alle fünf Fußzeilen-Zeilen ohne Build-Datum', () => {
     expect(quelle).toContain('Datenstand: Haushalt')
-    expect(quelle).toContain('Original-Haushaltsplan (PDF) der Gemeinde Ostbevern')
+    // Der Name der Kommune kommt aus den Daten (`lib/kommune.ts`), nie als getippter Ortsname.
+    expect(quelle).toMatch(/Original-Haushaltsplan \(PDF\) der \{\{\s*KOMMUNE_VOLL\s*\}\}/)
     expect(quelle).toContain(
-      'Inoffizielles Projekt, keine Veröffentlichung der Gemeinde Ostbevern.',
+      'Inoffizielles Projekt, keine Veröffentlichung der {{ KOMMUNE_VOLL }}.',
     )
+    expect(quelle).not.toMatch(/Ostbevern|Hörstel/)
     expect(quelle).toContain('Kontakt:')
     expect(quelle).toContain('Über dieses Projekt, Impressum und Datenschutz')
     expect(quelle).toContain('Inspiriert von')

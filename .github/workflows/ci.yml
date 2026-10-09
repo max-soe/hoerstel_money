@@ -1,4 +1,4 @@
-# CI-Workflow und Veröffentlichung für Ostbevern Money.
+# CI-Workflow und Veröffentlichung für Hörstel Money.
 #
 # Ablauf: Die Jobs `pipeline` und `app` prüfen jeden Push auf `main` und jeden Pull Request. Der Job
 # `app` baut die Seite, startet den Smoke-Test (Playwright und axe, QUAL-02) gegen den Build
@@ -7,9 +7,8 @@
 # Er braucht beide Jobs, läuft nie für Pull Requests oder andere Branches als `main` und ist der
 # einzige Job mit Schreibrechten für Pages und den OIDC-Token (least privilege).
 #
-# Hinweis (D-10): Es gibt noch kein GitHub-Remote. Der Workflow läuft erst, wenn die Nutzerin
-# bzw. der Nutzer das öffentliche Repository `ostbevern_money` anlegt und `main` pusht; die
-# Schritte stehen im README (Abschnitt „Veröffentlichung auf GitHub Pages“).
+# Hinweis (D-10): Veröffentlicht wird aus dem Repository `hoerstel_money`, sobald der Stand auf
+# `main` liegt; die Schritte stehen im README (Abschnitt „Veröffentlichung auf GitHub Pages“).
 name: CI
 
 on:

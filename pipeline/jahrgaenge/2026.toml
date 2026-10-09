@@ -223,3 +223,9 @@ stand = "jahresende_vor_verrechnung"
 # Einheit“ (Freigabe 05-03), je Produktcode [Einheit im Zeilennamen, Grundzahl-Bezeichnungen …].
 # Hörstel druckt „Produktergebnis je …“ selbst als Grundzahl; die App rechnet deshalb nichts nach.
 [layout.bezugsgroessen]
+
+# [layout.kommune] (Phase 12): Name und Art der Kommune für Seitentitel, Kopfzeile und Texte
+# der App („Hörstel Money“, „der Stadt Hörstel“).
+[layout.kommune]
+name = "Hörstel"
+art = "Stadt"

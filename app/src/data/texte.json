@@ -115,6 +115,42 @@
       ]
     },
     {
+      "schluessel": "nicht_im_haushalt_ausgaben",
+      "titel": "Was nicht im Haushalt steht",
+      "quelle_seiten": [
+        25,
+        590,
+        591
+      ],
+      "absaetze": [
+        "Nicht alles, was in Hörstel mit öffentlichem Geld geschieht, steht in diesem Haushalt. Die Hörsteler Energie GmbH und die Stadtmarketing Hörstel UG führen eigene Bücher. Im Haushalt siehst du nur, was zwischen Stadt und Gesellschaft fließt."
+      ]
+    },
+    {
+      "schluessel": "nicht_im_haushalt_einnahmen",
+      "titel": "Was nicht im Haushalt steht",
+      "quelle_seiten": [
+        25,
+        590,
+        591
+      ],
+      "absaetze": [
+        "Die Einnahmen der städtischen Gesellschaften findest du hier nicht. Die Hörsteler Energie GmbH und die Stadtmarketing Hörstel UG führen eigene Bücher; im Haushalt steht nur, was zwischen Stadt und Gesellschaft fließt."
+      ]
+    },
+    {
+      "schluessel": "nicht_im_haushalt_kurz",
+      "titel": "Was nicht im Haushalt steht",
+      "quelle_seiten": [
+        25,
+        590,
+        591
+      ],
+      "absaetze": [
+        "Die Hörsteler Energie GmbH und die Stadtmarketing Hörstel UG führen eigene Bücher und stehen nicht in diesem Haushalt."
+      ]
+    },
+    {
       "schluessel": "steuern_selbst_festgelegt",
       "titel": "Welche Steuern die Stadt selbst festlegt",
       "quelle_seiten": [

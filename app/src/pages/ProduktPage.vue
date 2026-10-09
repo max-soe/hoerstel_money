@@ -18,6 +18,7 @@ import {
   baueTeilergebnisplan,
 } from '@/lib/produkt'
 import { belegSchluessel } from '@/lib/quelle'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const route = useRoute()
 const { jahr, jahrLink } = useJahr()
@@ -62,7 +63,7 @@ const investitionen = computed(() => baueInvestitionenTabelle(baueProduktInvesti
     <PageIntro :titel="produkt.name" :beschreibung="kopfzeile">
       <p>
         Ein <GlossarBegriff schluessel="produkt">Produkt</GlossarBegriff> ist eine Leistung der
-        Gemeinde.
+        {{ KOMMUNE_ART }}.
       </p>
     </PageIntro>
 

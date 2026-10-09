@@ -9,6 +9,7 @@ import KreisumlageCallout from '@/components/KreisumlageCallout.vue'
 import PageIntro from '@/components/PageIntro.vue'
 import { haushalt } from '@/data/daten'
 import { baueEinstiege, baueKennzahlen, quellenZeile, type Kennzahl } from '@/lib/kennzahlen'
+import { KOMMUNE_ART, KOMMUNE_VOLL } from '@/lib/kommune'
 
 // Die Startseite zeigt immer das Haushaltsjahr, ohne Jahr-Umschalter (UI-SPEC Routes).
 const jahrText = formatJahr(haushalt.haushaltsjahr)
@@ -47,8 +48,8 @@ const einstiege = computed(() => {
 
 <template>
   <PageIntro
-    :titel="`Der Haushalt ${jahrText} der Gemeinde Ostbevern`"
-    beschreibung="Hier siehst du, woher das Geld der Gemeinde kommt und wofür sie es ausgibt."
+    :titel="`Der Haushalt ${jahrText} der ${KOMMUNE_VOLL}`"
+    :beschreibung="`Hier siehst du, woher das Geld der ${KOMMUNE_ART} kommt und wofür sie es ausgibt.`"
   />
 
   <section class="om-start__kennzahlen" aria-labelledby="om-start-kennzahlen">

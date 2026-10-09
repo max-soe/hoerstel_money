@@ -113,6 +113,38 @@
       ]
     },
     {
+      "schluessel": "nicht_im_haushalt_ausgaben",
+      "titel": "Was nicht im Haushalt steht",
+      "quelle_seiten": [
+        14,
+        46
+      ],
+      "absaetze": [
+        "Nicht alles, was in Ostbevern Geld kostet, steht in diesem Haushalt. Das Hallenbad führt die BBO in eigenen Büchern. Im Haushalt siehst du nur die Verlustübernahme."
+      ]
+    },
+    {
+      "schluessel": "nicht_im_haushalt_einnahmen",
+      "titel": "Was nicht im Haushalt steht",
+      "quelle_seiten": [
+        14,
+        48
+      ],
+      "absaetze": [
+        "Abwassergebühren findest du hier nicht. Die Abwasserentsorgung führt der TEO AöR in eigenen Büchern."
+      ]
+    },
+    {
+      "schluessel": "nicht_im_haushalt_kurz",
+      "titel": "Was nicht im Haushalt steht",
+      "quelle_seiten": [
+        14
+      ],
+      "absaetze": [
+        "Das Hallenbad (BBO) und die Abwasserentsorgung (TEO AöR) führen eigene Bücher und stehen nicht in diesem Haushalt."
+      ]
+    },
+    {
       "schluessel": "steuern_selbst_festgelegt",
       "titel": "Welche Steuern die Gemeinde selbst festlegt",
       "quelle_seiten": [

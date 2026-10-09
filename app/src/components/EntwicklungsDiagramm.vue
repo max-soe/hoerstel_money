@@ -14,11 +14,11 @@ import { useSchmalerBildschirm } from '@/lib/bildschirm'
 import { baueErgebnisReihen, type Jahreswert } from '@/lib/entwicklung'
 import { wertartName } from '@/lib/jahr'
 import { zeitreihenSerien } from '@/lib/zeitreihen'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 const LEER_TITEL = 'Für diese Auswahl gibt es keine Einzelwerte'
 const LEER_TEXT = 'Der Haushaltsplan nennt für diese Jahre keine Werte. Öffne die Tabelle.'
-const BESCHREIBUNG =
-  'Liniendiagramm: Erträge und Aufwendungen der Gemeinde je Jahr, getrennt nach Ist, Ansatz und Planung. Die Werte stehen in der Tabelle darunter.'
+const BESCHREIBUNG = `Liniendiagramm: Erträge und Aufwendungen der ${KOMMUNE_ART} je Jahr, getrennt nach Ist, Ansatz und Planung. Die Werte stehen in der Tabelle darunter.`
 
 const istSchmal = useSchmalerBildschirm()
 const reihen = baueErgebnisReihen()

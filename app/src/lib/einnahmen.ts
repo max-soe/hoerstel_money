@@ -31,7 +31,7 @@ export interface PostenZeile {
 }
 
 export interface SteuerZeile extends PostenZeile {
-  /** `true`, wenn die Gemeinde die Steuer selbst festlegt (EINN-02). */
+  /** `true`, wenn die Kommune die Steuer selbst festlegt (EINN-02). */
   selbstFestgelegt: boolean
   /** Hebesatz in Prozentpunkten (nur Haushaltsjahr gedruckt), sonst `null`. */
   hebesatz: number | null
@@ -62,7 +62,7 @@ export interface InvestiveZeile {
 }
 
 /**
- * Steuern, deren Höhe die Gemeinde selbst bestimmt: Hebesatz (Grundsteuer A/B, Gewerbesteuer) bzw.
+ * Steuern, deren Höhe die Kommune selbst bestimmt: Hebesatz (Grundsteuer A/B, Gewerbesteuer) bzw.
  * örtliche Steuer (Hunde-, Vergnügungssteuer). Fachliche Regel (Spez. 6.4); die Anteile an
  * Einkommen- und Umsatzsteuer und die Kompensationszahlungen kommen von Bund und Land.
  */

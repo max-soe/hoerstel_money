@@ -21,13 +21,14 @@ import {
   stellenSummen,
   TEILE,
 } from '@/lib/stellen'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 // Die Seite zeigt das Haushaltsjahr, ohne Jahr-Umschalter (UI-SPEC Routes). Jahr und Wertart
 // kommen aus den Daten.
 const haushaltsjahr = formatiereJahr(haushalt.haushaltsjahr)
 const vorjahr = formatiereJahr(stellenplan.haushaltsjahr - 1)
 const wertart = wertartFuerJahr(haushalt.haushaltsjahr)
-const lead = `Hier siehst du, wie viele Stellen die Gemeinde ${haushaltsjahr} vorsieht, wie viele davon besetzt sind und in welchen Bereichen sie liegen.`
+const lead = `Hier siehst du, wie viele Stellen die ${KOMMUNE_ART} ${haushaltsjahr} vorsieht, wie viele davon besetzt sind und in welchen Bereichen sie liegen.`
 
 const summen = stellenSummen()
 const personen = nachwuchs()

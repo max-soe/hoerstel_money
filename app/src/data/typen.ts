@@ -178,6 +178,8 @@ export interface Haushalt {
   finanzierungsprodukt: string
   /** Produkte mit „Zuschussbedarf je Einheit“ (`[layout.bezugsgroessen]`); leer, wenn keines. */
   bezugsgroessen: HaushaltBezugsgroesse[]
+  /** Name und Art der Kommune (`[layout.kommune]`), z. B. Hörstel, Stadt. */
+  kommune: Kommune
   /**
    * Gedruckte Zeilennamen je Zeilenschlüssel, in der Reihenfolge von
    * `ergebnisplan.GESAMT.zeilen` bzw. `finanzplan.GESAMT.zeilen`. Einzige Namensquelle der
@@ -457,4 +459,10 @@ export interface HaushaltBezugsgroesse {
   produkt: string
   einheit_text: string
   bezeichnungen: string[]
+}
+
+/** Die Kommune des Haushalts; `art` ist „Stadt“ oder „Gemeinde“ (beide feminin). */
+export interface Kommune {
+  name: string
+  art: string
 }

@@ -23,6 +23,7 @@ import {
   rueckgangPlanjahre,
   ruecklagenTabelle,
 } from '@/lib/ruecklagen'
+import { KOMMUNE_ART } from '@/lib/kommune'
 
 // Die Seite zeigt immer alle ausgewiesenen Jahre, ohne Jahr-Umschalter (UI-SPEC Routes).
 // Erstes und letztes Jahr kommen aus den Daten, nie aus dem Quelltext.
@@ -30,7 +31,7 @@ const erstesJahr = formatiereJahr(haushalt.jahre[0] ?? haushalt.haushaltsjahr)
 const letztesJahr = formatiereJahr(
   haushalt.jahre[haushalt.jahre.length - 1] ?? haushalt.haushaltsjahr,
 )
-const lead = `Hier siehst du, wie sich Erträge, Aufwendungen und Ergebnis der Gemeinde bis ${letztesJahr} entwickeln und wie lange die Rücklagen als Polster reichen.`
+const lead = `Hier siehst du, wie sich Erträge, Aufwendungen und Ergebnis der ${KOMMUNE_ART} bis ${letztesJahr} entwickeln und wie lange die Rücklagen als Polster reichen.`
 
 // Das Jahresergebnis steht nach dem globalen Minderaufwand, wie in der Haushaltssatzung und auf der
 // Startseite (Entscheidung 1 der Phase); die Linien zeigen die Werte davor.
