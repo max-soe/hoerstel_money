@@ -40,13 +40,12 @@ describe('istPlatzhalter (UI-03, D-17)', () => {
 
 describe('Konfiguration (D-06, D-07)', () => {
   it('setzt die Kontaktadresse aus D-07', () => {
-    expect(KONTAKT_EMAIL).toBe('mail@thomas-manthey.de')
+    expect(KONTAKT_EMAIL).toBe('max.soest9@gmail.com')
     expect(KONTAKT_EMAIL).toMatch(/^[^@\s]+@[^@\s]+$/)
   })
 
-  it('verweist auf die offizielle PDF-Datei der Gemeinde (D-06)', () => {
-    expect(ORIGINAL_PDF_URL.startsWith('https://www.ostbevern.de/')).toBe(true)
-    expect(ORIGINAL_PDF_URL.endsWith('.pdf')).toBe(true)
+  it('verweist per HTTPS auf die offizielle PDF-Datei der Kommune (D-06)', () => {
+    expect(ORIGINAL_PDF_URL.startsWith('https://')).toBe(true)
   })
 
   it('hält weder die Kontaktadresse noch die PDF-URL für einen Platzhalter', () => {

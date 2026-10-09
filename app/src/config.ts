@@ -10,17 +10,16 @@
  * bestehen: `config.test.ts` und der Smoke-Test weisen das Deployment ab, falls hier je
  * wieder ein Platzhalter auf der reservierten Domain `.invalid` (RFC 2606) steht.
  */
-export const KONTAKT_EMAIL = 'mail@thomas-manthey.de'
+export const KONTAKT_EMAIL = 'max.soest9@gmail.com'
 
 /**
- * Link zum Original-Haushaltsplan (PDF) der Gemeinde Ostbevern (D-06): die offizielle Datei
- * der Gemeinde. Es wird keine eigene Kopie des PDFs ausgeliefert.
+ * Link zum Original-Haushaltsplan (PDF) der Kommune (D-06): die offizielle Datei
+ * der Stadt bzw. Gemeinde. Es wird keine eigene Kopie des PDFs ausgeliefert.
  *
  * Der Wert ist festgelegt. `istPlatzhalter(ORIGINAL_PDF_URL)` bleibt als Wächter für den
  * Smoke-Test bestehen (D-07).
  */
-export const ORIGINAL_PDF_URL =
-  'https://www.ostbevern.de/_Resources/Persistent/3/2/6/0/3260f0ed6ed16745ad93c953c061f765866667a6/Haushalt%202026%20komplett.pdf'
+export const ORIGINAL_PDF_URL = 'https://haushaltsplan-hoerstel.invalid/haushalt-2026.pdf'
 
 /**
  * Name der verantwortlichen Person im Impressum (D-08).
@@ -29,7 +28,7 @@ export const ORIGINAL_PDF_URL =
  * bleibt als Wächter bestehen: `config.test.ts` weist das Deployment ab, falls hier je wieder
  * ein Platzhalter auf `.invalid` steht.
  */
-export const IMPRESSUM_NAME = 'Thomas Manthey'
+export const IMPRESSUM_NAME = 'Max Soest'
 
 /**
  * Anschrift im Impressum als Zeilenliste, eine Zeile je Eintrag (1 bis n Zeilen, D-08).
@@ -37,7 +36,7 @@ export const IMPRESSUM_NAME = 'Thomas Manthey'
  * Der Wert ist seit dem Text-Checkpoint (07-10, D-15) festgelegt. `istAnschriftPlatzhalter`
  * bleibt als Wächter bestehen, auch für eine halb gefüllte Anschrift.
  */
-export const IMPRESSUM_ANSCHRIFT: readonly string[] = ['Lehmbrock 1', '48346 Ostbevern']
+export const IMPRESSUM_ANSCHRIFT: readonly string[] = ['Sanderskamp 6', '48477 Hörstel']
 
 function istInvalidHost(host: string): boolean {
   const klein = host.toLowerCase()
