@@ -7,6 +7,8 @@ import {
   IMPRESSUM_NAME,
   KONTAKT_EMAIL,
   ORIGINAL_PDF_URL,
+  URSPRUNGSPROJEKT_NAME,
+  URSPRUNGSPROJEKT_URL,
   istAnschriftPlatzhalter,
   istImpressumPlatzhalter,
   istPlatzhalter,
@@ -42,6 +44,12 @@ describe('Konfiguration (D-06, D-07)', () => {
   it('setzt die Kontaktadresse aus D-07', () => {
     expect(KONTAKT_EMAIL).toBe('max.soest9@gmail.com')
     expect(KONTAKT_EMAIL).toMatch(/^[^@\s]+@[^@\s]+$/)
+  })
+
+  it('dankt dem Ursprungsprojekt mit einem echten HTTPS-Link', () => {
+    expect(URSPRUNGSPROJEKT_NAME.trim()).not.toBe('')
+    expect(URSPRUNGSPROJEKT_URL.startsWith('https://')).toBe(true)
+    expect(istPlatzhalter(URSPRUNGSPROJEKT_URL)).toBe(false)
   })
 
   it('verweist per HTTPS auf die offizielle PDF-Datei der Kommune (D-06)', () => {

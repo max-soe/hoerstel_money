@@ -39,6 +39,13 @@ export const IMPRESSUM_NAME = 'Max Soest'
  */
 export const IMPRESSUM_ANSCHRIFT: readonly string[] = ['Sanderskamp 6', '48477 Hörstel']
 
+/**
+ * Das Projekt, dessen Codebasis diese App fortführt (Dank im Impressum): Name und Adresse der
+ * veröffentlichten App. Steht hier, weil der Ortsname nicht aus dem Haushalt stammt.
+ */
+export const URSPRUNGSPROJEKT_NAME = 'Ostbevern Money'
+export const URSPRUNGSPROJEKT_URL = 'https://bitwerkstatt.github.io/ostbevern_money/#/'
+
 function istInvalidHost(host: string): boolean {
   const klein = host.toLowerCase()
   return klein === 'invalid' || klein.endsWith('.invalid')
